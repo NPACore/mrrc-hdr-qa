@@ -1,0 +1,51 @@
+Metadata-Version: 2.1
+Name: protocol
+Version: 0.37
+Summary: generic framework to develop protocols with implementations in neuroscience
+Project-URL: Homepage, https://github.com/raamana/protocol
+Author-email: Pradeep Reddy Raamana <raamana@gmail.com>, Harsh Sinha <harsh.sinha@pitt.edu>
+License-Expression: Apache-2.0
+License-File: AUTHORS.rst
+License-File: LICENSE
+Keywords: protocol
+Classifier: Intended Audience :: Developers
+Classifier: Natural Language :: English
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.8
+Requires-Dist: lxml
+Requires-Dist: nibabel
+Requires-Dist: numpy
+Requires-Dist: pydicom
+Provides-Extra: test
+Requires-Dist: flake8; extra == 'test'
+Requires-Dist: hypothesis; extra == 'test'
+Requires-Dist: pytest; extra == 'test'
+Requires-Dist: requests; extra == 'test'
+Description-Content-Type: text/x-rst
+
+========
+protocol
+========
+
+
+Library and utilities to develop protocols and check for protocol compliance in medical imaging.
+
+We use the term "protocol" here loosely, to refer to MRI acquisition protocols, or neuroimaging data QC protocols.
+
+Current release focuses on MRI image acquisition protocols for QA purposes only.
+
+
+Features
+--------
+
+- simple tool to check for *protocol compliance* :
+    ensure all subjects in a given dataset were acquired with same/compatible values for few key parameters.
+- programmatic parsing of Siemens protocols in XML format
+
+
+
+Documentation
+-------------
+
+* Docs with examples : https://raamana.github.io/protocol
+* Free software: Apache 2.0 license

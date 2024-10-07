@@ -1,0 +1,12 @@
+{
+    "Manufacturer": "SIEMENS",
+    "ManufacturersModelName": "Verio",
+    "MagneticFieldStrength": 3.0,
+    "FlipAngle": 80.0,
+    "EchoTime": 0.043,
+    "RepetitionTime": 2.0,
+    "MultibandAccelerationFactor": 4,
+    "InPlanePhaseEncodingDirection": "COL",
+    "NumberOfPhaseEncodingSteps": 72,
+    "NumberofAverages": 2
+}

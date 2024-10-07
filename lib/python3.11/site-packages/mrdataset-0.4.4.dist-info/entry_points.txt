@@ -1,0 +1,3 @@
+[console_scripts]
+mrdataset = MRdataset.cli:cli
+mrds = MRdataset.cli:cli
