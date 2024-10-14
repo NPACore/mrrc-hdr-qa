@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 from pathlib import Path
 import logging
@@ -6,11 +7,6 @@ from collections import Counter
 from email.mime.text import MIMEText
 import smtplib
 
-# Grab the paths
-SCAN_DIRECTORY = "/Volumes/Hera/Raw/MRprojects/Habit/"
-LOG_FILE_PATH = "/home/hudlowe/src/mrrc-hdr-qa/mrqacheck/log_file.txt"
-CONFIG_PATH = "/home/hudlowe/src/mrrc-hdr-qa/mrqacheck/mri-config.json"
-OUTPUT_DIR = "/home/hudlowe/src/mrrc-hdr-qa/mrqacheck/output.txt"
 
 # Open the logger
 logging.basicConfig(filename="audit_script.log", level=logging.INFO)
@@ -326,6 +322,15 @@ def process_scan(scan_dir, config_path, output_dir):
 
 # Main function
 def main():
+
+    # Grab the paths
+    SCAN_DIRECTORY = "/Volumes/Hera/Raw/MRprojects/Habit/"
+    filedir = Path(os.path.dirname(__file__))
+    LOG_FILE_PATH = filedir / "log_file.txt"
+    CONFIG_PATH = filedir / "mri-config.json"
+    OUTPUT_DIR = filedir / "output.txt"
+    # TODO: use argparser to grab theses settings from command line
+
     # Iterate through scans in the specified directory
     for scan_dir in Path(SCAN_DIRECTORY).glob("*/"):
         scan_date = scan_dir.name
