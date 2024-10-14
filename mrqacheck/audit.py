@@ -12,8 +12,6 @@ LOG_FILE_PATH = "/home/hudlowe/src/mrrc-hdr-qa/mrqacheck/log_file.txt"
 CONFIG_PATH = "/home/hudlowe/src/mrrc-hdr-qa/mrqacheck/mri-config.json"
 OUTPUT_DIR = "/home/hudlowe/src/mrrc-hdr-qa/mrqacheck/output.txt"
 
-data_source = "/Volumes/Hera/Raw/MRprojects/Habit/"
-
 # Open the logger
 logging.basicConfig(filename="audit_script.log", level=logging.INFO)
 
@@ -36,7 +34,6 @@ def import_dataset_from_dicom(data_source, ds_format="dicom", config_path=None):
     dataset : dict
         A dictionary representing the dataset with metadata extracted from DICOM files.
     """
-
     dataset = {"name": Path(data_source).name, "sequences": []}
 
     # Loop through the data_source directory
@@ -48,7 +45,7 @@ def import_dataset_from_dicom(data_source, ds_format="dicom", config_path=None):
                     # Load the DICOM file using pydicom
                     dicom_data = pydicom.dcmread(dicom_path)
 
-                    # PUll the metadata
+                    # Pull the metadata
                     sequence_name = dicom_data.SeriesDescription if 'SeriesDescription' in dicom_data else "UnknownSequence"
 
                     # Add to the dataset
@@ -61,41 +58,19 @@ def import_dataset_from_dicom(data_source, ds_format="dicom", config_path=None):
                     print(f"Error reading DICOM file {file}: {e}")
     return dataset
 
-# Imoprt the config from the json file
+# Import the config from the json file
 def get_config(config_path):
     import json
     with open(config_path, 'r') as f:
         config = json.load(f)
     return config
 
-def load_reference_protocol(config):
+def infer_protocol(dataset, config):
     """
-    Load a predefined reference protocol from the configuration file.
-    This can be a JSON file or part of the configuration containing 
-    the correct values for each parameter.
-    
+    Infers the reference protocol by determining the most common
+    values for important DICOM fields (e.g., SliceThickness, EchoTime).
+
     Parameters
-    ----------
-    config : dict
-        The configuration file loaded as a dictionary.
-        
-    Returns
-    -------
-    reference_protocol : dict
-        A dictionary containing the reference protocol for each sequence.
-    """
-    # Check if reference protocol is defined in the config
-    if "reference_protocol" in config:
-        return config["reference_protocol"]
-    else:
-        raise ValueError("No reference protocol found in the configuration.")
-
-###def infer_protocol(dataset, config):
-    """
-    Infers the reference protocol by detereming the most common
-    values for important DICOM fields (e.g. SliceThickness, EchoTime).
-
-    Paramaters
     ----------
     dataset : dict
         The dataset containing DICOM sequences with metadata.
@@ -117,17 +92,17 @@ def load_reference_protocol(config):
     # Initialize a dictionary to hold the counts of each parameter's values
     param_counters = {param: Counter() for param in include_params}
 
-    # Gruop sequences by the stratify_by parameters, if specified 
+    # Group sequences by the stratify_by parameters, if specified
     sequences_by_group = {}
 
     for seq in dataset["sequences"]:
         dicom_metadata = seq["metadata"]
 
-        # Deteremine the group to stratify by (e.g., series number) if needed
+        # Determine the group to stratify by (e.g., series number) if needed
         if stratify_by and hasattr(dicom_metadata, stratify_by):
             group_value = getattr(dicom_metadata, stratify_by)
         else:
-            group_value = "default_group" # Single group if no stratisfy_by
+            group_value = "default_group"  # Single group if no stratify_by
 
         # Initialize the group if not already present
         if group_value not in sequences_by_group:
@@ -151,23 +126,21 @@ def load_reference_protocol(config):
 
             # Get the most common value for the parameter in this group
             if param_counter:
-                most_common_value = param_counter.most_common[1][0][0]
+                most_common_value = param_counter.most_common(1)[0][0]
                 group_reference[param] = most_common_value
             else:
-                group_reference[param] = None # If no value is found for the paramater
+                group_reference[param] = None  # If no value is found for the parameter
 
         # Add the inferred protocol for this group to the reference protocol
         reference_protocol[group] = group_reference
         
     return reference_protocol
 
-
-
 def horizontal_audit(dataset, config_path):
     """
     Perform the horizontal audit on the dataset using the sequences extracted
     from DICOM files. The audit checks if sequences are compliant with
-    a reference protocol.
+    an inferred protocol.
 
     Parameters
     ----------
@@ -180,7 +153,7 @@ def horizontal_audit(dataset, config_path):
     -------
     results : dict
         A dictionary with compliant, non-compliant sequences, and the 
-        reference protocol.
+        inferred reference protocol.
     """
     # Load the configuration file to determine the parameters for compliance
     config = get_config(config_path)
@@ -194,8 +167,8 @@ def horizontal_audit(dataset, config_path):
     # Parameter used to group sequences, such as 'series_number'
     stratify_by = horizontal_audit_config.get("stratify_by", None)
     
-    # Load the reference protocol for comparison from the configuration file
-    reference_protocol = load_reference_protocol(config)
+    # Infer the reference protocol from the dataset
+    reference_protocol = infer_protocol(dataset, config)
     
     # Tolerance configuration: allows parameter-specific tolerances
     tolerance_config = config.get("tolerance", {})
@@ -232,7 +205,7 @@ def horizontal_audit(dataset, config_path):
             # Compare each included parameter against the reference protocol
             for param in include_params:
                 # Get the reference value for the parameter from the reference protocol
-                ref_value = reference_protocol.get(param)
+                ref_value = reference_protocol[group].get(param)
                 
                 # Fetch the parameter-specific tolerance from the config (default: 0.1)
                 tolerance = tolerance_config.get(param, 0.1)
@@ -267,6 +240,7 @@ def horizontal_audit(dataset, config_path):
         'non_compliant': non_compliant_ds,
         'reference': reference_protocol
     }
+
 
 # Check if a scan has been processed
 def is_scan_processed(log_file, scan_date):
