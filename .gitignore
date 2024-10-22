@@ -2,3 +2,5 @@ lib/
 lib64
 bin/
 mrqadb/habit_DATE*
+sphinx/_autosummary/
+docs/
