@@ -15,12 +15,21 @@ mkdir -p "$output_dir"
 
 copy_first_dicom() {
     local folders=("$@")
+    local count=0
     for d in "${folders[@]}"; do
+	if [ "$count" -ge 2 ]; then
+		break
+	fi
         # Find and copy the first DICOM file to output directory
         find "$d" -maxdepth 1 -type f -print -quit |
         while read -r file; do
             cp "$file" "$output_dir/$(basename "$file")"
-        done
+	    ((count++))
+	
+	    if [ "$count" -ge 2 ]; then
+		    break
+	    fi
+    	done
     done
 }
 
