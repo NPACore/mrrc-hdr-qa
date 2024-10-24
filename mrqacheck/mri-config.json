@@ -32,30 +32,21 @@
             "AcquisitionMatrix"
         ]
     },
-    "vertical_audit": {
-        "stratify_by": "series_number",
-        "sequences": [
-            [
-                "ncanda-rsfmri-v1",
-                "ncanda-grefieldmap-v1"
-            ],
-            [
-                "ncanda-dti30b400-v1",
-                "ncanda-grefieldmap-v1"
-            ],
-            [
-                "ncanda-dti60b1000-v1",
-                "ncanda-grefieldmap-v1"
-            ]
-        ],
-        "include_parameters": [
-            "Rows",
-            "Columns",
-            "AcquisitionMatrix",
-            "PhaseEncodingDirection",
-            "ShimMode",
-            "ShimSetting"
-        ]
+    "reference_protocol": {
+        "EchoTrainLength": 128,
+        "ParallelAcquisitionTechnique": "GRAPPA",
+        "MagneticFieldStrength": 3.0,
+        "MRAcquisitionType": "3D",
+        "RepetitionTime": 2000,
+        "EchoTime": 30,
+        "FlipAngle": 90,
+        "Rows": 256,
+        "Columns": 256,
+        "AcquisitionMatrix": "256x256"
+    },
+    "tolerance": {
+        "RepetitionTime": 0.05,
+        "EchoTime": 0.1
     },
     "plots": {
         "include_parameters": [
@@ -71,5 +62,18 @@
     "exclude_subjects": [
         "210098",
         "210078"
-    ]
+    ],
+    "email_settings": {
+        "from": "hudlowe@upmc.edu",
+        "to": "hudlowe@upmc.edu",
+        "smtp_server": "smtp.office365.com",
+        "smtp_port": 587,
+        "smtp_username": "hudlowe@upmc.edu",
+        "smtp_encryption": "STARTTLS"
+    },
+    "logging": {
+        "level": "INFO",
+        "file": "/home/hudlowe/src/mrrc-hdr-qa/mrqacheck/log_file.txt"
+    }
+
 }
