@@ -17,3 +17,5 @@ Code to parse dicoms into a template database and alert on non-conforming sequen
    :recursive:
 
    change_header
+   dcmmeta2tsv
+   01_txt_to_sqlite
