@@ -4,3 +4,4 @@ bin/
 mrqadb/habit_DATE*
 sphinx/_autosummary/
 docs/
+db.*

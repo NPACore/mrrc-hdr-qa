@@ -1,29 +1,28 @@
-#!/usr/bin/bash
-# quick pass at building minimal text database of dicom headers
-# 20240907 WF - init
+#!/usr/bin/env bash
 #
-export TAG_ARGS=$(cut -f2 taglist.txt | sed '1d;/#/d;s/^/-tag /;'|paste -sd' ')
-dcminfo(){
- declare -g TAG_ARGS
- #echo "# $1" >&2
- gdcmdump -dC "$1" |
-   perl -ne 'BEGIN{%a=(Phase=>"NA", ucPAT=>"NA")}
-   $a{substr($1,0,5)} = $2 if m/(PhaseEncodingDirectionPositive.*Data..|ucPATMode\s+=\s+)(\d+)/;
-   END {print join("\t", @a{qw/Phase ucPAT/}), "\t"}'
- dicom_hinfo -sepstr $'\t' -last -full_entry $TAG_ARGS "$@"
+# build db 
+#
+
+source dcmmeta2tsv.bash
+export -f dcmmeta2tsv
+
+build_dcm_db(){
+  cnt=1
+  maxcnt=${MAXDCMCOUNT:-0}
+  [[ $# -eq 0 || "${1}" == "all" ]] && 
+     dcmdirs=(/Volumes/Hera/Raw/MRprojects/Habit/2022.08.23-14.24.18/11878_20220823/{HabitTask_704x752.19,dMRI_b0_AP_140x140.35,Resting-state_ME_476x504.14}/) ||
+     dcmdirs="$@"
+  for d in "${dcmdirs[@]}"; do
+    echo "# $cnt $d" >&2
+    # just one dicom
+    find  $d -maxdepth 1 -type f -print -quit
+    let ++cnt
+    [ $maxcnt -gt 0 -a $cnt -gt $maxcnt ] && break
+  done |
+    xargs ./dcmmeta2tsv.py |
+    #parallel -n1 dcmmeta2tsv |
+    tee db.txt
+ return 0
 }
 
-export -f dcminfo
-
-cnt=0
-#for d in /Volumes/Hera/Raw/MRprojects/Habit/20*-*/1*_2*/dMRI_*/; do
-for d in  /Volumes/Hera/Raw/MRprojects/Habit/2022.08.23-14.24.18/11878_20220823/HabitTask_704x752.19/ /Volumes/Hera/Raw/MRprojects/Habit/2022.08.23-14.24.18/11878_20220823/dMRI_b0_AP_140x140.35/  /Volumes/Hera/Raw/MRprojects/Habit/2022.08.23-14.24.18/11878_20220823/Resting-state_ME_476x504.14/; do
-  echo "# $d" >&2
-  # just one dicom
-  find  $d -maxdepth 1 -type f -print -quit
-  let ++cnt
-  [ $cnt -gt 2 ] && break
-done |
-  xargs ./dcmmeta2tsv.py|
-  #parallel -n1 dcminfo |
-  tee db.txt
+eval "$(iffmain build_dcm_db)"
