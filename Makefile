@@ -6,8 +6,9 @@ source_venv := . .venv/bin/activate
 docs/: .venv/ $(wildcard *.py) sphinx/conf.py $(wildcard sphinx/*.rst)
 	$(source_venv) && sphinx-build sphinx/ docs/
 
-test:
-	$(source_venv) && python3 -m doctest change_header.py
+test: .test
+.test: change_header.py acq2sqlite.py #$(wildcard *py)
+	$(source_venv) && python3 -m doctest $^ |& tee $@
 
 .venv/:
 	python -m venv .venv && $(source_venv) && pip install -r requirements.txt

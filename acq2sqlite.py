@@ -130,10 +130,10 @@ class DBQuery:
         across acquistions of the same name within a study.
 
         >>> db = DBQuery(sqlite3.connect(':memory:'))
-        >>> with open('schema.sql') as f: [db.sql.execute(c) for c in f.read().split(";")]
+        >>> with open('schema.sql') as f: _ = [db.sql.execute(c) for c in f.read().split(";")]
         ...
         >>> # db.sql.execute(".read schema.sql")
-        >>> example = {"Project": 'x', "SequenceName": 'a', 'TR': 1500}
+        >>> example = {k: 'x' for k in db.CONSTS}
         >>> db.param_rowid(example)
         1
         >>> db.param_rowid(example)
