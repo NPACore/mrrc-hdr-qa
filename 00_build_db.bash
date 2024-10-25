@@ -24,7 +24,6 @@ for d in  /Volumes/Hera/Raw/MRprojects/Habit/2022.08.23-14.24.18/11878_20220823/
   let ++cnt
   [ $cnt -gt 2 ] && break
 done |
-  # TODO: use './dcmmeta2tsv.py' instead of dcminfo?
-  #xargs ./dcm2nii_check.bash |
-  parallel -n1 dcminfo |
+  xargs ./dcmmeta2tsv.py|
+  #parallel -n1 dcminfo |
   tee db.txt

@@ -14,7 +14,7 @@ test:
 
 
 db.sqlite:
-	sqlite3 < schema.sql
+	sqlite3 $@ < schema.sql
 
 # TODO: replace me actual code
 db.txt:

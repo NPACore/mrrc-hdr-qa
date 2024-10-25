@@ -3,7 +3,7 @@ create table acq (
   param_id integer, -- join to session-consitent settings
   AcqTime text,
   AcqDate text,
-  SeiresNumber text,
+  SeriesNumber text,
   SubID text,
   Operator text
 );
@@ -15,6 +15,7 @@ create table acq_param (
   SequenceName text,
   -- TODO: should this be json blob? to extend easier?
   iPAT text,
+  Phase text,
   Comments text,
   SequenceType text,
   PED_major text,
