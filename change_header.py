@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Modify DICOM header information.
+Modify DICOM header information to simulate failing QA.
 """
 import os
 from pathlib import Path

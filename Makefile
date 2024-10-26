@@ -1,8 +1,9 @@
-.PHONY: test
+.PHONY: test doc docs
 
 # how to get into the python virtual environment
 source_venv := . .venv/bin/activate 
 
+doc docs: docs/
 docs/: .venv/ $(wildcard *.py) sphinx/conf.py $(wildcard sphinx/*.rst)
 	$(source_venv) && sphinx-build sphinx/ docs/
 

@@ -81,7 +81,7 @@ def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> list[str]:
     """
     :param dcm_path: dicom file with headers to extract
     :param tags: ordered dictionary with 'tag' key as hex pair, see :py:func:`tagpair_to_hex`
-    :return: list of tag values in same order as ``tags``
+    :return: list of tag values in same order as ``tags`` \
     BUT with CSA headers ``pedp``, ``ipat`` prepended
     """
     if not os.path.isfile(dcm_path):

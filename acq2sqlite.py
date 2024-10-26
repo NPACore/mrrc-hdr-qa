@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-convert db.txt into a sqlite database
+Convert ``db.txt`` into a sqlite database.
 """
 import sqlite3
 import logging
@@ -49,10 +49,24 @@ def column_names():
 
 class DBQuery:
     """
-    Convient SQL queries for tracking dicom headers/metadata
+    Convient SQL queries for tracking dicom headers/metadata.
     
-    Poorly implemented, ad-hoc bespoke ORM for ``schema.sql``
+    This class is a poorly implemented, ad-hoc/bespoke ORM for database defined in ``schema.sql``
     """
+
+    #: :py:data:`CONSTS` is a list of expected aquisition-invarient parameters.
+    #: The values of these attributes should be the same for every aquisition
+    #: sharing a ``Project × SequenceName`` pair (across all sessions of a Project).
+    #:
+    #: We consider the acquistion to have a Quallity Assurance error
+    #: when the value of any of these parameters in a single acquisition
+    #: fails to match the template.
+    #:
+    #: For example ``TR`` for task EPI acquistion identified by
+    #: ``SequenceName=RewardedAnti`` in ``Project=WPC-8620``
+    #: should always be ``1300`` ms.
+    #:
+    #: .. image:: ../../sphinx/imgs/nonconforming_example.png
     CONSTS = [
         "Project",
         "SequenceName",
@@ -121,14 +135,14 @@ class DBQuery:
         cur = self.sql.execute(self.find_acq, acq_search_vals)
         acq = cur.fetchone()
         if acq:
-            logging.debug(f"have acq {acq[0]} {acq_search_vals}")
+            logging.info("have acq %s %s",acq[0], acq_search_vals)
             return True
         return False
 
     def param_rowid(self, d):
         """
         Find or insert the combination of parameters for an aquisition.
-        Using ``CONSTS``, the header parameters that should be invarient
+        Using :py:data:`CONSTS`, the header parameters that should be invarient
         across acquistions of the same name within a study.
 
         >>> db = DBQuery(sqlite3.connect(':memory:'))

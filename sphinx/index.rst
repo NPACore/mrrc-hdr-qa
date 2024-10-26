@@ -8,6 +8,8 @@ mrrc-hdr-qa documentation
 
 Code to parse dicoms into a template database and alert on non-conforming sequences.
 
+Code
+--------
 
 .. toctree::
    :caption: Contents:
@@ -16,6 +18,29 @@ Code to parse dicoms into a template database and alert on non-conforming sequen
    :toctree: _autosummary
    :recursive:
 
-   change_header
    dcmmeta2tsv
    acq2sqlite
+   change_header
+
+
+Overview
+--------
+
+See :py:data:`acq2sqlite.DBQuery.CONSTS`
+
+.. image:: ../sphinx/imgs/nonconforming_example.png
+
+
+
+.. `https://dicom-parser.readthedocs.io/en/latest/siemens/csa_headers.html#csa-headers`_
+
+
+Parameters
+----------
+
+ .. csv-table:: Dicom tag list
+    :file: ../taglist.txt
+    :delimiter: \t
+    :header-rows: 1
+
+.. .. include:: ../readme.md
