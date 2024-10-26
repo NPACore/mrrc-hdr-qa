@@ -1,0 +1,25 @@
+# Codespell configuration is within .codespellrc
+---
+name: linting
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  lint:
+    name: Lint and spellcheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Lint
+        run: make .lint
+      - name: Commit
+        uses: stefanzweifel/git-auto-commit-action@v5

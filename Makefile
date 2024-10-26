@@ -14,7 +14,7 @@ docs/taglist.csv: taglist.txt
 test: .test
 .test: change_header.py acq2sqlite.py #$(wildcard *py)
 	# LOGLEVEL=CRITICAL
-	$(source_venv) && python3 -m doctest $^ |& tee $@
+	$(source_venv) && python3 -m doctest $^ 2>&1 | tee $@
 
 .venv/:
 	python3 -m venv .venv && $(source_venv) && \
@@ -29,5 +29,7 @@ db.sqlite:
 db.txt:
 	./00_build_db.bash
 
-pre-commit: .venv/ .test
-	$(source_venv) && black . && isort . && codespell -w
+.lint: $(wildcard *.py) $(wildcard sphinx/*.rst)
+	$(source_venv) && black . > .lint && isort . >> .lint && codespell -w >> .lint
+
+pre-commit: .venv/ .test .lint
