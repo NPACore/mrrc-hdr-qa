@@ -16,7 +16,9 @@ with warnings.catch_warnings():
     import nibabel.nicom.csareader as csareader
 
 logging.basicConfig(level=logging.INFO)
-# object that has obj.value for when a dicom tag does not exist
+
+#: object that has obj.value for when a dicom tag does not exist
+#: using 'null' to match AFNI's dicom_hinfo
 NULLVAL = type('',(object,),{"value": "null"})()
 
 def tagpair_to_hex(csv_str) -> tuple[int,int]:
@@ -28,7 +30,7 @@ def tagpair_to_hex(csv_str) -> tuple[int,int]:
     :return: dicom header tag hex pair
 
     >>> tagpair_to_hex("0051,1017")
-    ('0x51','0x1017')
+    ('0x51', '0x1017')
     """
     return tuple(hex(int(x, 16)) for x in csv_str.split(","))
 
@@ -49,12 +51,18 @@ def read_known_tags(tagfile="taglist.txt") -> TagDicts:
         ]
     return tags
 
+
 def csa_fetch(csa_tr: dict, item: str) -> str:
+    """
+
+    >>> csa_fetch({'notags':'badinput'}, 'PhaseEncodingDirectionPositive')
+    'null'
+    """
     try:
-        val = csa_tr["tags"]["PhaseEncodingDirectionPositive"]["items"]
-        val = val[0] if val else "null"
+        val = csa_tr["tags"][item]["items"]
+        val = val[0] if val else NULLVAL.value
     except KeyError:
-        val = 'null'
+        val = NULLVAL.value
     return val
 
 def read_csa(csa) -> list[str]:
@@ -62,8 +70,11 @@ def read_csa(csa) -> list[str]:
     extract parameters from siemens CSA
     :param csa: content of siemens private tag (0x0029, 0x1010)
     :return: [pepd, ipat] is phase encode positive direction and GRAPA iPATModeText
+
+    >>> read_csa(None)
+    ['null', 'null']
     """
-    null = ['null','null']
+    null = [NULLVAL.value]*2
     if csa is None:
         return null
     csa = csa.value
@@ -83,10 +94,22 @@ def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> list[str]:
     :param tags: ordered dictionary with 'tag' key as hex pair, see :py:func:`tagpair_to_hex`
     :return: list of tag values in same order as ``tags`` \
     BUT with CSA headers ``pedp``, ``ipat`` prepended
+
+    >>> tr = {'name': 'TR', 'tag': (0x0018,0x0080)}
+    >>> read_tags('example_dicoms/RewardedAnti_good.dcm', [tr])
+    ['1', 'p2', '1300', 'example_dicoms/RewardedAnti_good.dcm']
+
+    >>> read_tags('example_dicoms/DNE.dcm', [tr])
+    ['null', 'null', 'null', 'example_dicoms/DNE.dcm']
     """
     if not os.path.isfile(dcm_path):
         raise Exception("Bad path to dicom: '{dcm_path}' DNE")
-    dcm = pydicom.dcmread(dcm_path)
+    try:
+        dcm = pydicom.dcmread(dcm_path)
+    except pydicom.errors.InvalidDicomError:
+        logging.error("cannot read header in %s", dcm_path)
+        return ["null"]*(len(tags)+2) + [dcm_path]
+
     meta = [dcm.get(tag_d["tag"],NULLVAL).value for tag_d in tags]
 
     csa_tags = read_csa(dcm.get((0x0029, 0x1010)))
