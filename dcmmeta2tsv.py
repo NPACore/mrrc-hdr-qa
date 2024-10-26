@@ -9,9 +9,11 @@ import pydicom
 import logging
 from typing import TypedDict
 
-# import warnings
-# warnings.filterwarnings("ignore", module="nibabel.nicom.csareader")
-import nibabel.nicom.csareader as csareader
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    # UserWarning: The DICOM readers are highly experimental...
+    import nibabel.nicom.csareader as csareader
 
 logging.basicConfig(level=logging.INFO)
 # object that has obj.value for when a dicom tag does not exist
@@ -55,6 +57,26 @@ def csa_fetch(csa_tr: dict, item: str) -> str:
         val = 'null'
     return val
 
+def read_csa(csa) -> list[str]:
+    """
+    extract parameters from siemens CSA
+    :param csa: content of siemens private tag (0x0029, 0x1010)
+    :return: [pepd, ipat] is phase encode positive direction and GRAPA iPATModeText
+    """
+    null = ['null','null']
+    if csa is None:
+        return null
+    csa = csa.value
+    try:
+        csa_tr = csareader.read(csa)
+    except csareader.CSAReadError:
+        return null
+    pedp = csa_fetch(csa_tr, "PhaseEncodingDirectionPositive")
+    ipat = csa_fetch(csa_tr, "ImaPATModeText")
+    # order here matches 00_build_db.bash
+    return [pedp, ipat]
+
+
 def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> list[str]:
     """
     :param dcm_path: dicom file with headers to extract
@@ -67,16 +89,7 @@ def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> list[str]:
     dcm = pydicom.dcmread(dcm_path)
     meta = [dcm.get(tag_d["tag"],NULLVAL).value for tag_d in tags]
 
-    csa = dcm.get((0x0029, 0x1010))
-    if csa:
-        csa_str = csa.value
-        csa_tr = csareader.read(csa_str)
-        pedp = csa_fetch(csa_tr, "PhaseEncodingDirectionPositive")
-        ipat = csa_fetch(csa_tr, "ImaPATModeText")
-        # order here matches 00_build_db.bash
-        csa_tags = [pedp, ipat]
-    else:
-        csa_tags = ['null','null']
+    csa_tags = read_csa(dcm.get((0x0029, 0x1010)))
 
     # NB. arrays are '[x, y, z]' instead of ' x y z ' or 'x/y'
     # like in dicom_hdr (00_build_db.bash)
