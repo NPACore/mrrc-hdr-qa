@@ -1,0 +1,4 @@
+[codespell]
+skip = ./docs/*,./share/*,./example*,.git/*
+ignore-words-list = TE,DNE
+

@@ -1,4 +1,4 @@
 pydicom
+nibabel
 dicom-parser
-sphinx
 #mrQA
