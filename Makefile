@@ -11,7 +11,7 @@ test: .test
 	$(source_venv) && python3 -m doctest $^ |& tee $@
 
 .venv/:
-	python -m venv .venv && $(source_venv) && pip install -r requirements.txt
+	python3 -m venv .venv && $(source_venv) && pip install -r requirements.txt
 
 
 db.sqlite:

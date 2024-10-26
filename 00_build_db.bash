@@ -3,33 +3,45 @@
 # build db
 #
 source dcmmeta2tsv.bash
-export -f dcmmeta2tsv
+
+_project=${PROJECT:-all}
+find_example_dcm(){
+  # physio embedded dicoms dont have much in the way of header information
+  # Phoenix Report is session summary pdf?
+  [[ "$1" =~ PhysioLog|PhoenixZIPReport ]] && return
+  [ ! -d "$1" ] && echo "ERROR acq dir '$1' is not a dir" >&2 && return
+  # just one dicom form each acquisition
+  find "$1" -maxdepth 1 -type f \( -iname '*.dcm' -or -iname 'MR.*' -or -iname '*.IMA' \) -print -quit
+}
+
+export -f dcmmeta2tsv find_example_dcm
 
 build_dcm_db(){
-  cnt=1
+  #
+  # dicoms like project/session_date/session_id/acquistion/
+
+
   maxcnt=${MAXDCMCOUNT:-0}
-  [[ $# -eq 0 || "${1}" == "all" ]] &&
-     dcmdirs=(/Volumes/Hera/Raw/MRprojects/Habit/2022.08.23-14.24.18/11878_20220823/{HabitTask_704x752.19,dMRI_b0_AP_140x140.35,Resting-state_ME_476x504.14}/) ||
-     dcmdirs=("$@")
-  for d in "${dcmdirs[@]}"; do
-    # physio embedded dicoms dont have much in the way of header information
-    # Phoenix Report is session summary pdf?
-    [[ $d =~ PhysioLog|PhoenixZIPReport ]] && continue
+  cnt=1
 
-    # give some indication of progress every 100
-    [ $(($cnt % 100)) -eq 0 ] && echo "# [$(date +%H:%M:%S.%N)] $cnt $d" >&2
+  mkdir -p db/
 
-    # just one dicom form each acquisition
-    find "$d" -maxdepth 1 -type f -print -quit
+  for project in "$@"; do
+     [ ! -d $project ] && echo "ERROR: failed to find project directory '$project'" >&2 && continue
+     pname=$(basename $project)
+     outtxt=db/$pname.txt
+     echo "# $pname into $outtxt" >&2
+     for acq in $project/2*/*/*/; do
 
-    # maybe we want to quit early?
-    let ++cnt
-    # || true  so we don't end loop on an error
-    [ $maxcnt -gt 0 -a $cnt -gt $maxcnt ] && break || true
-  done |
-    time xargs ./dcmmeta2tsv.py |
-    #parallel -n1 dcmmeta2tsv |
-    tee db.txt
+         # give some indication of progress: print line every 100
+	 let ++cnt
+	 [ $maxcnt -gt 0 -a $cnt -gt $maxcnt ] && break
+         [ $(($cnt % 100)) -eq 0 ] && echo "# [$(date +%H:%M:%S.%N)] $cnt $acq" >&2
+
+	 find_example_dcm "$acq"
+     done |
+     time parallel -X -j 4 --bar ./dcmmeta2tsv.py > $outtxt 
+  done
  return 0
 }
 

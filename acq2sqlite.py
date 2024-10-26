@@ -5,6 +5,8 @@ convert db.txt into a sqlite database
 import sqlite3
 import logging
 import re
+import os
+import sys
 logging.basicConfig(level=logging.INFO)
 
 
@@ -119,7 +121,7 @@ class DBQuery:
         cur = self.sql.execute(self.find_acq, acq_search_vals)
         acq = cur.fetchone()
         if acq:
-            logging.info(f"have acq {acq[0]} {acq_search_vals}")
+            logging.debug(f"have acq {acq[0]} {acq_search_vals}")
             return True
         return False
 
@@ -142,16 +144,16 @@ class DBQuery:
         2
         """
         val_array = [d.get(k) for k in self.CONSTS]
-        logging.info("searching: %s", val_array)
+        logging.debug("searching: %s", val_array)
         cur = self.sql.execute(self.find_cmd, val_array)
         res = cur.fetchone()
         if res:
             rowid = res[0]
-            logging.info("seq repeated: found exiting %d", rowid)
+            logging.debug("seq repeated: found exiting %d", rowid)
         else:
             cur = self.sql.execute(self.sql_cmd, val_array)
             rowid = cur.lastrowid
-            logging.info("new seq: created %d", rowid)
+            logging.info("new seq param set created %d: %s %s", rowid, d["Project"], d["SequenceName"])
 
         return rowid
 
@@ -169,12 +171,14 @@ class DBQuery:
         d["param_id"] = rowid
         acq_insert_vals = [d[k] for k in self.acq_insert_columns]
         cur = self.sql.execute(self.acq_insert, acq_insert_vals)
-        logging.info("new acq: created %d", cur.lastrowid)
+        logging.debug("new acq created: %d", cur.lastrowid)
 
+def have_pipe_data():
+    return os.isatty(sys.stdout.fileno())
 
 if __name__ == "__main__":
     db = DBQuery()
-    with open("db.txt", "r") as f:
+    with sys.stdin if have_pipe_data() else open("db.txt", "r") as f:
         while line := f.readline():
             vals = line.split("\t")
             d = dict(zip(db.all_columns, vals))
