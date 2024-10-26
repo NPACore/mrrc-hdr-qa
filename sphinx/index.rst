@@ -26,7 +26,13 @@ Code
 Overview
 --------
 
+
+Template
+++++++++
+
 See :py:data:`acq2sqlite.DBQuery.CONSTS`
+
+Here's an example for the ``RewardedAnti`` task acquisitions in the ``WPC-8620`` project. The ideal template is found finding the most frequent set of repeated key parameters. 150 of the ``RewardedAnti`` seqeuences share the same ``acq_param`` set, here stored in the sqlite db on rowid=35. But 4 acquisitions (rows in ``acq``) don't match. In this case all mismatches can be found in ``TA``.
 
 .. image:: ../sphinx/imgs/nonconforming_example.png
 
@@ -39,8 +45,7 @@ Parameters
 ----------
 
  .. csv-table:: Dicom tag list
-    :file: ../taglist.txt
-    :delimiter: \t
+    :file: ../docs/taglist.csv
     :header-rows: 1
 
 .. .. include:: ../readme.md
