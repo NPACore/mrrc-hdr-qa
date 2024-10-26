@@ -1,35 +1,40 @@
-.PHONY: test docs pre-commit
+.PHONY: default test docs pre-commit venv-dev venv-program
 
-# how to get into the python virtual environment
-source_venv := . .venv/bin/activate 
+default: docs
 
-docs: docs/
-docs/: .venv/ $(wildcard *.py) sphinx/conf.py $(wildcard sphinx/*.rst) docs/taglist.csv
-	$(source_venv) && sphinx-build sphinx/ docs/
-
-docs/taglist.csv: taglist.txt
-	mkdir -p docs
-	sed '/^#/d;s/,//g;s/\t/,/g' $< > $@
-
-test: .test
-.test: change_header.py acq2sqlite.py #$(wildcard *py)
-	# LOGLEVEL=CRITICAL
-	$(source_venv) && python3 -m doctest $^ 2>&1 | tee $@
-
-.venv/:
-	python3 -m venv .venv && $(source_venv) && \
-		pip install -r requirements.txt && \
-		pip install -r requirements_dev.txt
-
+pre-commit: venv-program venv-dev .test .lint
 
 db.sqlite:
 	sqlite3 $@ < schema.sql
 
-# TODO: replace me actual code
-db.txt:
-	./00_build_db.bash
+# how to get into the python virtual environment
+source_venv := . .venv/bin/activate
 
-.lint: $(wildcard *.py) $(wildcard sphinx/*.rst)
+## documentation. github action pushes this to 'gh-pages' branch
+docs: docs/
+docs/: venv-dev $(wildcard *.py) sphinx/conf.py $(wildcard sphinx/*.rst) docs/taglist.csv
+	$(source_venv) && sphinx-build sphinx/ docs/
+docs/taglist.csv: taglist.txt
+	mkdir -p docs
+	sed '/^#/d;s/,//g;s/\t/,/g' $< > $@
+
+##
+
+.lint: venv-dev $(wildcard *.py) $(wildcard sphinx/*.rst)
 	$(source_venv) && black . > .lint && isort . >> .lint && codespell -w >> .lint
 
-pre-commit: .venv/ .test .lint
+test: .test
+.test: change_header.py acq2sqlite.py dcmmeta2tsv.py | venv-dev  #$(wildcard *py)
+	# LOGLEVEL=CRITICAL
+	$(source_venv) && python3 -m doctest $^ 2>&1 | tee $@
+
+## managing the environment
+# dev requirements separate to hopefully run github actions a bit faster
+.venv/:
+	python3 -m venv .venv
+venv-dev: .venv/bin/black
+.venv/bin/black: .venv/
+	$(source_venv) && pip install -r requirements_dev.txt
+venv-progam: .venv/bin/pydicom
+.venv/bin/pydicom: .venv/
+	$(source_venv) && pip install -r requirements.txt

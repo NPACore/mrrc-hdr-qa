@@ -109,7 +109,7 @@ def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> list[str]:
     ['null', 'null', 'null', 'example_dicoms/DNE.dcm']
     """
     if not os.path.isfile(dcm_path):
-        raise Exception("Bad path to dicom: '{dcm_path}' DNE")
+        raise Exception(f"Bad path to dicom: '{dcm_path}' DNE")
     try:
         dcm = pydicom.dcmread(dcm_path)
     except pydicom.errors.InvalidDicomError:
