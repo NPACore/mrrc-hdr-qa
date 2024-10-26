@@ -14,17 +14,18 @@ source_venv := . .venv/bin/activate
 docs: docs/
 docs/: venv-dev $(wildcard *.py) sphinx/conf.py $(wildcard sphinx/*.rst) docs/taglist.csv
 	$(source_venv) && sphinx-build sphinx/ docs/
+# sphinx can read in csv but not tsv, so convert for it
 docs/taglist.csv: taglist.txt
 	mkdir -p docs
 	sed '/^#/d;s/,//g;s/\t/,/g' $< > $@
 
 ##
 
-.lint: venv-dev $(wildcard *.py) $(wildcard sphinx/*.rst)
+.lint: $(wildcard *.py) $(wildcard sphinx/*.rst) | venv-dev
 	$(source_venv) && black . > .lint && isort . >> .lint && codespell -w >> .lint
 
 test: .test
-.test: change_header.py acq2sqlite.py dcmmeta2tsv.py | venv-dev  #$(wildcard *py)
+.test: change_header.py acq2sqlite.py dcmmeta2tsv.py | venv-program venv-dev  #$(wildcard *py)
 	# LOGLEVEL=CRITICAL
 	$(source_venv) && python3 -m doctest $^ 2>&1 | tee $@
 
@@ -35,6 +36,6 @@ test: .test
 venv-dev: .venv/bin/black
 .venv/bin/black: .venv/
 	$(source_venv) && pip install -r requirements_dev.txt
-venv-progam: .venv/bin/pydicom
+venv-program: .venv/bin/pydicom
 .venv/bin/pydicom: .venv/
 	$(source_venv) && pip install -r requirements.txt
