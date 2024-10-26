@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-import os
-from pathlib import Path
 import logging
-import pydicom
+import os
+import smtplib
 from collections import Counter
 from email.mime.text import MIMEText
-import smtplib
+from pathlib import Path
 
+import pydicom
 
 # Open the logger
 logging.basicConfig(filename="audit_script.log", level=logging.INFO)
+
 
 def import_dataset_from_dicom(data_source, ds_format="dicom", config_path=None):
     """
@@ -42,24 +43,33 @@ def import_dataset_from_dicom(data_source, ds_format="dicom", config_path=None):
                     dicom_data = pydicom.dcmread(dicom_path)
 
                     # Pull the metadata
-                    sequence_name = dicom_data.SeriesDescription if 'SeriesDescription' in dicom_data else "UnknownSequence"
+                    sequence_name = (
+                        dicom_data.SeriesDescription
+                        if "SeriesDescription" in dicom_data
+                        else "UnknownSequence"
+                    )
 
                     # Add to the dataset
-                    dataset["sequences"].append({
-                        "file": dicom_path,
-                        "sequence_name": sequence_name,
-                        "metadata": dicom_data
-                    })
+                    dataset["sequences"].append(
+                        {
+                            "file": dicom_path,
+                            "sequence_name": sequence_name,
+                            "metadata": dicom_data,
+                        }
+                    )
                 except Exception as e:
                     print(f"Error reading DICOM file {file}: {e}")
     return dataset
 
+
 # Import the config from the json file
 def get_config(config_path):
     import json
-    with open(config_path, 'r') as f:
+
+    with open(config_path, "r") as f:
         config = json.load(f)
     return config
+
 
 def infer_protocol(dataset, config):
     """
@@ -73,7 +83,7 @@ def infer_protocol(dataset, config):
     config : dict
         Configuration file specifying the parameters to include in the
         reference protocol.
-    
+
     Returns
     -------
     reference_protocol : dict
@@ -129,8 +139,9 @@ def infer_protocol(dataset, config):
 
         # Add the inferred protocol for this group to the reference protocol
         reference_protocol[group] = group_reference
-        
+
     return reference_protocol
+
 
 def horizontal_audit(dataset, config_path):
     """
@@ -144,49 +155,49 @@ def horizontal_audit(dataset, config_path):
         Dataset containing DICOM sequences and metadata.
     config_path : str
         Path to the configuration file.
-    
+
     Returns
     -------
     results : dict
-        A dictionary with compliant, non-compliant sequences, and the 
+        A dictionary with compliant, non-compliant sequences, and the
         inferred reference protocol.
     """
     # Load the configuration file to determine the parameters for compliance
     config = get_config(config_path)
-    
+
     # Extract the configuration for horizontal audits
     horizontal_audit_config = config.get("horizontal_audit", {})
-    
+
     # List of parameters to include in the compliance check
     include_params = horizontal_audit_config.get("include_parameters", [])
-    
+
     # Parameter used to group sequences, such as 'series_number'
     stratify_by = horizontal_audit_config.get("stratify_by", None)
-    
+
     # Infer the reference protocol from the dataset
     reference_protocol = infer_protocol(dataset, config)
-    
+
     # Tolerance configuration: allows parameter-specific tolerances
     tolerance_config = config.get("tolerance", {})
 
     # Lists to hold compliant and non-compliant sequences
     compliant_ds = []
     non_compliant_ds = []
-    
+
     # Group sequences by the value of the 'stratify_by' parameter
     sequences_by_group = {}
 
     # Loop through each sequence in the dataset
-    for seq in dataset['sequences']:
-        dicom_metadata = seq['metadata']
-        
+    for seq in dataset["sequences"]:
+        dicom_metadata = seq["metadata"]
+
         # Determine the group for this sequence based on the 'stratify_by' parameter
         group_value = getattr(dicom_metadata, stratify_by, "default_group")
-        
+
         # Initialize the group if it doesn't already exist
         if group_value not in sequences_by_group:
             sequences_by_group[group_value] = []
-        
+
         # Add the sequence to its corresponding group
         sequences_by_group[group_value].append(seq)
 
@@ -194,7 +205,7 @@ def horizontal_audit(dataset, config_path):
     for group, sequences in sequences_by_group.items():
         # Loop through each sequence within the group
         for seq in sequences:
-            dicom_metadata = seq['metadata']
+            dicom_metadata = seq["metadata"]
             is_compliant = True
             non_compliant_reasons = []
 
@@ -202,7 +213,7 @@ def horizontal_audit(dataset, config_path):
             for param in include_params:
                 # Get the reference value for the parameter from the reference protocol
                 ref_value = reference_protocol[group].get(param)
-                
+
                 # Fetch the parameter-specific tolerance from the config (default: 0.1)
                 tolerance = tolerance_config.get(param, 0.1)
 
@@ -211,30 +222,36 @@ def horizontal_audit(dataset, config_path):
                     seq_value = getattr(dicom_metadata, param)
 
                     # If the parameter is numeric, allow some tolerance in comparison
-                    if isinstance(ref_value, (int, float)) and isinstance(seq_value, (int, float)):
+                    if isinstance(ref_value, (int, float)) and isinstance(
+                        seq_value, (int, float)
+                    ):
                         # Check if the value exceeds the allowed tolerance
                         if abs(ref_value - seq_value) > tolerance:
                             is_compliant = False
-                            non_compliant_reasons.append(f"{param}: {seq_value} (Expected: {ref_value}, Tolerance: {tolerance})")
-                    
+                            non_compliant_reasons.append(
+                                f"{param}: {seq_value} (Expected: {ref_value}, Tolerance: {tolerance})"
+                            )
+
                     # If the parameter is non-numeric, check for an exact match
                     elif ref_value != seq_value:
                         is_compliant = False
-                        non_compliant_reasons.append(f"{param}: {seq_value} (Expected: {ref_value})")
+                        non_compliant_reasons.append(
+                            f"{param}: {seq_value} (Expected: {ref_value})"
+                        )
 
             # If the sequence is compliant, add it to the compliant dataset
             if is_compliant:
                 compliant_ds.append(seq)
             else:
                 # If the sequence is not compliant, add reasons and log it
-                seq['non_compliant_reasons'] = non_compliant_reasons
+                seq["non_compliant_reasons"] = non_compliant_reasons
                 non_compliant_ds.append(seq)
 
     # Return the results of the audit, including compliant and non-compliant sequences
     return {
-        'compliant': compliant_ds,
-        'non_compliant': non_compliant_ds,
-        'reference': reference_protocol
+        "compliant": compliant_ds,
+        "non_compliant": non_compliant_ds,
+        "reference": reference_protocol,
     }
 
 
@@ -246,10 +263,12 @@ def is_scan_processed(log_file, scan_date):
             return scan_date in [line.strip() for line in processed_scans]
     return False
 
+
 # Log a processed scan
 def log_processed_scan(log_file, scan_date):
     with open(log_file, "a") as log:
         log.write(f"{scan_date}\n")
+
 
 def send_email_alert(subject, message, config):
     """
@@ -291,34 +310,40 @@ def send_email_alert(subject, message, config):
     except Exception as e:
         print(f"Failed to send email: {e}")
 
+
 # Process individual scans
 def process_scan(scan_dir, config_path, output_dir):
     try:
         config = get_config(config_path)
         exclude_subjects = config.get("exclude_subjects", [])
 
-        # Check if the subject is in the exlusion list
+        # Check if the subject is in the exclusion list
         subject_id = Path(scan_dir).name
         if subject_id in exclude_subjects:
             logging.info(f"Skipping excluded subject: {subject_id}")
-            return # Skip this scan
-        
+            return  # Skip this scan
+
         # Import dataset
-        dataset = import_dataset_from_dicom(data_source=scan_dir, ds_format="dicom", config_path=config_path)
+        dataset = import_dataset_from_dicom(
+            data_source=scan_dir, ds_format="dicom", config_path=config_path
+        )
 
         # Perform horizontal audit
         hz_audit_results = horizontal_audit(dataset=dataset, config_path=config_path)
 
         # If non-compliant, send an email alert
-        if hz_audit_results['non_compliant']:
+        if hz_audit_results["non_compliant"]:
             subject = f"Non-compliant Scan Detected - {Path(scan_dir).name}"
-            message = f"Non-compliant scans foudn in {Path(scan_dir)}. Review the report"
+            message = (
+                f"Non-compliant scans found in {Path(scan_dir)}. Review the report"
+            )
             logging.warning(f"Non-compliant scan detected in {scan_dir}")
             send_email_alert(subject, message)
 
         logging.info(f"Scan {Path(scan_dir)} processed successfully.")
     except Exception as e:
         logging.error(f"Failed to process scan {scan_dir}: {e}")
+
 
 # Main function
 def main():
@@ -329,7 +354,7 @@ def main():
     LOG_FILE_PATH = filedir / "log_file.txt"
     CONFIG_PATH = filedir / "mri-config.json"
     OUTPUT_DIR = filedir / "output.txt"
-    # TODO: use argparser to grab theses settings from command line
+    # TODO: use argparser to grab these settings from command line
 
     # Iterate through scans in the specified directory
     for scan_dir in Path(SCAN_DIRECTORY).glob("*/"):
@@ -346,6 +371,7 @@ def main():
 
         # Log the processed scan
         log_processed_scan(LOG_FILE_PATH, scan_date)
-    
+
+
 if __name__ == "__main__":
     main()

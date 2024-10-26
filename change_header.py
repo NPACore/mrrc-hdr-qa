@@ -3,17 +3,18 @@
 Modify DICOM header information to simulate failing QA.
 """
 import os
+import random
+from datetime import datetime, timedelta
+from itertools import chain
 from pathlib import Path
 from typing import List, Optional
-from itertools import chain
-from datetime import datetime, timedelta
-import random
+
 import pydicom
 
 
 def change_tags(
     dcm_dir: Path, new_data: List[pydicom.DataElement], out_dir: Optional[Path] = None
-    ) -> Optional[pydicom.dataset.FileDataset]:
+) -> Optional[pydicom.dataset.FileDataset]:
     """
     Change specified tags of all dicoms in a directory. Optionally make copies in out_dir.
 
@@ -72,7 +73,7 @@ def gen_anon() -> List[pydicom.DataElement]:
                       'PatientBirthDate', 'PatientAge', 'PatientSex']
             [x[k] for k in fields]
 
-            # yeilds
+            # yields
             [(0008,0022) Acquisition Date                    DA: '20221222',
              (0008,0032) Acquisition Time                    TM: '092132.722500',
              (0010,0030) Patient's Birth Date                DA: '20070404',
@@ -80,18 +81,19 @@ def gen_anon() -> List[pydicom.DataElement]:
              (0010,0040) Patient's Sex                       CS: 'F']
 
     Where the tag is the tuple and "``XX``:" is the type
-    
+
     """
     dob = f"{random.randrange(1980,2024):04d}0101"
     age = f"{random.randrange(8,100):03d}Y"
-    sex = random.choice(["M","F"])
+    sex = random.choice(["M", "F"])
     return [
-      pydicom.DataElement(value=dob, VR="DA", tag=(0x0010, 0x0030)),
-      pydicom.DataElement(value=age, VR="AS", tag=(0x0010, 0x1010)),
-      pydicom.DataElement(value=sex, VR="CS", tag=(0x0010, 0x0040))]
+        pydicom.DataElement(value=dob, VR="DA", tag=(0x0010, 0x0030)),
+        pydicom.DataElement(value=age, VR="AS", tag=(0x0010, 0x1010)),
+        pydicom.DataElement(value=sex, VR="CS", tag=(0x0010, 0x0040)),
+    ]
 
 
-def gen_ids(new_id: str)  -> List[pydicom.DataElement]:
+def gen_ids(new_id: str) -> List[pydicom.DataElement]:
     """
     Generate ID DataElements.
 
@@ -110,10 +112,13 @@ def gen_ids(new_id: str)  -> List[pydicom.DataElement]:
     >>> data_els[0].tag
     (0010, 0010)
     """
-    return [pydicom.DataElement(value=new_id, VR="PN", tag=(0x0010, 0x0010)),
-            pydicom.DataElement(value=new_id, VR="LO", tag=(0x0010, 0x0020))]
+    return [
+        pydicom.DataElement(value=new_id, VR="PN", tag=(0x0010, 0x0010)),
+        pydicom.DataElement(value=new_id, VR="LO", tag=(0x0010, 0x0020)),
+    ]
 
-def gen_acqdates()  -> List[pydicom.DataElement]:
+
+def gen_acqdates() -> List[pydicom.DataElement]:
     """
     Generate DataElements for random acquisition day and time.
 
@@ -122,19 +127,21 @@ def gen_acqdates()  -> List[pydicom.DataElement]:
 
     See :py:func:`gen_anon` for tag and VR info.
     """
-    earliest = datetime(2020,1,1)
-    rand_offset = random.randrange( (datetime.now() - earliest).days *24*60*60)
+    earliest = datetime(2020, 1, 1)
+    rand_offset = random.randrange((datetime.now() - earliest).days * 24 * 60 * 60)
     rand_date = earliest + timedelta(seconds=rand_offset)
     ymd = rand_date.strftime("%Y%m%d")
     hms = rand_date.strftime("%H%M%S.000000")
 
-    return [pydicom.DataElement(value=ymd, VR="DA", tag=(0x0008, 0x0022)),
-            pydicom.DataElement(value=hms, VR="TM", tag=(0x0008, 0x0032))]
+    return [
+        pydicom.DataElement(value=ymd, VR="DA", tag=(0x0008, 0x0022)),
+        pydicom.DataElement(value=hms, VR="TM", tag=(0x0008, 0x0032)),
+    ]
 
 
 def main_make_mods():
     """
-    Excercise header modification code to make example data we can use.
+    Exercise header modification code to make example data we can use.
 
     We can confirm changes are made from shell using AFNI's ``dicom_hinfo``
 
@@ -149,10 +156,12 @@ def main_make_mods():
 
     """
 
-    new_tags_mod1 = [pydicom.DataElement(value="1301", VR="DS", tag=(0x0018, 0x0080))] + \
-                    gen_ids('mod1') + \
-                    gen_acqdates() + \
-                    gen_anon()
+    new_tags_mod1 = (
+        [pydicom.DataElement(value="1301", VR="DS", tag=(0x0018, 0x0080))]
+        + gen_ids("mod1")
+        + gen_acqdates()
+        + gen_anon()
+    )
 
     change_tags(
         Path("example/dicom/11903_20221222/HabitTask_704x752.18/"),
@@ -160,10 +169,12 @@ def main_make_mods():
         Path("example/dicom/mod1/HabitTask/"),
     )
 
-    new_tags_mod2 = [pydicom.DataElement(value="1300", VR="DS", tag=(0x0018, 0x0080))] + \
-                    gen_ids('mod2') + \
-                    gen_acqdates() + \
-                    gen_anon()
+    new_tags_mod2 = (
+        [pydicom.DataElement(value="1300", VR="DS", tag=(0x0018, 0x0080))]
+        + gen_ids("mod2")
+        + gen_acqdates()
+        + gen_anon()
+    )
 
     change_tags(
         Path("example/dicom/mod1/HabitTask/"),

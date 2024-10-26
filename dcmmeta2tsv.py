@@ -2,26 +2,28 @@
 """
 Give a tab separated metadata value line per dicom file.
 """
-import os
-import sys
-import re
-import pydicom
 import logging
+import os
+import re
+import sys
+import warnings
 from typing import TypedDict
 
-import warnings
+import pydicom
+
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     # UserWarning: The DICOM readers are highly experimental...
     import nibabel.nicom.csareader as csareader
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
 
 #: object that has obj.value for when a dicom tag does not exist
 #: using 'null' to match AFNI's dicom_hinfo
-NULLVAL = type('',(object,),{"value": "null"})()
+NULLVAL = type("", (object,), {"value": "null"})()
 
-def tagpair_to_hex(csv_str) -> tuple[int,int]:
+
+def tagpair_to_hex(csv_str) -> tuple[int, int]:
     """
     move our text files has tags like "0051,1017"
     to pydicom indexe like (0x51,0x1017)
@@ -34,7 +36,10 @@ def tagpair_to_hex(csv_str) -> tuple[int,int]:
     """
     return tuple(hex(int(x, 16)) for x in csv_str.split(","))
 
-TagDicts = list[TypedDict('Tag', {'name': str, 'tag': str, 'desc': str})]
+
+TagDicts = list[TypedDict("Tag", {"name": str, "tag": str, "desc": str})]
+
+
 def read_known_tags(tagfile="taglist.txt") -> TagDicts:
     """
     read in tsv file like with header name,tag,desc.
@@ -65,6 +70,7 @@ def csa_fetch(csa_tr: dict, item: str) -> str:
         val = NULLVAL.value
     return val
 
+
 def read_csa(csa) -> list[str]:
     """
     extract parameters from siemens CSA
@@ -74,7 +80,7 @@ def read_csa(csa) -> list[str]:
     >>> read_csa(None)
     ['null', 'null']
     """
-    null = [NULLVAL.value]*2
+    null = [NULLVAL.value] * 2
     if csa is None:
         return null
     csa = csa.value
@@ -108,9 +114,9 @@ def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> list[str]:
         dcm = pydicom.dcmread(dcm_path)
     except pydicom.errors.InvalidDicomError:
         logging.error("cannot read header in %s", dcm_path)
-        return ["null"]*(len(tags)+2) + [dcm_path]
+        return ["null"] * (len(tags) + 2) + [dcm_path]
 
-    meta = [dcm.get(tag_d["tag"],NULLVAL).value for tag_d in tags]
+    meta = [dcm.get(tag_d["tag"], NULLVAL).value for tag_d in tags]
 
     csa_tags = read_csa(dcm.get((0x0029, 0x1010)))
 
@@ -125,7 +131,7 @@ if __name__ == "__main__":
     for i in range(len(tags)):
         tags[i]["tag"] = tagpair_to_hex(tags[i]["tag"])
 
-    logging.info("processing %d dicom files", len(sys.argv)-1)
+    logging.info("processing %d dicom files", len(sys.argv) - 1)
     for dcm_path in sys.argv[1:]:
         all_tags = read_tags(dcm_path, tags)
         print("\t".join(all_tags))

@@ -18,7 +18,7 @@ export -f dcmmeta2tsv find_example_dcm
 
 build_dcm_db(){
   #
-  # dicoms like project/session_date/session_id/acquistion/
+  # dicoms like project/session_date/session_id/acquisition/
 
 
   maxcnt=${MAXDCMCOUNT:-0}

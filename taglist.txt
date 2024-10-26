@@ -7,7 +7,7 @@ SubID	0010,0010	 patient name
 Comments	0020,4000	REL Image Comments//Unaliased MB3/PE4/LB SENSE1
 Operator	0008,1070
 Project	0008,1030	 ID Study Description//Brain^wpc-8620
-SequenceName	0008,103e	 series descripton
+SequenceName	0008,103e	 series description
 SequenceType	0018,0024	 ACQ Sequence Name
 PED_major	0018,1312	   ACQ Phase Encoding Direction, ROW or COL
 TR	0018,0080
