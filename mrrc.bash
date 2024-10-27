@@ -7,10 +7,12 @@ export SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt LC_ALL=C
 make .venv
 . .venv/bin/activate
 
-echo "[$(date +%s)] parse dicoms start" | tee build.log
+log(){ echo "$(date +"[%s] %F %T"):: $*" | tee -a build.log; }
+
+log parse dicoms start
 ./00_build_db.bash /disk/mace2/scan_data/*
 
-echo "[$(date +%s)] add to db start" | tee -a build.log
+log starting sqlite db
 cat db/*.txt | ./acq2sqlite.py
 
-echo "[$(date +%s)] finished" | tee -a build.log
+log finished
