@@ -7,6 +7,7 @@ import os
 import re
 import sqlite3
 import sys
+from typing import Optional
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
 
@@ -145,8 +146,11 @@ class DBQuery:
             return True
         return False
 
-    def param_rowid(self, d):
+    def param_rowid(self, d: dict) -> Optional[int]:
         """
+        :param d: dicom headers
+        :return: ``acq_param`` (new or existing) rowid identifing unique set of :py:data:`CONSTS`
+
         Find or insert the combination of parameters for an acquisition.
         Using :py:data:`CONSTS`, the header parameters that should be invariant
         across acquisitions of the same name within a study.
@@ -162,7 +166,12 @@ class DBQuery:
         1
         >>> db.param_rowid({**example, 'Project': 'b'})
         2
+        >>> str(db.param_rowid({}))
+        'None'
         """
+        if d.get("Project") is None:
+            logging.warn("input dicom header has no 'Project' key!? %s", d)
+            return None
         val_array = [d.get(k) for k in self.CONSTS]
         logging.debug("searching: %s", val_array)
         cur = self.sql.execute(self.find_cmd, val_array)
@@ -176,8 +185,8 @@ class DBQuery:
             logging.info(
                 "new seq param set created %d: %s %s",
                 rowid,
-                d["Project"],
-                d["SequenceName"],
+                d.get("Project"),
+                d.get("SequenceName"),
             )
 
         return rowid
@@ -191,6 +200,8 @@ class DBQuery:
             return
 
         rowid = self.param_rowid(d)
+        if not rowid:
+            return
         ###
         d["param_id"] = rowid
         acq_insert_vals = [d[k] for k in self.acq_insert_columns]
