@@ -27,7 +27,7 @@ def change_tags(
     :return: example modified dicom. last if out_dir, first and only if no ``out_dir``.
 
     >>> new_data = [pydicom.DataElement(value="newpname", VR="LO", tag=(0x0018, 0x1030))]
-    >>> ex_path = Path('example/dicom/11903_20221222/HabitTask_704x752.18/')
+    >>> ex_path = Path('example_dicoms/')
     >>> ex = change_tags(ex_path, new_data)
     >>> ex.ProtocolName
     'newpname'

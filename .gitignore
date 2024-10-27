@@ -7,3 +7,7 @@ sphinx/_autosummary/
 docs/
 db.*
 db/
+.lint
+.test
+build.log
+__pycache__/
