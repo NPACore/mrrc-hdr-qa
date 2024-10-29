@@ -6,6 +6,10 @@ pre-commit: venv-program venv-dev .test .lint
 
 db.sqlite:
 	sqlite3 $@ < schema.sql
+templates.tsv: db.sqlite
+	sqlite3 $< < make_template_by_count.sql
+	sqlite3 -header -separator $$'\t' $< \
+		'select * from template_by_count c join acq_param p on c.param_id=p.rowid' > $@
 
 # how to get into the python virtual environment
 source_venv := . .venv/bin/activate
