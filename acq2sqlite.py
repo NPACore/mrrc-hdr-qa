@@ -50,6 +50,9 @@ def column_names():
     return colnames
 
 
+TagValue = dict[str, str]
+
+
 class DBQuery:
     """
     Convenient SQL queries for tracking dicom headers/metadata.
@@ -134,9 +137,12 @@ class DBQuery:
         acq_q = ",".join(["?" for _ in self.acq_insert_columns])
         self.acq_insert = f"INSERT INTO acq({acq_col_csv}) VALUES({acq_q});"
 
-    def check_acq(self, d):
+    def check_acq(self, d: TagValue) -> bool:
         """
         Is this exact acquisition (time, id, series) already in the database?
+
+        :param d: All parameters of an acquisition
+        :return: True/False if dict params exist
         """
         acq_search_vals = (d["AcqTime"], d["AcqDate"], d["SubID"], d["SeriesNumber"])
         cur = self.sql.execute(self.find_acq, acq_search_vals)
@@ -146,7 +152,24 @@ class DBQuery:
             return True
         return False
 
-    def param_rowid(self, d: dict) -> Optional[int]:
+    def search_acq_param(self, d: TagValue) -> Optional[int]:
+        """
+        Try to find ``aca_param`` row id of :py:data:`CONSTS` part of input d
+
+        :param d: dictionary of tag values (keys in CONSTS)
+        :return: rowid of matching (``param_id``) or None
+        """
+
+        rowid = None
+        val_array = [d.get(k) for k in self.CONSTS]
+        logging.debug("searching: %s", val_array)
+        cur = self.sql.execute(self.find_cmd, val_array)
+        res = cur.fetchone()
+        if res:
+            rowid = res[0]
+        return rowid
+
+    def param_rowid(self, d: TagValue) -> Optional[int]:
         """
         :param d: dicom headers
         :return: ``acq_param`` (new or existing) rowid identifying unique set of :py:data:`CONSTS`
@@ -172,14 +195,12 @@ class DBQuery:
         if d.get("Project") is None:
             logging.warn("input dicom header has no 'Project' key!? %s", d)
             return None
-        val_array = [d.get(k) for k in self.CONSTS]
-        logging.debug("searching: %s", val_array)
-        cur = self.sql.execute(self.find_cmd, val_array)
-        res = cur.fetchone()
-        if res:
-            rowid = res[0]
+
+        rowid = self.search_acq_param(d)
+        if rowid is not None:
             logging.debug("seq repeated: found exiting %d", rowid)
         else:
+            val_array = [d.get(k) for k in self.CONSTS]
             cur = self.sql.execute(self.sql_cmd, val_array)
             rowid = cur.lastrowid
             logging.info(
@@ -191,7 +212,7 @@ class DBQuery:
 
         return rowid
 
-    def dict_to_db_row(self, d):
+    def dict_to_db_row(self, d: TagValue) -> None:
         """
         insert a dicom header (representative of acquisition) into db
         """
@@ -208,6 +229,29 @@ class DBQuery:
         cur = self.sql.execute(self.acq_insert, acq_insert_vals)
         logging.debug("new acq created: %d", cur.lastrowid)
 
+    def tsv_to_dict(self, line: str) -> TagValue:
+        """
+        Read a tsv line into dictionary.
+
+        :param line: tab separated string. likely line from ``dcmmeta2tsv.py``
+        :return: dictionary with taglist.txt names and acquisition values.
+        """
+        vals = line.split("\t")
+        return dict(zip(self.all_columns, vals))
+
+    def is_template(self, param_id: int) -> bool:
+        """
+        Check if param id is the ideal template.
+        """
+        cur = self.sql.execute(
+            "select * from template_by_count where param_id = ?", param_id
+        )
+        res = cur.fetchone()
+        if not res:
+            return False
+        if res[0]:
+            return True
+
 
 def have_pipe_data():
     return os.isatty(sys.stdout.fileno())
@@ -217,8 +261,7 @@ if __name__ == "__main__":
     db = DBQuery()
     with sys.stdin if have_pipe_data() else open("db.txt", "r") as f:
         while line := f.readline():
-            vals = line.split("\t")
-            d = dict(zip(db.all_columns, vals))
+            d = db.tsv_to_dict(line)
             db.dict_to_db_row(d)
 
     db.sql.commit()
