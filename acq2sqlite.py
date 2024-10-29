@@ -149,7 +149,7 @@ class DBQuery:
     def param_rowid(self, d: dict) -> Optional[int]:
         """
         :param d: dicom headers
-        :return: ``acq_param`` (new or existing) rowid identifing unique set of :py:data:`CONSTS`
+        :return: ``acq_param`` (new or existing) rowid identifying unique set of :py:data:`CONSTS`
 
         Find or insert the combination of parameters for an acquisition.
         Using :py:data:`CONSTS`, the header parameters that should be invariant

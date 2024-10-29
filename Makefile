@@ -16,7 +16,7 @@ source_venv := . .venv/bin/activate
 
 ## documentation. github action pushes this to 'gh-pages' branch
 docs: docs/
-docs/: venv-dev $(wildcard *.py) sphinx/conf.py $(wildcard sphinx/*.rst) docs/taglist.csv
+docs/: $(wildcard *.py) sphinx/conf.py $(wildcard sphinx/*.rst) docs/taglist.csv | venv-dev venv-program
 	$(source_venv) && sphinx-build sphinx/ docs/
 # sphinx can read in csv but not tsv, so convert for it
 docs/taglist.csv: taglist.txt
