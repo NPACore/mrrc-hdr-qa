@@ -17,7 +17,7 @@ See
 ## Notes
  * "Sequence Name(0018,0024)" called "SequenceType" in [`taglist.txt`](./taglist.txt) is different per diffusion dcm (like  `ep_b5#1`..`ep_b1540#27`)
  * should look at n echos 0018,0086 and collapse across dicoms to make protocol mutliecho parameter
- * percision changes between realtime streaming and offline dicom writes? see `check_template.py`
+ * precision changes between realtime streaming and offline dicom writes? see `check_template.py`
 
 ## Prior Art
  * mrQA
