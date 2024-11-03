@@ -28,10 +28,10 @@ logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
 
 class WebServer(Application):
     """HTTP server (tornado request handler)
-    Currently (20241102), this is just a fancy way to serve a static page.
-    Eventually
-       * will match ``/scanner-id`` URL to ``station id`` dicom header for scanner specific page
-       * could give more insite into or  modify DB.
+    Currently (20241102), this is just a fancy way to serve a static page.  Eventually
+
+    * will match ``/scanner-id`` URL to ``station id`` dicom header for scanner specific page
+    * could give more insite into or  modify DB.
     """
 
     def __init__(self):
