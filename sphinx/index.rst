@@ -18,6 +18,7 @@ Code
    :toctree: _autosummary
    :recursive:
 
+   servers
    dcmmeta2tsv
    acq2sqlite
    change_header

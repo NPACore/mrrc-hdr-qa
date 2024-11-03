@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+Broadcast filesystem updates (via inotify) over websockets.
+Serve javascript over HTTP for recieving websocket messages in a browser.
 """
 
 import asyncio
