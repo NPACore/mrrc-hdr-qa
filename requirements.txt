@@ -1,4 +1,7 @@
 pydicom
 nibabel
 dicom-parser
+websockets
+aionotify
+asyncio
 #mrQA

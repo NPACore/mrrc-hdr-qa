@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head><title>MRQART</title>
+  <link rel="stylesheet" type="text/css" href="static/main.css" />
+</head>
+<script>
+  /* TODO: move into own file. run tests? */
+function receivedMessage(msg) {
+    console.log("new message!", msg);
+    //TODO: msg as json; parse alert
+    let el = document.createElement("p");
+    el.textContent = msg.data;
+    document.getElementById("sequences").appendChild(el);
+}
+
+function update_via_ws() {
+  const ws = new WebSocket("ws://127.0.0.1:5000/");
+  ws.addEventListener('message', receivedMessage);
+}
+window.onload = update_via_ws;
+
+</script>
+
+<body>
+  <div id="alert"></div>
+  <div id="project"></div>
+  <div id="sequence number"></div>
+  <ul id="sequences">waiting for scanner</ul>
+</body>
+</html>
