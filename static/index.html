@@ -6,11 +6,22 @@
 <script>
   /* TODO: move into own file. run tests? */
 function receivedMessage(msg) {
-    console.log("new message!", msg);
-    //TODO: msg as json; parse alert
-    let el = document.createElement("p");
-    el.textContent = msg.data;
-    document.getElementById("sequences").appendChild(el);
+   console.log("new message!", msg);
+   // TODO: 
+   // 1. build a sub element id= sessionDate (need to store that field still?) if el w/id doesn't exist
+   // 2. append to that element instead of directly to "sequences". then we can later hide finished sequences
+   let el = document.createElement("li");
+
+   data = JSON.parse(msg.data)
+   console.log("...data:", data);
+   el.className = data['conforms']?'conform':'no-conform';
+   dcm_in =  data['input'];
+   errors = data['errors'];
+   identity = `${dcm_in['Project']}/${dcm_in['SequenceName']} @ ${dcm_in['SeriesNumber']}`;
+   note = Object.keys(errors).length==0?'💯':JSON.stringify(errors);
+   console.log("...note:", note);
+   el.textContent = `${identity}: ${note}`;
+   document.getElementById("sequences").prepend(el); //appendChild(el);
 }
 
 function update_via_ws() {
