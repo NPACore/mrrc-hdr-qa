@@ -5,13 +5,17 @@ Serve javascript over HTTP for receiving websocket messages in a browser.
 """
 
 import asyncio
+import json
 import logging
 import os
+import re
 
 import aionotify
 from tornado.httpserver import HTTPServer
 from tornado.web import Application, RequestHandler
 from websockets.asyncio.server import broadcast, serve
+
+from template_checker import TemplateChecker
 
 #: Websocket port used to send updates to browser
 WS_PORT = 5000
@@ -78,9 +82,12 @@ async def track_ws(websocket):
 
 
 ####
+def set_default(obj):
+    if isinstance(obj, set):
+        return list(obj)
+    raise TypeError
 
-
-async def monitor_dirs(watcher):
+async def monitor_dirs(watcher, dcm_checker):
     """
     Perpetually wait for new dicom files.
     Broadcast new files to the browser over websockets.
@@ -91,7 +98,15 @@ async def monitor_dirs(watcher):
     while True:
         event = await watcher.get_event()
         logging.info("got event %s", event)
-        broadcast(WS_CONNECTIONS, f"{event}")
+        # Event(flags=256, cookie=0, name='a', alias='/home/foranw/src/work/mrrc-hdr-qa/./sim')
+        if re.search("^MR.|.dcm$|.IMA$", event.name):
+            file = os.path.join(event.alias, event.name)
+            msg = dcm_checker.check_header(file)
+            logging.debug(msg)
+            broadcast(WS_CONNECTIONS, json.dumps(msg,default=list))
+        else:
+            logging.warning("non dicom file %s", event.name)
+            broadcast(WS_CONNECTIONS, f"non-dicom file: {event}")
 
 
 async def main(path):
@@ -99,12 +114,12 @@ async def main(path):
     Run all services on different threads.
     HTTP and inotify are forked. Websocket holds the main thread.
     """
-
+    dcm_checker = TemplateChecker()
     watcher = aionotify.Watcher()
     watcher.watch(
         path=path, flags=aionotify.Flags.CREATE
     )  # aionotify.Flags.MODIFY|aionotify.Flags.CREATE |aionotify.Flags.DELETE)
-    asyncio.create_task(monitor_dirs(watcher))
+    asyncio.create_task(monitor_dirs(watcher, dcm_checker))
 
     http_run()
 

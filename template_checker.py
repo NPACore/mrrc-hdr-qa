@@ -38,7 +38,7 @@ def find_errors(template: TagValues, current_hdr: TagValues) -> dict[str,ErrorCo
         elif k == "iPAT":
             check = t_k == h_k
         else:
-            check = t_k == h_k
+            check = str(t_k) == str(h_k)
 
         if check:
             continue
