@@ -28,10 +28,11 @@ docs/taglist.csv: taglist.txt
 .lint: $(wildcard *.py) $(wildcard sphinx/*.rst) | venv-dev
 	$(source_venv) && black . > .lint && isort . >> .lint && codespell -w >> .lint
 
-test: .test
-.test: change_header.py acq2sqlite.py dcmmeta2tsv.py | venv-program venv-dev  #$(wildcard *py)
-	# LOGLEVEL=CRITICAL
-	$(source_venv) && python3 -m doctest $^ 2>&1 | tee $@
+test: .test.doctest .test.pytest
+.test.doctest: change_header.py acq2sqlite.py dcmmeta2tsv.py | venv-program venv-dev  #$(wildcard *py)
+	$(source_venv) && LOGLEVEL=CRITICAL python3 -m doctest $^ 2>&1 | tee $@
+.test.pytest: $(wildcard tests/*py) $(wildcard *py) | venv-program venv-dev  #$(wildcard *py)
+	$(source_venv) && python3 -m pytest tests/ 2>&1 | tee $@
 
 ## managing the environment
 # dev requirements separate to hopefully run github actions a bit faster
