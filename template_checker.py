@@ -19,7 +19,7 @@ CheckResult = TypedDict(
 )
 
 
-def find_errors(template: TagValues, current_hdr: TagValues) -> dict[str,ErrorCompare]:
+def find_errors(template: TagValues, current_hdr: TagValues) -> dict[str, ErrorCompare]:
     """
     given a template and hdr, find any mismatches (non-conforming errors)
     :param template: expected values
@@ -32,7 +32,7 @@ def find_errors(template: TagValues, current_hdr: TagValues) -> dict[str,ErrorCo
         h_k = current_hdr.get(k, "0")
 
         # TODO: more checks for specific headers
-        #: TR is in milliseconds. no need to keep decimals percision
+        #: TR is in milliseconds. no need to keep decimals precision
         if k == "TR":
             check = int(float(t_k)) == int(float(h_k))
         elif k == "iPAT":
@@ -74,7 +74,7 @@ class TemplateChecker:
             errors = {}
 
         return {
-            "conforms": not errors ,
+            "conforms": not errors,
             "errors": errors,
             "input": hdr,
             "template": dict(template),

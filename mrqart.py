@@ -87,6 +87,7 @@ def set_default(obj):
         return list(obj)
     raise TypeError
 
+
 async def monitor_dirs(watcher, dcm_checker):
     """
     Perpetually wait for new dicom files.
@@ -103,7 +104,7 @@ async def monitor_dirs(watcher, dcm_checker):
             file = os.path.join(event.alias, event.name)
             msg = dcm_checker.check_header(file)
             logging.debug(msg)
-            broadcast(WS_CONNECTIONS, json.dumps(msg,default=list))
+            broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
         else:
             logging.warning("non dicom file %s", event.name)
             broadcast(WS_CONNECTIONS, f"non-dicom file: {event}")
