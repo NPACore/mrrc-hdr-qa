@@ -43,6 +43,9 @@ TagDicts = list[
     TypedDict("Tag", {"name": str, "tag": TagTuple, "loc": str, "desc": str})
 ]
 
+#: keys are names from ``taglist.txt``, also has ``dcm_path`` key for file
+TagValues = dict[str, str]
+
 
 def read_known_tags(tagfile="taglist.txt") -> TagDicts:
     """
@@ -109,7 +112,7 @@ def read_csa(csa) -> list[str]:
     return csa_tr
 
 
-def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> dict[str, str]:
+def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> TagValues:
     """
     Read dicom header and isolate tags
 
@@ -154,7 +157,7 @@ class DicomTagReader:
     def __init__(self):
         self.tags = read_known_tags()
 
-    def read_dicom_tags(self, dcm_path: os.PathLike) -> dict:
+    def read_dicom_tags(self, dcm_path: os.PathLike) -> TagValues:
         """return values of dicom header priority fields
         ordered as defined in ``taglist.txt``
         :param dcm_path: path to dciom

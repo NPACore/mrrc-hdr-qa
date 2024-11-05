@@ -9,6 +9,8 @@ import sqlite3
 import sys
 from typing import Optional
 
+from dcmmeta2tsv import NULLVAL, TagValues
+
 logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
 
 
@@ -42,9 +44,6 @@ def column_names():
     # final file name column also not in taglist.txt (not a tag)
     tag_colnames += ["filename"]
     return tag_colnames
-
-
-TagValue = dict[str, str]
 
 
 class DBQuery:
@@ -100,6 +99,7 @@ class DBQuery:
             self.sql = sql
         else:
             self.sql = sqlite3.connect("db.sqlite")  # see schema.sql
+        self.sql.row_factory = sqlite3.Row
 
         ### SQL queries
         # These are the header values (now sql columns) that should be consistent for an acquisition ('SequenceName') in a specific study ('Project')
@@ -131,14 +131,16 @@ class DBQuery:
         acq_q = ",".join(["?" for _ in self.acq_insert_columns])
         self.acq_insert = f"INSERT INTO acq({acq_col_csv}) VALUES({acq_q});"
 
-    def check_acq(self, d: TagValue) -> bool:
+    def check_acq(self, d: TagValues) -> bool:
         """
         Is this exact acquisition (time, id, series) already in the database?
 
         :param d: All parameters of an acquisition
         :return: True/False if dict params exist
         """
-        acq_search_vals = (d["AcqTime"], d["AcqDate"], d["SubID"], d["SeriesNumber"])
+        acq_search_vals = [
+            str(x) for x in [d["AcqTime"], d["AcqDate"], d["SubID"], d["SeriesNumber"]]
+        ]
         cur = self.sql.execute(self.find_acq, acq_search_vals)
         acq = cur.fetchone()
         if acq:
@@ -146,7 +148,7 @@ class DBQuery:
             return True
         return False
 
-    def search_acq_param(self, d: TagValue) -> Optional[int]:
+    def search_acq_param(self, d: TagValues) -> Optional[int]:
         """
         Try to find ``aca_param`` row id of :py:data:`CONSTS` part of input d
 
@@ -155,7 +157,7 @@ class DBQuery:
         """
 
         rowid = None
-        val_array = [d.get(k) for k in self.CONSTS]
+        val_array = [str(d.get(k, NULLVAL.value)) for k in self.CONSTS]
         logging.debug("searching: %s", val_array)
         cur = self.sql.execute(self.find_cmd, val_array)
         res = cur.fetchone()
@@ -163,7 +165,7 @@ class DBQuery:
             rowid = res[0]
         return rowid
 
-    def param_rowid(self, d: TagValue) -> Optional[int]:
+    def param_rowid(self, d: TagValues) -> Optional[int]:
         """
         :param d: dicom headers
         :return: ``acq_param`` (new or existing) rowid identifying unique set of :py:data:`CONSTS`
@@ -187,14 +189,14 @@ class DBQuery:
         'None'
         """
         if d.get("Project") is None:
-            logging.warn("input dicom header has no 'Project' key!? %s", d)
+            logging.warning("input dicom header has no 'Project' key!? %s", d)
             return None
 
         rowid = self.search_acq_param(d)
         if rowid is not None:
             logging.debug("seq repeated: found exiting %d", rowid)
         else:
-            val_array = [d.get(k) for k in self.CONSTS]
+            val_array = [str(d.get(k, NULLVAL.value)) for k in self.CONSTS]
             cur = self.sql.execute(self.sql_cmd, val_array)
             rowid = cur.lastrowid
             logging.info(
@@ -206,7 +208,7 @@ class DBQuery:
 
         return rowid
 
-    def dict_to_db_row(self, d: TagValue) -> None:
+    def dict_to_db_row(self, d: TagValues) -> None:
         """
         insert a dicom header (representative of acquisition) into db
         """
@@ -219,11 +221,11 @@ class DBQuery:
             return
         ###
         d["param_id"] = rowid
-        acq_insert_vals = [d[k] for k in self.acq_insert_columns]
+        acq_insert_vals = [str(d[k]) for k in self.acq_insert_columns]
         cur = self.sql.execute(self.acq_insert, acq_insert_vals)
         logging.debug("new acq created: %d", cur.lastrowid)
 
-    def tsv_to_dict(self, line: str) -> TagValue:
+    def tsv_to_dict(self, line: str) -> TagValues:
         """
         Read a tsv line into dictionary.
 
@@ -238,13 +240,34 @@ class DBQuery:
         Check if param id is the ideal template.
         """
         cur = self.sql.execute(
-            "select * from template_by_count where param_id = ?", param_id
+            "select * from template_by_count where param_id = ?", str(param_id)
         )
         res = cur.fetchone()
         if not res:
             return False
         if res[0]:
             return True
+        return False
+
+    def get_template(self, pname: str, seqname: str) -> sqlite3.Row:
+        """
+        Find the template from ``template_by_count``. See ``make_template_by_count.sql``
+
+        :param pname: protocol name
+        :param sqname: sequence name
+        :returns: template row matching prot+seq name pair
+        """
+        cur = self.sql.execute(
+            """
+            select * from template_by_count t
+            join acq_param p on t.param_id = p.rowid
+            where t.Project like ? and t.SequenceName like ?
+            """,
+            (pname, seqname),
+        )
+        res = cur.fetchone()
+        logging.debug("found template: %s", res)
+        return res
 
 
 def have_pipe_data():
