@@ -2,6 +2,7 @@
 """
 Modify DICOM header information to simulate failing QA.
 """
+import logging
 import os
 import random
 from datetime import datetime, timedelta
@@ -10,6 +11,8 @@ from pathlib import Path
 from typing import List, Optional
 
 import pydicom
+
+logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
 
 
 def change_tags(
@@ -35,7 +38,12 @@ def change_tags(
     all_dicoms = chain(dcm_dir.glob("MR*"), dcm_dir.glob("*IMA"), dcm_dir.glob("*dcm"))
     ex_dcm = None
     for ex_dcm_file in all_dicoms:
-        ex_dcm = pydicom.dcmread(ex_dcm_file)
+
+        try:
+            ex_dcm = pydicom.dcmread(ex_dcm_file)
+        except pydicom.errors.InvalidDicomError:
+            logging.error("cannot read file as dicom %s", ex_dcm_file)
+            continue
 
         for datum in new_data:
             ex_dcm[datum.tag] = datum
@@ -110,7 +118,7 @@ def gen_ids(new_id: str) -> List[pydicom.DataElement]:
     >>> data_els[0].VR
     'PN'
     >>> data_els[0].tag
-    (0010, 0010)
+    (0010,0010)
     """
     return [
         pydicom.DataElement(value=new_id, VR="PN", tag=(0x0010, 0x0010)),

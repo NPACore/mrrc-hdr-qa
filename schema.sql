@@ -14,8 +14,8 @@ create table acq_param (
   Project text,
   SequenceName text,
   -- TODO: should this be json blob? to extend easier?
-  iPAT text,
   Phase text,
+  iPAT text,
   Comments text,
   SequenceType text,
   PED_major text,

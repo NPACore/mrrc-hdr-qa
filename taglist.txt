@@ -1,9 +1,10 @@
 name	tag	desc
+Phase	PhaseEncodingDirectionPositive	 csa header phase 0/1
+iPAT	ImaPATModeText	csa header grappa acceleration
 AcqTime	0008,0032	 Acquisition Time like 145446.685000
 AcqDate	0008,0022	 like 20241004
 SeriesNumber	0020,0011	 REL Series Number
 SubID	0010,0010	 patient name
-#iPAT	0051,1011	 PATModeText (private field); not implemented, use CSA value ucPAT
 Comments	0020,4000	REL Image Comments//Unaliased MB3/PE4/LB SENSE1
 Operator	0008,1070
 Project	0008,1030	 ID Study Description//Brain^wpc-8620

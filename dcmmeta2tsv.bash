@@ -2,7 +2,7 @@
 # quick pass at building minimal text database of dicom headers
 # 20240907 WF - init
 #
-export TAG_ARGS=$(cut -f2 taglist.txt | sed '1d;/#/d;s/^/-tag /;'|paste -sd' ')
+export TAG_ARGS=$(cut -f2 taglist.txt|grep -v csa\ header | sed '1d;/#/d;s/^/-tag /;'|paste -sd' ')
 dcmmeta2tsv(){
  declare -g TAG_ARGS
  #echo "# $1" >&2

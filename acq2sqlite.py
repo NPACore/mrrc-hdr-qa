@@ -20,9 +20,6 @@ def column_names():
     Defaults to reading from ``taglist.txt``
     This provides a language agnostic lookup for columns in ``schema.sql``
 
-    AND
-     *  prepends Phase and iPAT
-     *  appends filename
 
     These column names should match what is output by
     ``./dcmmeta2tsv.bash`` or ``./dcmmeta2tsv.py``
@@ -42,12 +39,9 @@ def column_names():
             if not re.search("^name|^#", line)
         ]
 
-    # CSA col names from 00_build_db.bash not in taglist.txt
-    colnames = ["Phase", "iPAT"]
-    colnames += tag_colnames
     # final file name column also not in taglist.txt (not a tag)
-    colnames += ["filename"]
-    return colnames
+    tag_colnames += ["filename"]
+    return tag_colnames
 
 
 TagValue = dict[str, str]
