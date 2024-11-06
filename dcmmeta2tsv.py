@@ -179,4 +179,4 @@ if __name__ == "__main__":
     logging.info("processing %d dicom files", len(sys.argv) - 1)
     for dcm_path in sys.argv[1:]:
         all_tags = dtr.read_dicom_tags(dcm_path).values()
-        print("\t".join(all_tags))
+        print("\t".join([str(x) for x in all_tags]))
