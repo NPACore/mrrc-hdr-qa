@@ -58,12 +58,23 @@ class TemplateChecker:
         self.db = DBQuery()
         self.reader = DicomTagReader()
 
-    def check_header(self, dcm_path) -> CheckResult:
+    def check_file(self, dcm_path) -> CheckResult:
         """
-        :returns: (True|Fales, {'have': xxx, 'expect': yyy}, hdr)
-        """
+        File disbatch for :py:func:`TemplateChecker.check_header`
 
+        :param dcm_path: path to dicom file with header/parameters to read.
+        :returns: output of check_header
+        """
         hdr = self.reader.read_dicom_tags(dcm_path)
+        return self.check_header(hdr)
+
+    def check_header(self, hdr) -> CheckResult:
+        """
+        Check acquisition parameters against it's template.
+
+        :param hdr: DB or file dictionary desc. acq. to check against template
+        :returns: conforming status, errors, and comparison infomration
+        """
         template = self.db.get_template(hdr["Project"], hdr["SequenceName"])
         template = dict(template)
 

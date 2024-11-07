@@ -116,7 +116,7 @@ async def monitor_dirs(watcher, dcm_checker):
         # Event(flags=256, cookie=0, name='a', alias='/home/foranw/src/work/mrrc-hdr-qa/./sim')
         if re.search("^MR.|.dcm$|.IMA$", event.name):
             file = os.path.join(event.alias, event.name)
-            msg = dcm_checker.check_header(file)
+            msg = dcm_checker.check_file(file)
             logging.debug(msg)
             broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
         else:
