@@ -29,6 +29,12 @@ WS_CONNECTIONS = set()
 FILEDIR = os.path.dirname(__file__)
 logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
 
+Station = str
+Sequence = str
+
+#: track the current state of each scanner based on filename
+#: we can skip parsing a dicoms (and spamming the browser) if we've already seen the session
+STATE : dict[Station, Sequence] = {}
 
 class WebServer(Application):
     """HTTP server (tornado request handler)
@@ -82,11 +88,17 @@ async def track_ws(websocket):
 
 
 ####
-def set_default(obj):
-    if isinstance(obj, set):
-        return list(obj)
-    raise TypeError
-
+def session_from_fname(dcm_fname: os.PathLike) -> Sequence:
+    """
+    extract
+     ls /data/dicomstream/20241016.MRQART_test.24.10.16_16_50_16_DST_1.3.12.2.1107.5.2.43.67078/|head
+001_000001_000001.dcm
+    ...
+    001_000017_000066.dcm
+    """
+    session = os.path.basename(dcm_fname)
+    (proj, sequence, number) = session.split("_")
+    return sequence
 
 async def monitor_dirs(watcher, dcm_checker):
     """
