@@ -73,7 +73,7 @@ class TemplateChecker:
         Check acquisition parameters against it's template.
 
         :param hdr: DB or file dictionary desc. acq. to check against template
-        :returns: conforming status, errors, and comparison infomration
+        :returns: conforming status, errors, and comparison information
         """
         template = self.db.get_template(hdr["Project"], hdr["SequenceName"])
         template = dict(template)
