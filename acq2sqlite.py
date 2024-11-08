@@ -8,6 +8,7 @@ import re
 import sqlite3
 import sys
 from typing import Optional
+import datetime import datetime, timedelta
 
 from dcmmeta2tsv import NULLVAL, TagValues
 
@@ -269,6 +270,23 @@ class DBQuery:
         logging.debug("found template: %s", res)
         return res
 
+    def find_acquisitions_since(self, since_date: Optional[str] = None):
+        """
+        Retrieve all acquisitions with AcqDate greater than the specified date.
+
+        :param since_date: Date string in 'YYYY-MM-DD' format; defaults to yesterday if None.
+        :return: List of acquisition rows with AcqDate > since_date.
+        """
+
+        # Default to yesterday if since_date is None
+        if since_date is None:
+            since_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+
+        query = "select * from acq where AcqDate > ?"
+        logging.info("Finding acquisitions since %s", since_date)
+
+        cur = self.sql.execute(query, (sicne_date,))
+        return cur.fetchall()
 
 def have_pipe_data():
     return os.isatty(sys.stdout.fileno())
