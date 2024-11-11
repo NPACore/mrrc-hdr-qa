@@ -6,7 +6,7 @@ import pytest
 from acq2sqlite import DBQuery
 from dcmmeta2tsv import DicomTagReader, TagDicts
 from template_checker import TemplateChecker
-
+from datetime import datetime, timedelta
 
 @pytest.fixture
 def db():
@@ -40,3 +40,49 @@ def test_template(db, good_dcm_dict):
 
     tmpl = db.get_template(good_dcm_dict["Project"], good_dcm_dict["SequenceName"])
     assert int(tmpl["TR"]) == int(good_dcm_dict["TR"])
+
+def test_find_acquisitions_since(db):
+    """Test the find_acquisitions_since function with different dates"""
+
+    # Insert test data
+    today = datetime.now().strftime('%Y-%m-%d')
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    day_before_yesterday = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+
+    test_data = [
+        {"param_id": 1, "AcqTime": "10:00", "AcqDate": day_before_yesterday, "SeriesNumber": "001", "SubID": "SUB1", "Operator": "OP1"},
+        {"param_id": 2, "AcqTime": "11:00", "AcqDate": yesterday, "SeriesNumber": "002", "SubID": "SUB2", "Operator": "OP2"},
+        {"param_id": 3, "AcqTime": "12:00", "AcqDate": today, "SeriesNumber": "003", "SubID": "SUB3", "Operator": "OP3"},
+    ]
+
+    for data in test_data:
+        db.sql.execute(
+            "INSERT INTO acq (param_id, AcqTime, AcqDate, SeriesNumber, SubID, Operator) VALUES (?, ?, ?, ?, ?, ?)",
+            (data["param_id"], data["AcqTime"], data["AcqDate"], data["SeriesNumber"], data["SubID"], data["Operator"])
+        )
+    db.sql.commit()
+    
+    # Test with yesterday's date (should return today's data)
+    results_yesterday = db.find_acquisitions_since(yesterday)
+    results_yesterday = [tuple(row) for row in results_yesterday]
+    assert results_yesterday == [(3, '12:00', today, '003', 'SUB3', 'OP3')]
+
+    # Test with today's date (shoudl return no rows since there's no future data)
+    results_today = db.find_acquisitions_since(today)
+    results_today = [tuple(row) for row in results_today]
+    assert results_today == []
+
+    # Test with a date far in the past (should return all rows)
+    results_past = db.find_acquisitions_since("2000-01-01")
+    results_past = [tuple(row) for row in results_past]
+    assert results_past == [
+            (1, '10:00', day_before_yesterday, '001', 'SUB1', 'OP1'),
+            (2, '11:00', yesterday, '002', 'SUB2', 'OP2'),
+            (3, '12:00', today, '003', 'SUB3', 'OP3')
+    ]
+
+    # Test with no date (should default to yesterday and return today's date
+    results_default = db.find_acquisitions_since()
+    results_default = [tuple(row) for row in results_default]
+    assert results_default == [(3, '12:00', today, '003', 'SUB3','OP3')]
+

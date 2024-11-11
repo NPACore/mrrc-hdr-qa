@@ -8,7 +8,7 @@ import re
 import sqlite3
 import sys
 from typing import Optional
-import datetime import datetime, timedelta
+from datetime import datetime, timedelta
 
 from dcmmeta2tsv import NULLVAL, TagValues
 
@@ -285,7 +285,7 @@ class DBQuery:
         query = "select * from acq where AcqDate > ?"
         logging.info("Finding acquisitions since %s", since_date)
 
-        cur = self.sql.execute(query, (sicne_date,))
+        cur = self.sql.execute(query, (since_date,))
         return cur.fetchall()
 
 def have_pipe_data():
