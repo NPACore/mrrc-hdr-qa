@@ -86,3 +86,51 @@ def test_find_acquisitions_since(db):
     results_default = [tuple(row) for row in results_default]
     assert results_default == [(3, '12:00', today, '003', 'SUB3','OP3')]
 
+@pytest.fixture
+def template_checker():
+    return TemplateChecker()
+
+def test_check_row(template_checker, mocker):
+    # Mock the template return by DBQuery.get_template
+    mock_template = {
+            "Project": "Brain^wpc-8620",
+            "SequenceName": "HabitTask",
+            "TR": "1300",
+            "TE": "30",
+            "FA": "60",
+            "iPAT": "GRAPPA",
+            "Comments": "Unaliased MB3/PE4/LB SENSE1",
+            # Other relevant fields can be added as well if seen as necessary
+    }
+
+    # Mock the get_template method to return the mock_template
+    mocker.patch.object(template_checker.db, 'get_template', return_value=mock_template)
+
+    # Example row from SQL query with soem values differing from the template
+    test_row = {
+            "Project": "Brain^wpc-8620",
+            "SequenceName": "HabitTask",
+            "TR": "1301", # Should trigger and error
+            "TE": "30",
+            "FA": "60",
+            "iPAT": "GRAPPA",
+            "Comments": "Unaliased MB3/PE4/LB SENSE1",
+
+    }
+
+    # Run the check_row function
+    result: CheckResult = template_checker.check_row(test_row)
+
+    # Expected result
+    expected_errors = {
+            "TR": {"expect": "1300", "have": "1301"},
+    }
+
+    # Assertions
+    assert result["conforms"] == False # Should not conform due to mismatch in "TR"
+    assert result["errors"] == expected_errors
+    assert result["input"] == test_row
+    assert result["template"] == mock_template
+
+    # Check that get_template was called with the correct arguments
+    template_checker.db.get_template.assert_called_once_with("Brain^wpc-8620", "HabitTask")
