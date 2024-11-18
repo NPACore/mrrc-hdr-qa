@@ -1,6 +1,7 @@
 # test compliance_check_html.py
 import pytest
 from compliance_check_html import generate_html_report, TemplateChecker, CheckResult
+from jinja2 import Template
 
 @pytest.fixture
 def example_check_result():
@@ -57,5 +58,10 @@ def test_generate_html_report(example_check_result):
     assert "<th>Expected Value</th>" in html_report
     assert "<th>Actual Value</th>" in html_report
 
+    # Verify proper structure for mismatched data
+    assert "<td>TR</td>" in html_report
+    assert "<td>1300</td>" in html_report # Expected value
+    assert "<td>1400</td>" in html_report # Actual value
+
 if __name__ == "__main__":
-    pytest.main(["-v", "test_generate_dicom_report.py"])
+    pytest.main(["-v", __file__])
