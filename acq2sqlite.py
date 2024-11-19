@@ -7,8 +7,8 @@ import os
 import re
 import sqlite3
 import sys
-from typing import Optional
 from datetime import datetime, timedelta
+from typing import Optional
 
 from dcmmeta2tsv import NULLVAL, TagValues
 
@@ -122,7 +122,7 @@ class DBQuery:
         #  only add if not already in the DB
         acq_uniq_col = set(self.all_columns) - set(self.CONSTS) - set(["filename"])
         assert acq_uniq_col == set(
-            ["AcqTime", "AcqDate", "SeriesNumber", "SubID", "Operator"]
+            ["AcqTime", "AcqDate", "SeriesNumber", "SubID", "Operator", "Shims", "Station"]
         )
         # TODO: include station?
 
@@ -280,13 +280,14 @@ class DBQuery:
 
         # Default to yesterday if since_date is None
         if since_date is None:
-            since_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+            since_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
         query = "select * from acq where AcqDate > ?"
         logging.info("Finding acquisitions since %s", since_date)
 
         cur = self.sql.execute(query, (since_date,))
         return cur.fetchall()
+
 
 def have_pipe_data():
     return os.isatty(sys.stdout.fileno())
