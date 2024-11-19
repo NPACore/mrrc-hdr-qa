@@ -27,6 +27,10 @@ build_dcm_db(){
   mkdir -p db/
 
   for project in "$@"; do
+     # convenient way to specify a project without having the full path
+     [[ ! -d "$project" && ! "$project" =~ / && -d "/disk/mace2/scan_data/$project" ]] &&
+        project=/disk/mace2/scan_data/$project
+
      [ ! -d $project ] && echo "ERROR: failed to find project directory '$project'" >&2 && continue
      pname=$(basename $project)
      outtxt=db/$pname.txt
