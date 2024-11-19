@@ -2,7 +2,7 @@
 <<<<<<< HEAD
 # want to check acq dir there in addition to dicom tag in case we're looking at the wrong one
 =======
-# want to check acq dir there in addtion to dicom tag incase we're looking at the wrong one
+# want to check acq dir there in addition to dicom tag in case we're looking at the wrong one
 >>>>>>> 48cf3dc (first commit for audit.py)
 echo /Volumes/Hera/Raw/MRprojects/Habit/20*-*/1*_2*/dMRI_*/ |
     head -n 15 |
