@@ -113,18 +113,25 @@ async def monitor_dirs(watcher, dcm_checker):
     while True:
         event = await watcher.get_event()
         logging.info("got event %s", event)
+        file = os.path.join(event.alias, event.name)
+        if(os.path.isdir(file)):
+            watcher.watch(path=file, flags=aionotify.Flags.CREATE)
+            logging.info("that's a dir! following")
+            continue
         # Event(flags=256, cookie=0, name='a', alias='/home/foranw/src/work/mrrc-hdr-qa/./sim')
         if re.search("^MR.|.dcm$|.IMA$", event.name):
-            file = os.path.join(event.alias, event.name)
             msg = dcm_checker.check_file(file)
             logging.debug(msg)
             seq = msg["input"]
-            sequence_info: Sequence = seq["SeriesNumber"] + seq["SequenceName"]
-            current_ses = STATE.get(seq["station"])
+            sequence_info: Sequence = f'{seq["SeriesNumber"]}{seq["SequenceName"]}'
+            current_ses = STATE.get(seq["Station"])
             # only send to browser if new
             if current_ses != sequence_info:
+                logging.debug("already have %s", sequence_info)
                 broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
-                STATE[seq["station"]] = sequence_info
+                STATE[seq["Station"]] = sequence_info
+
+            # TODO: if epi maybe try plotting motion?
 
         else:
             logging.warning("non dicom file %s", event.name)
