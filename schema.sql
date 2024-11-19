@@ -5,7 +5,9 @@ create table acq (
   AcqDate text,
   SeriesNumber text,
   SubID text,
-  Operator text
+  Operator text,
+  Station text,
+  Shims text
 );
 
 -- acq params that should match across sessions

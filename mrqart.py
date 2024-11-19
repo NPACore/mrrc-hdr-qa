@@ -118,7 +118,14 @@ async def monitor_dirs(watcher, dcm_checker):
             file = os.path.join(event.alias, event.name)
             msg = dcm_checker.check_file(file)
             logging.debug(msg)
-            broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
+            seq = msg["input"]
+            sequence_info: Sequence = seq["SeriesNumber"] + seq["SequenceName"]
+            current_ses = STATE.get(seq["station"])
+            # only send to browser if new
+            if current_ses != sequence_info:
+                broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
+                STATE[seq["station"]] = sequence_info
+
         else:
             logging.warning("non dicom file %s", event.name)
             broadcast(WS_CONNECTIONS, f"non-dicom file: {event}")
