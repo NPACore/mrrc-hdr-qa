@@ -43,7 +43,7 @@ def test_generate_html_report(example_check_result):
     # Show that the file has been generated
     print("Generated HTML report saved as 'generated_report.html'")
 
-    # Cehck that table headers and rows contain expected values
+    # Check that table headers and rows contain expected values
     assert "Project" in html_report
     assert "HabitTask" in html_report
     assert "TR" in html_report

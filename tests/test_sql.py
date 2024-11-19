@@ -67,7 +67,7 @@ def test_find_acquisitions_since(db):
     results_yesterday = [tuple(row) for row in results_yesterday]
     assert results_yesterday == [(3, '12:00', today, '003', 'SUB3', 'OP3')]
 
-    # Test with today's date (shoudl return no rows since there's no future data)
+    # Test with today's date (should return no rows since there's no future data)
     results_today = db.find_acquisitions_since(today)
     results_today = [tuple(row) for row in results_today]
     assert results_today == []
@@ -106,7 +106,7 @@ def test_check_row(template_checker, mocker):
     # Mock the get_template method to return the mock_template
     mocker.patch.object(template_checker.db, 'get_template', return_value=mock_template)
 
-    # Example row from SQL query with soem values differing from the template
+    # Example row from SQL query with some values differing from the template
     test_row = {
             "Project": "Brain^wpc-8620",
             "SequenceName": "HabitTask",
