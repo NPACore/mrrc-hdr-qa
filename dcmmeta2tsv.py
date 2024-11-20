@@ -7,7 +7,7 @@ import os
 import re
 import sys
 import warnings
-from typing import TypedDict, Optional
+from typing import Optional, TypedDict
 
 import pydicom
 
@@ -18,11 +18,14 @@ with warnings.catch_warnings():
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
 
+
 class NULLVAL:
     """Container to imitate ``pydicom.dcmread``.
     object that has ``obj.value`` for when a dicom tag does not exist.
     Using "null" to match AFNI's dicom_hinfo missing text"""
-    value : str = "null"
+
+    value: str = "null"
+
 
 TagTuple = tuple[int, int]
 
@@ -96,6 +99,7 @@ def csa_fetch(csa_tr: dict, itemname: str) -> str:
         val = NULLVAL.value
     return val
 
+
 def read_shims(csa_s: Optional[dict]) -> list:
     """
     :param: csa_s ``0x0029,0x1020`` CSA **Series** Header Info::
@@ -119,14 +123,18 @@ def read_shims(csa_s: Optional[dict]) -> list:
     if csa_s is None:
         csa_s = {}
     try:
-        asccov = csa_s['tags']['MrPhoenixProtocol']['items'][0]
+        asccov = csa_s["tags"]["MrPhoenixProtocol"]["items"][0]
     except KeyError:
-        return [NULLVAL.value]*10
+        return [NULLVAL.value] * 10
 
-    key = "|".join(['sAdjData.uiAdjShimMode',
-                    'sGRADSPEC.asGPAData\\[0\\].lOffset[XYZ]',
-                    'sGRADSPEC.alShimCurrent\\[[0-4]\\]',
-                    'sTXSPEC.asNucleusInfo\\[0\\].lFrequency'])
+    key = "|".join(
+        [
+            "sAdjData.uiAdjShimMode",
+            "sGRADSPEC.asGPAData\\[0\\].lOffset[XYZ]",
+            "sGRADSPEC.alShimCurrent\\[[0-4]\\]",
+            "sTXSPEC.asNucleusInfo\\[0\\].lFrequency",
+        ]
+    )
 
     # keys are like
     #   sGRADSPEC.asGPAData[0].lOffsetX\t = \t1174
@@ -228,4 +236,3 @@ if __name__ == "__main__":
     for dcm_path in sys.argv[1:]:
         all_tags = dtr.read_dicom_tags(dcm_path).values()
         print("\t".join([str(x) for x in all_tags]))
-
