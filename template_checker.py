@@ -34,6 +34,10 @@ def find_errors(template: TagValues, current_hdr: TagValues) -> dict[str, ErrorC
         # TODO: more checks for specific headers
         #: TR is in milliseconds. no need to keep decimals precision
         if k == "TR":
+            if t_k == "null":
+                t_k = 0
+            if h_k == "null":
+                h_k = 0
             check = int(float(t_k)) == int(float(h_k))
         elif k == "iPAT":
             check = t_k == h_k
