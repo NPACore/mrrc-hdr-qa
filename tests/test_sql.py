@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sqlite3
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -40,3 +41,100 @@ def test_template(db, good_dcm_dict):
 
     tmpl = db.get_template(good_dcm_dict["Project"], good_dcm_dict["SequenceName"])
     assert int(tmpl["TR"]) == int(good_dcm_dict["TR"])
+
+
+def test_find_acquisitions_since(db):
+    """Test the find_acquisitions_since function with different dates"""
+
+    # Insert test data
+    today = datetime.now().strftime("%Y-%m-%d")
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    day_before_yesterday = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
+
+    test_data = [
+        { "param_id": 1, "AcqTime": "10:00", "AcqDate": day_before_yesterday, },
+        { "param_id": 2, "AcqTime": "11:00", "AcqDate": yesterday, },
+        { "param_id": 3, "AcqTime": "12:00", "AcqDate": today, },
+    ]
+
+    for data in test_data:
+        db.sql.execute(
+            "INSERT INTO acq (param_id, AcqTime, AcqDate) VALUES (?, ?, ?)",
+            ( data["param_id"], data["AcqTime"], data["AcqDate"]),
+        )
+    db.sql.commit()
+
+    # Test with yesterday's date (should return today's data)
+    results_yesterday = db.find_acquisitions_since(yesterday)
+    results_yesterday = [tuple(row[0:3]) for row in results_yesterday]
+    assert results_yesterday == [(3, "12:00", today)]
+
+    # Test with today's date (should return no rows since there's no future data)
+    results_today = db.find_acquisitions_since(today)
+    assert results_today == []
+
+    # Test with a date far in the past (should return all rows)
+    results_past = db.find_acquisitions_since("2000-01-01")
+    results_past = [tuple(row[0:3]) for row in results_past]
+    assert results_past == [
+        (1, "10:00", day_before_yesterday),
+        (2, "11:00", yesterday),
+        (3, "12:00", today),
+    ]
+
+    # Test with no date (should default to yesterday and return today's date
+    results_default = db.find_acquisitions_since()
+    results_default = [tuple(row[0:3]) for row in results_default]
+    assert results_default == [(3, "12:00", today)]
+
+
+@pytest.fixture
+def template_checker():
+    return TemplateChecker()
+
+
+def test_check_row(template_checker, mocker):
+    # Mock the template return by DBQuery.get_template
+    mock_template = {
+        "Project": "Brain^wpc-8620",
+        "SequenceName": "HabitTask",
+        "TR": "1300",
+        "TE": "30",
+        "FA": "60",
+        "iPAT": "GRAPPA",
+        "Comments": "Unaliased MB3/PE4/LB SENSE1",
+        # Other relevant fields can be added as well if seen as necessary
+    }
+
+    # Mock the get_template method to return the mock_template
+    mocker.patch.object(template_checker.db, "get_template", return_value=mock_template)
+
+    # Example row from SQL query with some values differing from the template
+    test_row = {
+        "Project": "Brain^wpc-8620",
+        "SequenceName": "HabitTask",
+        "TR": "1301",  # Should trigger and error
+        "TE": "30",
+        "FA": "60",
+        "iPAT": "GRAPPA",
+        "Comments": "Unaliased MB3/PE4/LB SENSE1",
+    }
+
+    # Run the check_row function
+    result: CheckResult = template_checker.check_row(test_row)
+
+    # Expected result
+    expected_errors = {
+        "TR": {"expect": "1300", "have": "1301"},
+    }
+
+    # Assertions
+    assert result["conforms"] == False  # Should not conform due to mismatch in "TR"
+    assert result["errors"] == expected_errors
+    assert result["input"] == test_row
+    assert result["template"] == mock_template
+
+    # Check that get_template was called with the correct arguments
+    template_checker.db.get_template.assert_called_once_with(
+        "Brain^wpc-8620", "HabitTask"
+    )

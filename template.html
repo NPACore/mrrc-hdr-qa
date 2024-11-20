@@ -1,0 +1,38 @@
+<html>
+<head>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .match { background-color: #d4edda; } /* green for matches */
+        .mismatch { background-color: #f8d7da; } /* red for mismatches */
+    </style>
+</head>
+<body>
+    <h2>DICOM Header Compliance Report</h2>
+    <table>
+        <tr>
+            <th>Header</th>
+            <th>Expected Value</th>
+            <th>Actual Value</th>
+        </tr>
+        {% for row in rows %}
+            <tr class="{{ row.class_name }}">
+            <td>{{ row.header }}</td>
+            <td>{{ row.expected_value }}</td>
+            <td>{{ row.actual_value }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
+

@@ -34,6 +34,10 @@ def find_errors(template: TagValues, current_hdr: TagValues) -> dict[str, ErrorC
         # TODO: more checks for specific headers
         #: TR is in milliseconds. no need to keep decimals precision
         if k == "TR":
+            if t_k == "null":
+                t_k = 0
+            if h_k == "null":
+                h_k = 0
             check = int(float(t_k)) == int(float(h_k))
         elif k == "iPAT":
             check = t_k == h_k
@@ -89,4 +93,26 @@ class TemplateChecker:
             "errors": errors,
             "input": hdr,
             "template": dict(template),
+        
+        }
+    def check_row(self, row: dict) -> CheckResult:
+        """ 
+        Check a single SQL row against its template.
+
+        :parm row: Dictionary of header parameters (a row from SQL query)
+        :returns: Conforming status, errors, and comparison information.
+        """
+
+        # Retrieve the template based on Project and SequenceName in the row
+        template = self.db.get_template(row["Project"], row["SequenceName"])
+        template = dict(template)
+
+        # Check for differences using find_errors
+        errors = find_errors(template, row) if template else {}
+
+        return {
+                "conforms": not errors,
+                "errors": errors,
+                "input": row, 
+                "template": template,
         }

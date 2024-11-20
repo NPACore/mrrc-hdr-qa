@@ -10,10 +10,15 @@ function receivedMessage(msg) {
    // TODO: 
    // 1. build a sub element id= sessionDate (need to store that field still?) if el w/id doesn't exist
    // 2. append to that element instead of directly to "sequences". then we can later hide finished sequences
-   let el = document.createElement("li");
 
    data = JSON.parse(msg.data)
    console.log("...data:", data);
+   if(data['type'] == 'new'){
+      add_new_series(data['content'])
+   }
+}
+function add_new_series(data) {
+   let el = document.createElement("li");
    el.className = data['conforms']?'conform':'no-conform';
    dcm_in =  data['input'];
    errors = data['errors'];
@@ -21,7 +26,13 @@ function receivedMessage(msg) {
    note = Object.keys(errors).length==0?'💯':JSON.stringify(errors);
    console.log("...note:", note);
    el.textContent = `${identity}: ${note}`;
-   document.getElementById("sequences").prepend(el); //appendChild(el);
+   // TODO: per scanner tab
+   let seq = document.getElementById("sequences");
+   // clear waiting
+   if(seq.innerHTML == "waiting for scanner"){
+      seq.innerHTML = ""
+   }
+   seq.prepend(el); //appendChild(el);
 }
 
 function update_via_ws() {

@@ -4,4 +4,6 @@ dicom-parser
 websockets
 aionotify
 asyncio
+pytest-mock
+Jinja2
 #mrQA

@@ -7,6 +7,7 @@ import os
 import re
 import sqlite3
 import sys
+from datetime import datetime, timedelta
 from typing import Optional
 
 from dcmmeta2tsv import NULLVAL, TagValues
@@ -121,7 +122,7 @@ class DBQuery:
         #  only add if not already in the DB
         acq_uniq_col = set(self.all_columns) - set(self.CONSTS) - set(["filename"])
         assert acq_uniq_col == set(
-            ["AcqTime", "AcqDate", "SeriesNumber", "SubID", "Operator"]
+            ["AcqTime", "AcqDate", "SeriesNumber", "SubID", "Operator", "Shims", "Station"]
         )
         # TODO: include station?
 
@@ -268,6 +269,24 @@ class DBQuery:
         res = cur.fetchone()
         logging.debug("found template: %s", res)
         return res
+
+    def find_acquisitions_since(self, since_date: Optional[str] = None):
+        """
+        Retrieve all acquisitions with AcqDate greater than the specified date.
+
+        :param since_date: Date string in 'YYYY-MM-DD' format; defaults to yesterday if None.
+        :return: List of acquisition rows with AcqDate > since_date.
+        """
+
+        # Default to yesterday if since_date is None
+        if since_date is None:
+            since_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+        query = "select * from acq where AcqDate > ?"
+        logging.info("Finding acquisitions since %s", since_date)
+
+        cur = self.sql.execute(query, (since_date,))
+        return cur.fetchall()
 
 
 def have_pipe_data():

@@ -7,20 +7,25 @@ import os
 import re
 import sys
 import warnings
-from typing import TypedDict
+from typing import Optional, TypedDict
 
 import pydicom
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     # UserWarning: The DICOM readers are highly experimental...
-    import nibabel.nicom.csareader as csareader
+    from nibabel.nicom import csareader
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
 
-#: object that has obj.value for when a dicom tag does not exist
-#: using 'null' to match AFNI's dicom_hinfo
-NULLVAL = type("", (object,), {"value": "null"})()
+
+class NULLVAL:
+    """Container to imitate ``pydicom.dcmread``.
+    object that has ``obj.value`` for when a dicom tag does not exist.
+    Using "null" to match AFNI's dicom_hinfo missing text"""
+
+    value: str = "null"
+
 
 TagTuple = tuple[int, int]
 
@@ -67,6 +72,8 @@ def read_known_tags(tagfile="taglist.txt") -> TagDicts:
         if re.search("^[0-9]{4},", tags[i]["tag"]):
             tags[i]["tag"] = tagpair_to_hex(tags[i]["tag"])
             tags[i]["loc"] = "header"
+        elif tags[i]["name"] == "shims":
+            tags[i]["loc"] = "asccov"
         else:
             tags[i]["loc"] = "csa"
 
@@ -93,11 +100,54 @@ def csa_fetch(csa_tr: dict, itemname: str) -> str:
     return val
 
 
-def read_csa(csa) -> list[str]:
+def read_shims(csa_s: Optional[dict]) -> list:
+    """
+    read current shim parameters from ASCCONV
+    from 0x0029,0x1020 CSA Series Header Info
+
+    csa_s = dcmmeta2tsv.read_csa(dcm.get(())
+
+    CHM maltab code concats
+      sAdjData.uiAdjShimMode
+      sGRADSPEC.asGPAData[0].lOffset{X,Y,Z}
+      sGRADSPEC.alShimCurrent[0:4]
+      sTXSPEC.asNucleusInfo[0].lFrequency
+    >>> csa_s = pydicom.dcmread('example_dicoms/RewardedAnti_good.dcm').get((0x0029, 0x1020))
+    >>> ",".join(read_shims(read_csa(csa_s)))
+    '1174,-2475,4575,531,-20,59,54,-8,123160323,4'
+    >>> read_shims(None)
+    [None]*10
+    """
+
+    if csa_s is None:
+        csa_s = {}
+    try:
+        asccov = csa_s["tags"]["MrPhoenixProtocol"]["items"][0]
+    except KeyError:
+        return [NULLVAL.value] * 10
+
+    key = "|".join(
+        [
+            "sAdjData.uiAdjShimMode",
+            "sGRADSPEC.asGPAData\\[0\\].lOffset[XYZ]",
+            "sGRADSPEC.alShimCurrent\\[[0-4]\\]",
+            "sTXSPEC.asNucleusInfo\\[0\\].lFrequency",
+        ]
+    )
+
+    # keys are like
+    #   sGRADSPEC.asGPAData[0].lOffsetX\t = \t1174
+    reg = re.compile(f"({key})\\s*=\\s*([^\\s]+)")
+    res = reg.findall(asccov)
+    # could be more rigerous about order by moving tuple results into dict
+    return [x[1] for x in res]
+
+
+def read_csa(csa) -> Optional[dict]:
     """
     extract parameters from siemens CSA
     :param csa: content of siemens private tag (0x0029, 0x1010)
-    :return: [pepd, ipat] is phase encode positive direction and GRAPA iPATModeText
+    :return: nibabel's csareader dictionary or None if cannot read
 
     >>> read_csa(None) is None
     True
@@ -142,7 +192,12 @@ def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> TagValues:
     csa = read_csa(dcm.get((0x0029, 0x1010)))
     for tag in tags:
         k = tag["name"]
-        if tag["loc"] == "csa":
+        if k == "Shims":
+            # 20241118: add shims
+            csa_s = read_csa(dcm.get((0x0029, 0x1020)))
+            shims = read_shims(csa_s)
+            out[k] = ",".join(shims)
+        elif tag["loc"] == "csa":
             out[k] = csa_fetch(csa, tag["tag"]) if csa is not None else NULLVAL.value
         else:
             out[k] = dcm.get(tag["tag"], NULLVAL).value
