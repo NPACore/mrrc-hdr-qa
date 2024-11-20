@@ -1,49 +1,18 @@
 from template_checker import TemplateChecker, CheckResult
 from jinja2 import Template
 
+def load_template(template_path: str) -> Template:
+    """
+    Load an HTML template from the template.html file
 
-# Define the template for Jinja
-html_template = """
-<html>
-<head>
-    <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .match { background-color: #d4edda; } /* green for matches */
-        .mismatch { background-color: #f8d7da; } /* red for mismatches */
-    </style>
-</head>
-<body>
-    <h2>DICOM Header Compliance Report</h2>
-    <table>
-        <tr>
-            <th>Header</th>
-            <th>Expected Value</th>
-            <th>Actual Value</th>
-        </tr>
-        {% for row in rows %}
-            <tr class="{{ row.class_name }}">
-            <td>{{ row.header }}</td>
-            <td>{{ row.expected_value }}</td>
-            <td>{{ row.actual_value }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</body>
-</html>
-"""
+    :param template_path: Path to the HTML template file.
+    :returns: A Jinja2 Template object.
+    """
+    with open(template_path, 'r') as file:
+        template_content = file.read()
+    return Template(template_content)
 
-def generate_html_report(check_result: CheckResult) -> str:
+def generate_html_report(check_result: CheckResult, template_path: str) -> str:
     """
     Generate an HTML report of DICOM header comparison, highlighting mismatches.
 
@@ -69,8 +38,10 @@ def generate_html_report(check_result: CheckResult) -> str:
             "class_name": class_name
         })
 
+    # Load the template from the file
+    template = load_template(template_path)
+
     # Render the template with the data
-    template = Template(html_template)
     html = template.render(rows=rows)
 
     return html
