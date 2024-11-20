@@ -52,15 +52,27 @@ def test_find_acquisitions_since(db):
     day_before_yesterday = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
 
     test_data = [
-        { "param_id": 1, "AcqTime": "10:00", "AcqDate": day_before_yesterday, },
-        { "param_id": 2, "AcqTime": "11:00", "AcqDate": yesterday, },
-        { "param_id": 3, "AcqTime": "12:00", "AcqDate": today, },
+        {
+            "param_id": 1,
+            "AcqTime": "10:00",
+            "AcqDate": day_before_yesterday,
+        },
+        {
+            "param_id": 2,
+            "AcqTime": "11:00",
+            "AcqDate": yesterday,
+        },
+        {
+            "param_id": 3,
+            "AcqTime": "12:00",
+            "AcqDate": today,
+        },
     ]
 
     for data in test_data:
         db.sql.execute(
             "INSERT INTO acq (param_id, AcqTime, AcqDate) VALUES (?, ?, ?)",
-            ( data["param_id"], data["AcqTime"], data["AcqDate"]),
+            (data["param_id"], data["AcqTime"], data["AcqDate"]),
         )
     db.sql.commit()
 

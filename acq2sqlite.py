@@ -122,7 +122,15 @@ class DBQuery:
         #  only add if not already in the DB
         acq_uniq_col = set(self.all_columns) - set(self.CONSTS) - set(["filename"])
         assert acq_uniq_col == set(
-            ["AcqTime", "AcqDate", "SeriesNumber", "SubID", "Operator", "Shims", "Station"]
+            [
+                "AcqTime",
+                "AcqDate",
+                "SeriesNumber",
+                "SubID",
+                "Operator",
+                "Shims",
+                "Station",
+            ]
         )
         # TODO: include station?
 

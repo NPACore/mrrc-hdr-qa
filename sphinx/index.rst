@@ -22,6 +22,8 @@ Code
    dcmmeta2tsv
    acq2sqlite
    change_header
+   template_checker
+   compliance_check_html
 
 
 Overview

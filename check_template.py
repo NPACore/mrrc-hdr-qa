@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
+"""
+quick cli tool to run template checker against tsv input
+likely form ``./dcmmeta2tsv.py $file``::
+    ./dcmmeta2tsv.py $file | ./check_template.py
 
-import os
+Added 2024-10-08. Consider removing 2024-11-20
+"""
 import sys
-
-from acq2sqlite import DBQuery, TagValue, have_pipe_data
+from acq2sqlite import DBQuery, have_pipe_data
 
 db = DBQuery()
 

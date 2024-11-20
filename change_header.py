@@ -117,8 +117,8 @@ def gen_ids(new_id: str) -> List[pydicom.DataElement]:
     'example_name'
     >>> data_els[0].VR
     'PN'
-    >>> data_els[0].tag
-    (0010,0010)
+    >>> data_els[0].tag # doctest: +NORMALIZE_WHITESPACE
+    (0010, 0010)
     """
     return [
         pydicom.DataElement(value=new_id, VR="PN", tag=(0x0010, 0x0010)),

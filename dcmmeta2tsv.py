@@ -7,7 +7,7 @@ import os
 import re
 import sys
 import warnings
-from typing import Optional, TypedDict
+from typing import TypedDict, Optional
 
 import pydicom
 
@@ -18,14 +18,11 @@ with warnings.catch_warnings():
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
 
-
 class NULLVAL:
     """Container to imitate ``pydicom.dcmread``.
     object that has ``obj.value`` for when a dicom tag does not exist.
     Using "null" to match AFNI's dicom_hinfo missing text"""
-
-    value: str = "null"
-
+    value : str = "null"
 
 TagTuple = tuple[int, int]
 
@@ -99,41 +96,37 @@ def csa_fetch(csa_tr: dict, itemname: str) -> str:
         val = NULLVAL.value
     return val
 
-
 def read_shims(csa_s: Optional[dict]) -> list:
     """
-    read current shim parameters from ASCCONV
-    from 0x0029,0x1020 CSA Series Header Info
+    :param: csa_s ``0x0029,0x1020`` CSA **Series** Header Info::
+        csa_s = dcmmeta2tsv.read_csa(dcm.get(())
 
-    csa_s = dcmmeta2tsv.read_csa(dcm.get(())
+    :return: list of shim values in order of CHM matlab code
 
     CHM maltab code concats
       sAdjData.uiAdjShimMode
       sGRADSPEC.asGPAData[0].lOffset{X,Y,Z}
       sGRADSPEC.alShimCurrent[0:4]
       sTXSPEC.asNucleusInfo[0].lFrequency
+
     >>> csa_s = pydicom.dcmread('example_dicoms/RewardedAnti_good.dcm').get((0x0029, 0x1020))
     >>> ",".join(read_shims(read_csa(csa_s)))
     '1174,-2475,4575,531,-20,59,54,-8,123160323,4'
-    >>> read_shims(None)
-    [None]*10
+    >>> read_shims(None)  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+    ['null', ...'null']
     """
 
     if csa_s is None:
         csa_s = {}
     try:
-        asccov = csa_s["tags"]["MrPhoenixProtocol"]["items"][0]
+        asccov = csa_s['tags']['MrPhoenixProtocol']['items'][0]
     except KeyError:
-        return [NULLVAL.value] * 10
+        return [NULLVAL.value]*10
 
-    key = "|".join(
-        [
-            "sAdjData.uiAdjShimMode",
-            "sGRADSPEC.asGPAData\\[0\\].lOffset[XYZ]",
-            "sGRADSPEC.alShimCurrent\\[[0-4]\\]",
-            "sTXSPEC.asNucleusInfo\\[0\\].lFrequency",
-        ]
-    )
+    key = "|".join(['sAdjData.uiAdjShimMode',
+                    'sGRADSPEC.asGPAData\\[0\\].lOffset[XYZ]',
+                    'sGRADSPEC.alShimCurrent\\[[0-4]\\]',
+                    'sTXSPEC.asNucleusInfo\\[0\\].lFrequency'])
 
     # keys are like
     #   sGRADSPEC.asGPAData[0].lOffsetX\t = \t1174
@@ -168,12 +161,12 @@ def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> TagValues:
 
     :param dcm_path: dicom file with headers to extract
     :param tags: ordered dictionary with 'tag' key as hex pair, see :py:func:`tagpair_to_hex`
-    :return: dict[tag,value] values in same order as ``tags`` \
+    :return: dict[tag,value] values in same order as ``tags``
 
     >>> tr = {'name': 'TR', 'tag': (0x0018,0x0080), 'loc': 'header'}
     >>> ipat = {'name': 'iPAT', 'tag': 'ImaPATModeText', 'loc': 'csa'}
     >>> list(read_tags('example_dicoms/RewardedAnti_good.dcm', [ipat, tr]).values())
-    ['p2', '1300', 'example_dicoms/RewardedAnti_good.dcm']
+    ['p2', '1300.0', 'example_dicoms/RewardedAnti_good.dcm']
 
     >>> list(read_tags('example_dicoms/DNE.dcm', [ipat,tr]).values())
     ['null', 'null', 'example_dicoms/DNE.dcm']
@@ -235,3 +228,4 @@ if __name__ == "__main__":
     for dcm_path in sys.argv[1:]:
         all_tags = dtr.read_dicom_tags(dcm_path).values()
         print("\t".join([str(x) for x in all_tags]))
+

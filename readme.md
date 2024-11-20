@@ -19,7 +19,7 @@ See
  * should look at n echos 0018,0086 and collapse across dicoms to make protocol mutliecho parameter
  * precision changes between realtime streaming and offline dicom writes? see `check_template.py`
 
- * inotify `CREATE` is catches files before they finish writting. Watch `CLOSE_WRITE` instead.
+ * inotify `CREATE` is catches files before they finish writing. Watch `CLOSE_WRITE` instead.
   Test slower write with `smbclient`
   ```
   smbclient -U mrqart //localhost/dicomstream/ -c 'put 001_000001_000002.dcm sim/y.dcm'

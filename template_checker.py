@@ -2,10 +2,10 @@
 check a header against best template
 """
 
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from acq2sqlite import DBQuery
-from dcmmeta2tsv import DicomTagReader, TagDicts, TagValues
+from dcmmeta2tsv import DicomTagReader, TagValues
 
 ErrorCompare = TypedDict("ErrorCompare", {"have": str, "expect": str})
 CheckResult = TypedDict(
@@ -93,13 +93,13 @@ class TemplateChecker:
             "errors": errors,
             "input": hdr,
             "template": dict(template),
-        
         }
+
     def check_row(self, row: dict) -> CheckResult:
-        """ 
+        """
         Check a single SQL row against its template.
 
-        :parm row: Dictionary of header parameters (a row from SQL query)
+        :param row: Dictionary of header parameters (a row from SQL query)
         :returns: Conforming status, errors, and comparison information.
         """
 
@@ -111,8 +111,8 @@ class TemplateChecker:
         errors = find_errors(template, row) if template else {}
 
         return {
-                "conforms": not errors,
-                "errors": errors,
-                "input": row, 
-                "template": template,
+            "conforms": not errors,
+            "errors": errors,
+            "input": row,
+            "template": template,
         }

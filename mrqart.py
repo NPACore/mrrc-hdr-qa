@@ -19,15 +19,18 @@ from template_checker import TemplateChecker
 
 Station = str
 Sequence = str
+
+
 class CurSeqStation:
     "Current Sequence settings at a MR Scanner station"
-    series_seqname : str
-    station : str
-    count : int
+    series_seqname: str
+    station: str
+    count: int
+
     def __init__(self, station: Station):
         "initialize new series"
         self.station = station
-        self.series_seqname=""
+        self.series_seqname = ""
         self.count = 0
 
     def update_isnew(self, series, seqname: Sequence) -> bool:
@@ -35,17 +38,18 @@ class CurSeqStation:
         Maintain count of repeats seen
         :return:  True if is new
         """
-        serseq=f"{series}{seqname}"
+        serseq = f"{series}{seqname}"
         if self.series_seqname == serseq:
             self.count += 1
             return False
 
-        self.series_seqname=serseq
+        self.series_seqname = serseq
         self.count = 0
         return True
 
     def __repr__(self) -> str:
         return f"{self.station} {self.series_seqname} {self.count}"
+
 
 #: Websocket port used to send updates to browser
 WS_PORT = 5000
@@ -121,12 +125,13 @@ async def track_ws(websocket):
 def session_from_fname(dcm_fname: os.PathLike) -> Sequence:
     """
     We can use the file name to see if session name has changed.
-    Don't need to read the dicom header -- if we know the station name
-        extract
-         ls /data/dicomstream/20241016.MRQART_test.24.10.16_16_50_16_DST_1.3.12.2.1107.5.2.43.67078/|head
-    001_000001_000001.dcm
-        ...
-        001_000017_000066.dcm
+    Don't need to read the dicom header -- if we know the station name.
+    Can extract from ``001_sequencenum_seriesnum``::
+
+      ls /data/dicomstream/20241016.MRQART_test.24.10.16_16_50_16_DST_1.3.12.2.1107.5.2.43.67078/|head
+      001_000001_000001.dcm
+      ...
+      001_000017_000066.dcm
     """
     session = os.path.basename(dcm_fname)
     (proj, sequence, number) = session.split("_")
@@ -167,15 +172,19 @@ async def monitor_dirs(watcher, dcm_checker):
             # only send to browser if new
             if current_ses.update_isnew(hdr["SeriesNumber"], hdr["SequenceName"]):
                 logging.debug("first time seeing  %s", current_ses)
-                msg = {'station': hdr["Station"],
-                       'type': 'new',
-                       'content': dcm_checker.check_header(hdr)}
+                msg = {
+                    "station": hdr["Station"],
+                    "type": "new",
+                    "content": dcm_checker.check_header(hdr),
+                }
                 logging.debug(msg)
                 broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
             else:
-                msg = {'station': hdr["Station"],
-                       'type': 'update',
-                       'content': current_ses.count}
+                msg = {
+                    "station": hdr["Station"],
+                    "type": "update",
+                    "content": current_ses.count,
+                }
                 broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
                 logging.debug("already have %s", STATE[seq["Station"]])
 
@@ -184,8 +193,8 @@ async def monitor_dirs(watcher, dcm_checker):
 
         else:
             logging.warning("non dicom file %s", event.name)
-            # if we want to do this, we need msg formated
-            #broadcast(WS_CONNECTIONS, f"non-dicom file: {event}")
+            # if we want to do this, we need msg formatted
+            # broadcast(WS_CONNECTIONS, f"non-dicom file: {event}")
 
 
 async def main(path):
@@ -196,7 +205,8 @@ async def main(path):
     dcm_checker = TemplateChecker()
     watcher = aionotify.Watcher()
     watcher.watch(
-        path=path, flags=FOLLOW_FLAGS
+        path=path,
+        flags=FOLLOW_FLAGS,
         # NB. prev had just aionotify.Flags.CREATE but that triggers too early (partial file)
     )  # aionotify.Flags.MODIFY|aionotify.Flags.CREATE |aionotify.Flags.DELETE)
     asyncio.create_task(monitor_dirs(watcher, dcm_checker))
@@ -215,5 +225,7 @@ async def main(path):
 if __name__ == "__main__":
     # TODO: watch based on input argument
     # TODO: watch all sub directories?
-    watch_dir = os.path.join(FILEDIR, "/data/dicomstream/20241119.testMRQARAT.testMRQARAT/")
+    watch_dir = os.path.join(
+        FILEDIR, "/data/dicomstream/20241119.testMRQARAT.testMRQARAT/"
+    )
     asyncio.run(main(watch_dir))

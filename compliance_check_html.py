@@ -1,5 +1,7 @@
-from template_checker import TemplateChecker, CheckResult
 from jinja2 import Template
+
+from template_checker import CheckResult, TemplateChecker
+
 
 def load_template(template_path: str) -> Template:
     """
@@ -8,9 +10,10 @@ def load_template(template_path: str) -> Template:
     :param template_path: Path to the HTML template file.
     :returns: A Jinja2 Template object.
     """
-    with open(template_path, 'r') as file:
+    with open(template_path, "r") as file:
         template_content = file.read()
     return Template(template_content)
+
 
 def generate_html_report(check_result: CheckResult, template_path: str) -> str:
     """
@@ -31,12 +34,14 @@ def generate_html_report(check_result: CheckResult, template_path: str) -> str:
         expected_value = check_result["template"].get(header, "N/A")
         actual_value = check_result["input"].get(header, "N/A")
         class_name = "mismatch" if header in check_result["errors"] else "match"
-        rows.append({
-            "header": header, 
-            "expected_value": expected_value,
-            "actual_value": actual_value,
-            "class_name": class_name
-        })
+        rows.append(
+            {
+                "header": header,
+                "expected_value": expected_value,
+                "actual_value": actual_value,
+                "class_name": class_name,
+            }
+        )
 
     # Load the template from the file
     template = load_template(template_path)
@@ -45,5 +50,3 @@ def generate_html_report(check_result: CheckResult, template_path: str) -> str:
     html = template.render(rows=rows)
 
     return html
-
-
