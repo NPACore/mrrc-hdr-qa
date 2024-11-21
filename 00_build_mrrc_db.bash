@@ -17,7 +17,11 @@ log parse dicoms start
 ./build_db.bash /disk/mace2/scan_data/WPC-*
 
 log starting sqlite db
-cat db/*.txt | ./acq2sqlite.py
+#cat db/*.txt | ./acq2sqlite.py
+for db in db/*.txt; do
+  echo $db
+  cat $db | ./acq2sqlite.py
+done
 
 log build template
-make template.csv
+make templates.csv
