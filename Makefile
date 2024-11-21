@@ -2,7 +2,7 @@
 
 default: docs
 
-pre-commit: venv-program venv-dev .test .lint
+pre-commit: venv-program venv-dev test .lint
 
 db.sqlite:
 	sqlite3 $@ < schema.sql
