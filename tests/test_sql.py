@@ -27,9 +27,21 @@ def good_dcm_dict():
     return reader.read_dicom_tags(f)
 
 
+def test_no_add_missingvals(db):
+    # expect to have at least all of these
+    # TODO: maybe shouldn't die if these 4 dont exist? (needed for check_acq)
+    bad_data = {
+        "AcqTime": "null",
+        "AcqDate": "null",
+        "SubID": "null",
+        "SeriesNumber": "null",
+    }
+    assert not db.dict_to_db_row(bad_data)
+
+
 def test_dict_to_db_row(db, good_dcm_dict):
     """add to db and check add"""
-    db.dict_to_db_row(good_dcm_dict)
+    assert db.dict_to_db_row(good_dcm_dict)
     assert db.check_acq(good_dcm_dict)
 
 

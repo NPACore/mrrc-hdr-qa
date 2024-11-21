@@ -203,6 +203,11 @@ def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> TagValues:
         else:
             out[k] = dcm.get(tag["tag"], NULLVAL).value
 
+        # 20241120: watch out for comments with newlines or tabs
+        # can maybe just change 'Comments' instead of everything
+        if type(out[k]) is str:
+            out[k] = out[k].replace("\t", " ").replace("\n", " ")
+
     out["dcm_path"] = dcm_path
     return out
 
