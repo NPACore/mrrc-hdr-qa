@@ -2,6 +2,7 @@ pydicom
 nibabel
 dicom-parser
 Jinja2
+pyrage
 # real time
 asyncio
 websockets

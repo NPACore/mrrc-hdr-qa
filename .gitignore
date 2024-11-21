@@ -14,3 +14,6 @@ __pycache__/
 pyvenv.cfg
 share/
 templates.tsv
+.test.*
+*.sw[op]
+creds/

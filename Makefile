@@ -44,3 +44,9 @@ venv-dev: .venv/bin/black
 venv-program: .venv/bin/pydicom
 .venv/bin/pydicom: .venv/
 	$(source_venv) && pip install -r requirements.txt
+
+## example key gen usage
+creds/email.key:
+	age-keygen -o $@
+creds/email.age: creds/email.key
+	printf user\tpass | age -e -i email.key > email.age
