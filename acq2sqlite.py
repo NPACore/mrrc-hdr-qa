@@ -94,6 +94,7 @@ class DBQuery:
           * insert new into ``acq``
           * insert new into ``acq_param``
 
+        :param sql: sql connection (None connects to ``db.sqlite`` default)
         """
         self.all_columns = column_names()
         if sql:
@@ -132,7 +133,6 @@ class DBQuery:
                 "Station",
             ]
         )
-        # TODO: include station?
 
         self.find_acq = "select rowid from acq where AcqTime like ? and AcqDate like ? and SubID = ? and SeriesNumber = ?"
         self.acq_insert_columns = ["param_id"] + list(acq_uniq_col)
@@ -217,22 +217,36 @@ class DBQuery:
 
         return rowid
 
-    def dict_to_db_row(self, d: TagValues) -> None:
+    def dict_to_db_row(self, d: TagValues) -> bool:
         """
         insert a dicom header (representative of acquisition) into db
+        :param d: a single acquisition to add to DB
+        :return: True if added or already exists
         """
         # order here needs to match find_acq.
         if self.check_acq(d):
-            return
+            return True
 
         rowid = self.param_rowid(d)
         if not rowid:
-            return
+            return False
         ###
         d["param_id"] = rowid
-        acq_insert_vals = [str(d[k]) for k in self.acq_insert_columns]
+
+        # check that we have all expected data
+        # if not, maybe bad import from tsv so dont put into db (return early)
+        for k in self.acq_insert_columns:
+            v = d.get(k)
+            if not v:
+                logging.warning("unexpected missing value %s in %s", k, d)
+                return False
+
+            d[k] = str(v)
+
+        acq_insert_vals = [d[k] for k in self.acq_insert_columns]
         cur = self.sql.execute(self.acq_insert, acq_insert_vals)
         logging.debug("new acq created: %d", cur.lastrowid)
+        return True
 
     def tsv_to_dict(self, line: str) -> TagValues:
         """
@@ -295,6 +309,23 @@ class DBQuery:
 
         cur = self.sql.execute(query, (since_date,))
         return cur.fetchall()
+
+    def most_recent(self, project: str = "%") -> sqlite3.Row:
+        """
+        Find a projects most recent scan in the database
+        :param project: project name. default to all via wildcard ``%``
+        :return: timestamp string of most recent seen scan
+        """
+        query = """
+        select max(AcqDate || ' '|| AcqTime) as timestamp
+        from acq a
+        join acq_param p on a.param_id=p.rowid
+        where project like ?
+        """
+        # logging.debug("search for %s", project)
+        cur = self.sql.execute(query, (project,))
+        res = cur.fetchone()
+        return res["timestamp"]
 
 
 def have_pipe_data():
