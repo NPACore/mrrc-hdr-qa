@@ -13,3 +13,4 @@ build.log
 __pycache__/
 pyvenv.cfg
 share/
+templates.tsv

@@ -1,9 +1,9 @@
 pydicom
 nibabel
 dicom-parser
+Jinja2
+# real time
+asyncio
 websockets
 aionotify
-asyncio
-pytest-mock
-Jinja2
-#mrQA
+tornado

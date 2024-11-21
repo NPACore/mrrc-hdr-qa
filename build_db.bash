@@ -2,7 +2,6 @@
 #
 # build db
 #
-source dcmmeta2tsv.bash
 
 _project=${PROJECT:-all}
 find_example_dcm(){
@@ -14,7 +13,7 @@ find_example_dcm(){
   find "$1" -maxdepth 1 -type f \( -iname '*.dcm' -or -iname 'MR.*' -or -iname '*.IMA' \) -print -quit
 }
 
-export -f dcmmeta2tsv find_example_dcm
+export -f find_example_dcm
 
 build_dcm_db(){
   #

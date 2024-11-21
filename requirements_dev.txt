@@ -2,3 +2,4 @@ black
 codespell
 isort
 sphinx
+pytest-mock
