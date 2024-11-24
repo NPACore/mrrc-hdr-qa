@@ -5,12 +5,10 @@
 </head>
 <script>
   /* TODO: move into own file. run tests? */
+
+ /* Main websocket data parser. dispatches base on message type */
 function receivedMessage(msg) {
    console.log("new message!", msg);
-   // TODO:
-   // 1. build a sub element id= sessionDate (need to store that field still?) if el w/id doesn't exist
-   // 2. append to that element instead of directly to "sequences". then we can later hide finished sequences
-
    data = JSON.parse(msg.data)
    console.log("...data:", data);
    if(data['type'] == 'new'){
@@ -18,6 +16,7 @@ function receivedMessage(msg) {
    }
 }
 
+// new dicom data into table
 function mktable(data){
     const keys = [
         "SequenceType", "PED_major", "TR", "TE", "Matrix",
@@ -65,14 +64,23 @@ function add_new_series(data) {
    console.log("...note:", note);
    el.innerHTML=note;
 
-   // TODO: per scanner tab
-   let seq = document.getElementById("sequences");
-
    // clear waiting
+   let seq = document.getElementById("stations");
    if(seq.innerHTML == "waiting for scanner"){
       seq.innerHTML = ""
    }
-   seq.prepend(el); //appendChild(el);
+
+   // TODO: per scanner tab
+   const station_id = `station-${data["input"]["Station"]}`
+   let station = document.getElementById(station_id);
+   if(station === null){
+    let newstat = document.createElement("ul");
+    newstat.id = station_id
+    seq.prepend(newstat);
+    station = newstat
+   }
+
+   station.prepend(el); //appendChild(el);
 }
 
 /* connects socket to main dispatcher `recievedMessages` */
@@ -94,8 +102,7 @@ window.onload = update_via_ws;
 <body>
   <div id="alert"></div>
   <div id="project"></div>
-  <div id="sequence number"></div>
-  <ul id="sequences">waiting for scanner</ul>
+  <div id="stations">waiting for scanner</div>
 
  <div class="debug" style="display:none">
 <textarea id="debug">
