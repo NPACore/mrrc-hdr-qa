@@ -8,9 +8,9 @@
 
  /* Main websocket data parser. dispatches base on message type */
 function receivedMessage(msg) {
-   console.log("new message!", msg);
+   //console.log("new message!", msg);
    data = JSON.parse(msg.data)
-   console.log("...data:", data);
+   console.log("new message data:", data);
    if(data['type'] == 'new'){
       add_new_series(data['content'])
    }
@@ -19,9 +19,9 @@ function receivedMessage(msg) {
 // new dicom data into table
 function mktable(data){
     const keys = [
-        "SequenceType", "PED_major", "TR", "TE", "Matrix",
-        "PixelResol", "BWP", "BWPPE", "FA", "TA",
-        "FoV", "Shims"]
+        "SequenceType", "Phase", "PED_major", "TR", "TE", "Matrix",
+        "PixelResol", "FoV", "BWP", "BWPPE", "FA", "TA",
+        "iPAT", "Shims"]
 
    let table = "<table>";
      /*Object.entries(data['input']).map(
@@ -36,7 +36,6 @@ function mktable(data){
         rows[1] += `<td class=${conf_css}>${data['input'][k]}</td>`;
         rows[2] += `<td class=${conf_css}>${data['template'][k]}</td>`;
     }
-    console.log(rows);
     table += `<tr>${rows[0]}</tr>` +
              `<tr>${rows[1]}</tr>` +
              `<tr>${rows[2]}</tr>`;
@@ -50,7 +49,7 @@ function add_new_series(data) {
    el.className = data['conforms']?'conform':'no-conform';
    dcm_in =  data['input'];
    errors = data['errors'];
-   let summary = `${dcm_in['SeriesNumber']} ${dcm_in['Project']}/<b>${dcm_in['SequenceName']}</b>`;
+   let summary = `<span class=seqnum>${dcm_in['SeriesNumber']}</span> <span class=seqname>${dcm_in['SequenceName']}</span> <span class=projname>${dcm_in['Project']}</span>`;
    //JSON.stringify(errors);
    for(k of Object.keys(errors)){
        summary += `<br>${k} should be <b>${errors[k]['expect']}</b> but have <i>${errors[k]['have']}</i>`
@@ -61,7 +60,6 @@ function add_new_series(data) {
 
    note += "<br>" + mktable(data) + "</details>";
 
-   console.log("...note:", note);
    el.innerHTML=note;
 
    // clear waiting
@@ -74,6 +72,9 @@ function add_new_series(data) {
    const station_id = `station-${data["input"]["Station"]}`
    let station = document.getElementById(station_id);
    if(station === null){
+    // selection box as option
+    document.getElementById("select_station").innerHTML += `<option value="${station_id}">${data["input"]["Station"]}</option>`
+
     let newstat = document.createElement("ul");
     newstat.id = station_id
     seq.prepend(newstat);
@@ -89,6 +90,22 @@ function update_via_ws() {
   ws.addEventListener('message', receivedMessage);
 }
 
+// TODO: parse url to set
+function select_station(){
+   const cur_station = document.getElementById("select_station").value;
+   for (el of document.getElementById("stations").children){
+     visibility = (el.id == cur_station || cur_station == "all")?"block":"none" ;
+     el.style.display = visibility;
+     console.log(el.id, visibility);
+   }
+}
+
+/* hidden text box to test sending what would come from websocket
+*/
+function show_debug(){
+  document.getElementsByClassName("debug")[0].style=""
+  //$("#select_station").children.map((el) => el.style.visibility="visible")
+}
 function simdata(){
    let data = document.getElementById("debug");
    data = JSON.parse(data.value)
@@ -100,8 +117,7 @@ window.onload = update_via_ws;
 </script>
 
 <body>
-  <div id="alert"></div>
-  <div id="project"></div>
+  MR Station: <select id="select_station" onchange="select_station()"><option value="all">all</option></select>
   <div id="stations">waiting for scanner</div>
 
  <div class="debug" style="display:none">

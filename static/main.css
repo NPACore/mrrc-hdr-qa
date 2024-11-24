@@ -18,3 +18,7 @@ td.no-conform { background: red}
 th.no-conform { background: red}
 td.conform { background: gray; font-size: .5em;}
 th.conform { background: lightgreen; font-size: .5em;}
+.projname {font-size:smaller;}
+.seqname {font-weight:bold;}
+.seqnum { font-family: mono; color: gray;}
+.seqnum::before { content: "#";}
