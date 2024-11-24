@@ -25,6 +25,14 @@ See
   smbclient -U mrqart //localhost/dicomstream/ -c 'put 001_000001_000002.dcm sim/y.dcm'
   ```
 
+## MRQART
+MR QA in Real Time (python port)
+![](sphinx/imgs/mrqart-browserUI_20241124.png)
+
+### Developing
+Use `show_debug` in a console to get a `simdata` textarea to send mock data.
+![](sphinx/imgs/show_debug.png)
+
 ## Prior Art
  * mrQA
  * sister project https://github.com/NPACore/mrqart/
