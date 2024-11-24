@@ -186,7 +186,7 @@ async def monitor_dirs(watcher, dcm_checker):
                     "content": current_ses.count,
                 }
                 broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
-                logging.debug("already have %s", STATE[seq["Station"]])
+                logging.debug("already have %s", STATE[hdr["Station"]])
 
             # TODO: if epi maybe try plotting motion?
             # async alignment
