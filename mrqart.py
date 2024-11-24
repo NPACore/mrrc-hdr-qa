@@ -224,6 +224,7 @@ async def main(path):
 
 if __name__ == "__main__":
     import sys
+
     # TODO: use argparser?
     if len(sys.argv) > 1:
         watch_dir = os.path.abspath(sys.argv[1])
@@ -234,5 +235,5 @@ if __name__ == "__main__":
         raise Exception(f"{watch_dir} is not a directory!")
 
     # TODO: watch all sub directories?
-    #watch_dir = os.path.join( FILEDIR, ...)
+    # watch_dir = os.path.join( FILEDIR, ...)
     asyncio.run(main(watch_dir))
