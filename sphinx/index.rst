@@ -31,7 +31,7 @@ Overview
 
 MRQART
 ++++++
-MR Quality Assurance in (near) Real Time:
+MR Quality Assurance in (near) Real Time. See see `static debug-enabled page <_static/mrqart/index.html>`_ for a demonstration. Full toolchain uses
 
 #. Samba server receives files from scanner (iceconfig)
 #. :py:func:`mrqart.main` initializes an inotify watcher
