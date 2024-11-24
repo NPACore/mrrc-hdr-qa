@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pyrage import decrypt, x25519  # 'age' password encryption
 
+
 def decrypt_creds():
     with open("creds/email.key", "r") as f:
         key = f.readlines()[-1].strip()
@@ -11,5 +12,6 @@ def decrypt_creds():
 
     print(f"email:'{addr}' pass:'{pswd}'")
     return (addr, pswd)
+
 
 # TODO: SMTP send
