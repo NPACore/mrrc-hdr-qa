@@ -7,7 +7,7 @@
   /* TODO: move into own file. run tests? */
 function receivedMessage(msg) {
    console.log("new message!", msg);
-   // TODO: 
+   // TODO:
    // 1. build a sub element id= sessionDate (need to store that field still?) if el w/id doesn't exist
    // 2. append to that element instead of directly to "sequences". then we can later hide finished sequences
 
@@ -17,17 +17,57 @@ function receivedMessage(msg) {
       add_new_series(data['content'])
    }
 }
+
+function mktable(data){
+    const keys = [
+        "SequenceType", "PED_major", "TR", "TE", "Matrix",
+        "PixelResol", "BWP", "BWPPE", "FA", "TA",
+        "FoV", "Shims"]
+
+   let table = "<table>";
+     /*Object.entries(data['input']).map(
+      ([k,v]) => `<tr><th>${k}</th><td class=` +
+                  ((k in data['errors'])?"no-coform":"conform") +
+                  `>${v}</td><td>${data['template'][k]}</td></tr>`) +
+      */
+    let rows = ["<th></th>", "<th>input</th>", "<th>template</th>"]
+    for(const k of keys){
+        conf_css = ((k in data['errors'])?"no-conform":"conform")
+        rows[0] += `<th class=${conf_css}>${k}</th>`;;
+        rows[1] += `<td class=${conf_css}>${data['input'][k]}</td>`;
+        rows[2] += `<td class=${conf_css}>${data['template'][k]}</td>`;
+    }
+    console.log(rows);
+    table += `<tr>${rows[0]}</tr>` +
+             `<tr>${rows[1]}</tr>` +
+             `<tr>${rows[2]}</tr>`;
+    table += "</table>";
+    return(table)
+}
+
+/* what to do with type=="new" data: a dicom from a new sequence */
 function add_new_series(data) {
    let el = document.createElement("li");
    el.className = data['conforms']?'conform':'no-conform';
    dcm_in =  data['input'];
    errors = data['errors'];
-   identity = `${dcm_in['Project']}/${dcm_in['SequenceName']} @ ${dcm_in['SeriesNumber']}`;
-   note = Object.keys(errors).length==0?'💯':JSON.stringify(errors);
+   let summary = `${dcm_in['SeriesNumber']} ${dcm_in['Project']}/<b>${dcm_in['SequenceName']}</b>`;
+   //JSON.stringify(errors);
+   for(k of Object.keys(errors)){
+       summary += `<br>${k} should be <b>${errors[k]['expect']}</b> but have <i>${errors[k]['have']}</i>`
+   }
+
+   const details_status = data['conforms']?'':'open';
+   let note = `<details ${details_status}><summary>${summary}</summary>`
+
+   note += "<br>" + mktable(data) + "</details>";
+
    console.log("...note:", note);
-   el.textContent = `${identity}: ${note}`;
+   el.innerHTML=note;
+
    // TODO: per scanner tab
    let seq = document.getElementById("sequences");
+
    // clear waiting
    if(seq.innerHTML == "waiting for scanner"){
       seq.innerHTML = ""
@@ -35,10 +75,18 @@ function add_new_series(data) {
    seq.prepend(el); //appendChild(el);
 }
 
+/* connects socket to main dispatcher `recievedMessages` */
 function update_via_ws() {
   const ws = new WebSocket("ws://127.0.0.1:5000/");
   ws.addEventListener('message', receivedMessage);
 }
+
+function simdata(){
+   let data = document.getElementById("debug");
+   data = JSON.parse(data.value)
+   add_new_series(data)
+}
+
 window.onload = update_via_ws;
 
 </script>
@@ -48,5 +96,30 @@ window.onload = update_via_ws;
   <div id="project"></div>
   <div id="sequence number"></div>
   <ul id="sequences">waiting for scanner</ul>
+
+ <div class="debug" style="display:none">
+<textarea id="debug">
+{"conforms": false, "errors": {"TR": {"have": "xxx", "expect": "yyyy"}},
+"input": {"Phase": 1, "iPAT": "p2", "AcqTime": "154833.265000", "AcqDate": "20220913", "SeriesNumber": "21",
+"SubID": "11883_20220913", "Comments": "Unaliased MB3/PE4/LB SENSE1", "Operator": "Gina",
+"Station": "AWP167046",
+"Project": "Brain^wpc-8620",
+"SequenceName": "RewardedAntisaccadexxx",
+"SequenceType": "epfid2d1_88", "PED_major": "COL", "TR": "1300.0", "TE": "30.0",
+"Matrix": [94, 0, 0, 88],
+"PixelResol": [2.2978723049164, 2.2978723049164], "BWP": "2045.0", "BWPPE": 39.872, "FA": "60.0", "TA": "TA 05:34", "FoV": "FoV 1617*1727",
+"Shims": "1174,-2475,4575,531,-20,59,54,-8,123160323,4",
+"dcm_path": "/home/foranw/src/work/mrrc-hdr-qa/sim/RewardedAnti_good.dcm"},
+"template": {"n": 102, "Project": "Brain^wpc-8620",
+"SequenceName": "RewardedAntisaccadexx", "param_id": 3786, "first": "20230509",
+"last": "20241022",
+ "is_ideal": null,
+ "iPAT": "p2", "Phase": "1",
+"Comments": "Unaliased MB3/PE4/LB SENSE1",
+"SequenceType": "epfid2d1_88",
+"PED_major": "COL", "TR": "1300", "TE": "30", "Matrix": "[94, 0, 0, 88]", "PixelResol": "[2.2978723049164, 2.2978723049164]",
+"BWP": "2045", "BWPPE": "39.872", "FA": "60", "TA": "TA 05:34", "FoV": "FoV 1617*1727"}}
+</textarea>
+<br> <button onclick="simdata()">test</button></div>
 </body>
 </html>

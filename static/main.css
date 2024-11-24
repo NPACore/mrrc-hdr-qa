@@ -1,6 +1,6 @@
 html {
-  max-width: 70ch;
-  padding: 3em 1em;
+  /*max-width: 70ch;*/
+  padding: 1em 2em;
   margin: auto;
   line-height: 1.75;
   font-size: 1.25em;
@@ -8,3 +8,13 @@ html {
 
 .conform { background: lightgreen; }
 .no-conform { background: pink; }
+
+li {
+  margin: 1em 0 1em 0; /* top and bottom padding */
+  list-style: none;
+}
+details>table {font-size: smaller;}
+td.no-conform { background: red}
+th.no-conform { background: red}
+td.conform { background: gray; font-size: .5em;}
+th.conform { background: lightgreen; font-size: .5em;}
