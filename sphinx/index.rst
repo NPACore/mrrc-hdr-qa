@@ -33,7 +33,7 @@ MRQART
 ++++++
 MR Quality Assurance in (near) Real Time:
 
-#. Samba server recieves files from scanner (iceconfig)
+#. Samba server receives files from scanner (iceconfig)
 #. :py:func:`mrqart.main` initializes an inotify watcher
 #. New dcm files parsed with :py:func:`dcmmeta2tsv.DicomTagReader.read_dicom_tags` 
 #. Headers compared to template :py:func:`template_checker.TemplateChecker.check_header`
