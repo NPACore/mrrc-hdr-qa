@@ -76,8 +76,8 @@ class TemplateChecker:
         """
         Check acquisition parameters against it's template.
 
-        :param hdr: DB or file dictionary desc. acq. to check against template
-        :returns: conforming status, errors, and comparison information
+        :param hdr: DB row or file dictionary desc. acq. to check against template
+        :returns: Conforming status, errors, and comparison information
         """
         template = self.db.get_template(hdr["Project"], hdr["SequenceName"])
 
@@ -93,27 +93,5 @@ class TemplateChecker:
             "conforms": not errors,
             "errors": errors,
             "input": hdr,
-            "template": template,
-        }
-
-    def check_row(self, row: dict) -> CheckResult:
-        """
-        Check a single SQL row against its template.
-
-        :param row: Dictionary of header parameters (a row from SQL query)
-        :returns: Conforming status, errors, and comparison information.
-        """
-
-        # Retrieve the template based on Project and SequenceName in the row
-        template = self.db.get_template(row["Project"], row["SequenceName"])
-        template = dict(template)
-
-        # Check for differences using find_errors
-        errors = find_errors(template, row) if template else {}
-
-        return {
-            "conforms": not errors,
-            "errors": errors,
-            "input": row,
             "template": template,
         }

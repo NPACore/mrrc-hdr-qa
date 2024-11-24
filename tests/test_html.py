@@ -2,8 +2,8 @@
 import pytest
 from jinja2 import Template
 
-from compliance_check_html import (CheckResult, TemplateChecker,
-                                   generate_html_report)
+from compliance_check_html import generate_html_report
+#from template_checker import CheckResult, TemplateChecker
 
 
 @pytest.fixture

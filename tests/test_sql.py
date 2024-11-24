@@ -6,8 +6,24 @@ import pytest
 
 from acq2sqlite import DBQuery
 from dcmmeta2tsv import DicomTagReader, TagDicts
-from template_checker import TemplateChecker
+from template_checker import TemplateChecker, CheckResult
 
+#: Example template to test against. Previously used within test like::
+#:   mocker.patch.object(template_checker.db, "get_template", return_value=mock_template)
+#:
+#: but this this leaks to other tests!?
+#: https://github.com/pytest-dev/pytest/pull/8276/files
+
+MOCK_TEMPLATE = {
+    "Project": "Brain^wpc-8620",
+    "SequenceName": "HabitTask",
+    "TR": "1300",
+    "TE": "30",
+    "FA": "60",
+    "iPAT": "GRAPPA",
+    "Comments": "Unaliased MB3/PE4/LB SENSE1",
+    # Other relevant fields can be added as well if seen as necessary
+}
 
 @pytest.fixture
 def db():
@@ -15,7 +31,20 @@ def db():
     mem_db = DBQuery(sqlite3.connect(":memory:"))
     with open("schema.sql") as f:
         _ = [mem_db.sql.execute(c) for c in f.read().split(";")]
-    mem_db.sql.commit()
+    # create template table. also see ../make_template_by_count.sql
+    mem_db.sql.execute("""
+      create table template_by_count (
+          n int, Project text, SequenceName text,
+          param_id int, first text, last text)""")
+    vals = [x for x in MOCK_TEMPLATE.values()]
+    cols = ",".join(MOCK_TEMPLATE.keys())
+    qs = ",".join(["?" for x in vals])
+    sql = f"INSERT INTO acq_param ({cols}) VALUES ({qs})"
+    mem_db.sql.execute(sql, vals)
+    sql = "INSERT INTO template_by_count (Project, SequenceName, param_id)" + \
+          f"VALUES ('{MOCK_TEMPLATE['Project']}', '{MOCK_TEMPLATE['SequenceName']}', 1)"
+    mem_db.sql.execute(sql)
+
     return mem_db
 
 
@@ -86,7 +115,6 @@ def test_find_acquisitions_since(db):
             "INSERT INTO acq (param_id, AcqTime, AcqDate) VALUES (?, ?, ?)",
             (data["param_id"], data["AcqTime"], data["AcqDate"]),
         )
-    db.sql.commit()
 
     # Test with yesterday's date (should return today's data)
     results_yesterday = db.find_acquisitions_since(yesterday)
@@ -113,27 +141,31 @@ def test_find_acquisitions_since(db):
 
 
 @pytest.fixture
-def template_checker():
-    return TemplateChecker()
+def template_checker(db):
+    return TemplateChecker(db)
 
 
-def test_check_row(template_checker, mocker):
-    # Mock the template return by DBQuery.get_template
-    mock_template = {
-        "Project": "Brain^wpc-8620",
-        "SequenceName": "HabitTask",
-        "TR": "1300",
+def test_check_header_notemplate(template_checker):
+    """
+    No existing template? assume conforms.
+    """
+    test_row = {
+        "Project": "Brain^wpc-DNE",
+        "SequenceName": "NoSequence",
+        "TR": "1301",
         "TE": "30",
         "FA": "60",
         "iPAT": "GRAPPA",
         "Comments": "Unaliased MB3/PE4/LB SENSE1",
-        # Other relevant fields can be added as well if seen as necessary
     }
+    result = template_checker.check_header(test_row)
+    assert result['errors'] == {}
+    assert result['conforms']
 
-    # Mock the get_template method to return the mock_template
-    mocker.patch.object(template_checker.db, "get_template", return_value=mock_template)
-
-    # Example row from SQL query with some values differing from the template
+def test_check_header(template_checker):
+    """
+    Example row from SQL query with some values differing from the template
+    """
     test_row = {
         "Project": "Brain^wpc-8620",
         "SequenceName": "HabitTask",
@@ -145,7 +177,7 @@ def test_check_row(template_checker, mocker):
     }
 
     # Run the check_row function
-    result: CheckResult = template_checker.check_row(test_row)
+    result: CheckResult = template_checker.check_header(test_row)
 
     # Expected result
     expected_errors = {
@@ -154,11 +186,11 @@ def test_check_row(template_checker, mocker):
 
     # Assertions
     assert result["conforms"] == False  # Should not conform due to mismatch in "TR"
-    assert result["errors"] == expected_errors
+    assert result["errors"]["TR"] == expected_errors["TR"]
     assert result["input"] == test_row
-    assert result["template"] == mock_template
+    assert result["template"]["TR"] == MOCK_TEMPLATE["TR"]
 
-    # Check that get_template was called with the correct arguments
-    template_checker.db.get_template.assert_called_once_with(
-        "Brain^wpc-8620", "HabitTask"
-    )
+def test_check_header_matches(db, template_checker):
+    result: CheckResult = template_checker.check_header(MOCK_TEMPLATE)
+    assert result["conforms"] == True
+    assert result["errors"] == {}

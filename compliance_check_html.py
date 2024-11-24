@@ -1,6 +1,6 @@
 from jinja2 import Template
 
-from template_checker import CheckResult, TemplateChecker
+from template_checker import CheckResult
 
 
 def load_template(template_path: str) -> Template:
