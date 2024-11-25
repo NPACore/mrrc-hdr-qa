@@ -39,8 +39,8 @@ def find_errors(template: TagValues, current_hdr: TagValues) -> dict[str, ErrorC
     """
     errors = {}
     for k in DBQuery.CONSTS:
-        t_k = template.get(k, "0")
-        h_k = current_hdr.get(k, "0")
+        t_k = template.get(k, "null")
+        h_k = current_hdr.get(k, "null")
 
         # TODO: more checks for specific headers
         #: TR is in milliseconds. no need to keep decimals precision
@@ -66,11 +66,13 @@ class TemplateChecker:
     read a dicom file and report if it conforms to the expected template
     """
 
-    def __init__(self):
+    def __init__(self, db=None):
         """
         db connection and tag reader (from taglist.txt)
+        :param db: sql connection passed on to :py:class:`DBQuery`.
+            ``None`` (default) is local sqlite3.
         """
-        self.db = DBQuery()
+        self.db = DBQuery(db)
         self.reader = DicomTagReader()
 
     def check_file(self, dcm_path) -> CheckResult:

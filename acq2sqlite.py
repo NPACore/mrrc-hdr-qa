@@ -15,6 +15,19 @@ from dcmmeta2tsv import NULLVAL, TagValues
 logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
 
 
+def none_to_null(row: Optional[sqlite3.Row]):
+    """
+    Template should match get_header. This changes all ``None``s to ``"null"``
+    :param row: single row from a sqlite query (likely :py:func:`get_template`)
+    """
+    if not row:
+        return row
+    res = {}
+    for k in row.keys():
+        res[k] = row[k] if row[k] else NULLVAL.value
+    return res
+
+
 def column_names():
     """
     These names match what's used by dcmmeta2tsv.py and 00_build_db.bash
@@ -289,6 +302,7 @@ class DBQuery:
             (pname, seqname),
         )
         res = cur.fetchone()
+        res = none_to_null(res)
         logging.debug("found template: %s", res)
         return res
 

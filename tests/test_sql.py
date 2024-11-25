@@ -6,7 +6,7 @@ import pytest
 
 from acq2sqlite import DBQuery
 from dcmmeta2tsv import DicomTagReader, TagDicts
-from template_checker import TemplateChecker, CheckResult
+from template_checker import CheckResult, TemplateChecker
 
 #: Example template to test against. Previously used within test like::
 #:   mocker.patch.object(template_checker.db, "get_template", return_value=mock_template)
@@ -25,6 +25,7 @@ MOCK_TEMPLATE = {
     # Other relevant fields can be added as well if seen as necessary
 }
 
+
 @pytest.fixture
 def db():
     """create an in memory database handler"""
@@ -32,17 +33,21 @@ def db():
     with open("schema.sql") as f:
         _ = [mem_db.sql.execute(c) for c in f.read().split(";")]
     # create template table. also see ../make_template_by_count.sql
-    mem_db.sql.execute("""
+    mem_db.sql.execute(
+        """
       create table template_by_count (
           n int, Project text, SequenceName text,
-          param_id int, first text, last text)""")
+          param_id int, first text, last text)"""
+    )
     vals = [x for x in MOCK_TEMPLATE.values()]
     cols = ",".join(MOCK_TEMPLATE.keys())
     qs = ",".join(["?" for x in vals])
     sql = f"INSERT INTO acq_param ({cols}) VALUES ({qs})"
     mem_db.sql.execute(sql, vals)
-    sql = "INSERT INTO template_by_count (Project, SequenceName, param_id)" + \
-          f"VALUES ('{MOCK_TEMPLATE['Project']}', '{MOCK_TEMPLATE['SequenceName']}', 1)"
+    sql = (
+        "INSERT INTO template_by_count (Project, SequenceName, param_id)"
+        + f"VALUES ('{MOCK_TEMPLATE['Project']}', '{MOCK_TEMPLATE['SequenceName']}', 1)"
+    )
     mem_db.sql.execute(sql)
 
     return mem_db
@@ -142,7 +147,7 @@ def test_find_acquisitions_since(db):
 
 @pytest.fixture
 def template_checker(db):
-    return TemplateChecker(db)
+    return TemplateChecker(db.sql)
 
 
 def test_check_header_notemplate(template_checker):
@@ -159,8 +164,9 @@ def test_check_header_notemplate(template_checker):
         "Comments": "Unaliased MB3/PE4/LB SENSE1",
     }
     result = template_checker.check_header(test_row)
-    assert result['errors'] == {}
-    assert result['conforms']
+    assert result["errors"] == {}
+    assert result["conforms"]
+
 
 def test_check_header(template_checker):
     """
@@ -190,7 +196,8 @@ def test_check_header(template_checker):
     assert result["input"] == test_row
     assert result["template"]["TR"] == MOCK_TEMPLATE["TR"]
 
-def test_check_header_matches(db, template_checker):
+
+def test_check_header_matches(template_checker):
     result: CheckResult = template_checker.check_header(MOCK_TEMPLATE)
-    assert result["conforms"] == True
     assert result["errors"] == {}
+    assert result["conforms"] == True

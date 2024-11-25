@@ -34,7 +34,7 @@ docs/_static/mrqart/main.css: static/main.css
 ##
 
 .lint: $(wildcard *.py) $(wildcard sphinx/*.rst) | venv-dev
-	$(source_venv) && black . > .lint && isort . >> .lint && codespell -w >> .lint
+	$(source_venv) && black . > .lint && isort --skip-gitignore . >> .lint && codespell -w >> .lint
 
 test: .test.doctest .test.pytest
 .test.doctest: change_header.py acq2sqlite.py dcmmeta2tsv.py | venv-program venv-dev  #$(wildcard *py)
