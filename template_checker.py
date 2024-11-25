@@ -8,6 +8,10 @@ from acq2sqlite import DBQuery
 from dcmmeta2tsv import DicomTagReader, TagValues
 
 ErrorCompare = TypedDict("ErrorCompare", {"have": str, "expect": str})
+#: * ``conforms``: false when a parameter between input and template mismatch
+#: * ``input``: all parameters of an input dicom header
+#: * ``template``: all the parameters of a template (matching Study, SeriesName)
+#: * ``errors``: mismatched_param: ``{'have':...,'expect':...}``
 CheckResult = TypedDict(
     "CheckResult",
     {
