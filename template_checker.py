@@ -7,12 +7,17 @@ from typing import TypedDict
 from acq2sqlite import DBQuery
 from dcmmeta2tsv import DicomTagReader, TagValues
 
+#: Dictonary for mismatches in input (``have`` key) and template (``expect`` key)
 ErrorCompare = TypedDict("ErrorCompare", {"have": str, "expect": str})
 
-#: * ``conforms``: false when a parameter between input and template mismatch
-#: * ``errors``: mismatched_param: ``{'have':...,'expect':...}``
-#: * ``input``: all parameters of an input dicom header
-#: * ``template``: all the parameters of a template (matching Study, SeriesName)
+#: * | ``conforms``: false when a :py:data:`acq2sqlite.DBQuery.CONSTS`
+#:   | template-parameter between ``input`` and ``template`` mismatch
+#: * | ``errors``: nested dict of {``mismatched_param``: ``{'have':...,'expect':...}}``
+#:     (parameter keyed dictionary with :py:class:`ErrorCompare` values)
+#: * | ``input``: dict of all parameters of an input dicom header
+#:   | (:py:class:`dcmmeta2tsv.TagValues`)
+#: * | ``template``: all the parameters of a template (matching Study, SeriesName)
+#:   | Also a :py:class:`dcmmeta2tsv.TagValues`
 #:
 #: Here's an example of :py:class:`CheckResult` datastructure in html/javascript
 #: on the `static debug-enabled page <../_static/mrqart/index.html>`_
