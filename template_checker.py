@@ -7,7 +7,7 @@ from typing import TypedDict
 from acq2sqlite import DBQuery
 from dcmmeta2tsv import DicomTagReader, TagValues
 
-#: Dictonary for mismatches in input (``have`` key) and template (``expect`` key)
+#: Dictionary for mismatches in input (``have`` key) and template (``expect`` key)
 ErrorCompare = TypedDict("ErrorCompare", {"have": str, "expect": str})
 
 #: * | ``conforms``: false when a :py:data:`acq2sqlite.DBQuery.CONSTS`
