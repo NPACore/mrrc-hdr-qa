@@ -29,6 +29,21 @@ Code
 Overview
 --------
 
+MRQART
+++++++
+MR Quality Assurance in (near) Real Time. See see `static debug-enabled page <_static/mrqart/index.html>`_ for a demonstration. Full toolchain uses
+
+#. Samba server receives files from scanner (iceconfig)
+#. :py:func:`mrqart.main` initializes an inotify watcher
+#. New dcm files parsed with :py:func:`dcmmeta2tsv.DicomTagReader.read_dicom_tags` 
+#. Headers compared to template :py:func:`template_checker.TemplateChecker.check_header`
+#. Dicom vs template comparisons is sent to the web browser via web sockets 
+
+    * socket and http server managed by `mrqart`
+    * javascript in ``static/index.html`` provides client websockets ingest and styling
+
+
+.. image:: ../sphinx/imgs/mrqart-browserUI_20241124.png
 
 Template
 ++++++++
