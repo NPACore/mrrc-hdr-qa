@@ -24,6 +24,7 @@ Code
    change_header
    template_checker
    compliance_check_html
+   mrrc_dbupdate
 
 
 Overview

@@ -17,3 +17,4 @@ templates.tsv
 .test.*
 *.sw[op]
 creds/
+log/
