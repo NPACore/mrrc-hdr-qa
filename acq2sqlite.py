@@ -166,7 +166,11 @@ class DBQuery:
         cur = self.sql.execute(self.find_acq, acq_search_vals)
         acq = cur.fetchone()
         if acq:
-            logging.info("have acq %s %s", acq[0], acq_search_vals)
+            logging.info(
+                "check_acq: already have time, subj, seriesnum '%s' in row %s",
+                acq_search_vals,
+                acq[0],
+            )
             return True
         return False
 
@@ -339,7 +343,12 @@ class DBQuery:
         # logging.debug("search for %s", project)
         cur = self.sql.execute(query, (project,))
         res = cur.fetchone()
-        return res["timestamp"]
+        # '20241108 124648.795000
+        tstamp = res["timestamp"]
+        if tstamp:
+            tstamp = datetime.strptime(tstamp, "%Y%m%d %H%M%S.%f")
+
+        return tstamp
 
 
 def have_pipe_data():

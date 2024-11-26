@@ -2,8 +2,11 @@
 """
 Add newer scans to DB
 """
+import logging
 import os
 import re
+import subprocess
+from datetime import timedelta
 from glob import glob
 
 import acq2sqlite
@@ -31,10 +34,60 @@ def is_project(pdir: str) -> bool:
     return False
 
 
+def find_first_dicoms(session_root: str):
+    first_dicoms = []
+    if not os.path.isdir(session_root):
+        raise Exception(f"{session_root} is not a directory!")
+    for seqdir in glob(os.path.join(session_root, "*/*/")):
+        if not os.path.isdir(seqdir) or re.search("PhysioLog|PhoenixZIPReport", seqdir):
+            continue
+        findcmd = f"find '{seqdir}' -maxdepth 1 -type f \( -iname '*.dcm' -or -iname 'MR.*' -or -iname '*.IMA' \) -print -quit"
+        dcm = subprocess.check_output(findcmd, shell=True).decode("utf-8").strip()
+        if dcm:
+            logging.debug("found first dcm '%s'", dcm)
+            first_dicoms.append(dcm)
+        else:
+            logging.warning("no dicoms found in %s", seqdir)
+    return first_dicoms
+
+
 db = acq2sqlite.DBQuery()
+dtr = dcmmeta2tsv.DicomTagReader()
+VERYRECENT = db.most_recent()
 for pdir in glob("/disk/mace2/scan_data/W*"):
     if not is_project(pdir):
         next
     project = os.path.basename(pdir)
     recent = db.most_recent("%" + project)
-    print(f"project:'{project}'; res='{recent}'")
+
+    #: if no data from any other pass, use the most recent DB pass as time to check
+    #: this will be a problem if this script isn't used to update and a existing folder is updated inbetween runs
+    if not recent or recent == "None":
+        recent = VERYRECENT
+
+    #: sequence time is older than folder copy to gyrus time
+    #: reset time to midnight and go one day ahead
+    nextday = recent.date() + timedelta(days=1)
+    newer = f"-newermt '{nextday}'"
+
+    cmd = f"find '{pdir}' -maxdepth 1 -mindepth 1 {newer} -type d -print0"
+    res = subprocess.check_output(cmd, shell=True)
+    newsessions = res.decode("utf-8").split("\0")[0:-1]
+    logging.info(
+        f"project:'{project}'; res='{recent}'; search for {newer}: {len(newsessions)}"
+    )
+    for ses in newsessions:
+        acq_dicoms = find_first_dicoms(ses)
+        logging.info("ses '%s' has %d dicoms found", ses, len(acq_dicoms))
+        for acq in acq_dicoms:
+            logging.debug("processing first dcm from newer acq '%s'", acq)
+            if not acq or not os.path.isfile(acq):
+                logging.warning("%s bad acq file '%s'", ses, acq)
+                continue
+            all_tags = dtr.read_dicom_tags(acq)
+            if os.environ.get("DRYRUN"):
+                logging.info(all_tags)
+            else:
+                db.dict_to_db_row(all_tags)
+
+    db.sql.commit()
