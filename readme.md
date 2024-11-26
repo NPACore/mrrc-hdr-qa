@@ -12,7 +12,12 @@ See
 
  * build sqlite db of all acquisitions with subset of parameters
  * use db summary to pull out "ideal template"
- * check new sessions' acquisitions against template to alert
+ * check new sessions' acquisitions against template to alert via cron
+
+```
+#m  h  dom mon dow   command
+30  0    *   *   *   /home/npac/src/mrrc-hdr-qa/02_update_db.sh
+```
 
 ## Notes
  * "Sequence Name(0018,0024)" called "SequenceType" in [`taglist.txt`](./taglist.txt) is different per diffusion dcm (like  `ep_b5#1`..`ep_b1540#27`)
