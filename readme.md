@@ -38,6 +38,15 @@ MR QA in Real Time (python port)
 Use `show_debug` in a console to get a `simdata` textarea to send mock data.
 ![](sphinx/imgs/show_debug.png)
 
+### Extentions/plugins
+
+MRQART can be extended to support
+
+ * motion/framewise displacement (FD) measure reporting a la FIRRM 
+ * dynamic EPI acquisition angle selection
+ * ntp (accurate) clock sync with trigger pulse (very limited analog to https://github.com/ReproNim/reprostim)
+
+
 ## Prior Art
  * mrQA
  * sister project https://github.com/NPACore/mrqart/
