@@ -1,0 +1,27 @@
+﻿template\_checker
+=================
+
+.. automodule:: template_checker
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      ErrorCompare
+      CheckResult
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      find_errors
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CheckResult
+      ErrorCompare
+      TemplateChecker
+   
