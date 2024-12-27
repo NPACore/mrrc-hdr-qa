@@ -86,7 +86,9 @@ function add_new_series(data) {
 
 /* connects socket to main dispatcher `recievedMessages` */
 function update_via_ws() {
-  const ws = new WebSocket("ws://127.0.0.1:5000/");
+  const host = "ws://" + location.hostname  + ":5000/";
+  console.log("host",host)
+  const ws = new WebSocket(host);
   ws.addEventListener('message', receivedMessage);
 }
 

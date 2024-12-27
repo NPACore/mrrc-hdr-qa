@@ -14,6 +14,7 @@ import aionotify
 from tornado.httpserver import HTTPServer
 from tornado.web import Application, RequestHandler
 from websockets.asyncio.server import broadcast, serve
+import glob
 
 from template_checker import TemplateChecker
 
@@ -170,6 +171,7 @@ async def monitor_dirs(watcher, dcm_checker):
                 current_ses = STATE.get(hdr["Station"])
 
             # only send to browser if new
+            # TODO: what if browser started up rate
             if current_ses.update_isnew(hdr["SeriesNumber"], hdr["SequenceName"]):
                 logging.debug("first time seeing  %s", current_ses)
                 msg = {
@@ -197,25 +199,31 @@ async def monitor_dirs(watcher, dcm_checker):
             # broadcast(WS_CONNECTIONS, f"non-dicom file: {event}")
 
 
-async def main(path):
+async def main(paths):
     """
     Run all services on different threads.
     HTTP and inotify are forked. Websocket holds the main thread.
     """
     dcm_checker = TemplateChecker()
     watcher = aionotify.Watcher()
-    watcher.watch(
-        path=path,
-        flags=FOLLOW_FLAGS,
-        # NB. prev had just aionotify.Flags.CREATE but that triggers too early (partial file)
-    )  # aionotify.Flags.MODIFY|aionotify.Flags.CREATE |aionotify.Flags.DELETE)
+    for path in paths:
+        logging.info("watching %s", path)
+        watcher.watch(
+            path=path,
+            flags=FOLLOW_FLAGS,
+            # NB. prev had just aionotify.Flags.CREATE but that triggers too early (partial file)
+        )  # aionotify.Flags.MODIFY|aionotify.Flags.CREATE |aionotify.Flags.DELETE)
+        for sub_path in glob.glob(path+"/*/"):
+            logging.info("trying to add %s", sub_path)
+            if os.path.isdir(sub_path):
+                watcher.watch( path=sub_path, flags=FOLLOW_FLAGS)
     asyncio.create_task(monitor_dirs(watcher, dcm_checker))
 
     http_run()
 
     # while True:
     #    await asyncio.sleep(.1)
-    async with serve(track_ws, "localhost", WS_PORT):
+    async with serve(track_ws, "0.0.0.0", WS_PORT):
         await asyncio.get_running_loop().create_future()  # run forever
 
     watcher.close()
@@ -227,13 +235,14 @@ if __name__ == "__main__":
 
     # TODO: use argparser?
     if len(sys.argv) > 1:
-        watch_dir = os.path.abspath(sys.argv[1])
+        watch_dirs = [os.path.abspath(x) for x in sys.argv[1:]]
     else:
-        watch_dir = "/data/dicomstream/20241119.testMRQARAT.testMRQARAT/"
+        watch_dirs = ["/data/dicomstream/20241119.testMRQARAT.testMRQARAT/"]
 
-    if not os.path.isdir(watch_dir):
+    if not os.path.isdir(watch_dirs[0]):
         raise Exception(f"{watch_dir} is not a directory!")
 
     # TODO: watch all sub directories?
     # watch_dir = os.path.join( FILEDIR, ...)
-    asyncio.run(main(watch_dir))
+    print(watch_dirs)
+    asyncio.run(main(watch_dirs))
