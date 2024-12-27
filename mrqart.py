@@ -198,6 +198,7 @@ async def main(paths):
     dcm_checker = TemplateChecker()
     watcher = aionotify.Watcher()
     for path in paths:
+        logging.info(f"Watching {path}")
         watcher.watch(
             path=path, flags=FOLLOW_FLAGS
             # NB. prev had just aionotify.Flags.CREATE but that triggers too early (partial file)

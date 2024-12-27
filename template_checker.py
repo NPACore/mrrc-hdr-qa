@@ -80,19 +80,20 @@ class TemplateChecker:
         :returns: conforming status, errors, and comparison information
         """
         template = self.db.get_template(hdr["Project"], hdr["SequenceName"])
-        template = dict(template)
 
         # no template, no errors
         if template:
+            template = dict(template)
             errors = find_errors(template, hdr)
         else:
+            template = {}
             errors = {}
 
         return {
             "conforms": not errors,
             "errors": errors,
             "input": hdr,
-            "template": dict(template),
+            "template": template,
         
         }
     def check_row(self, row: dict) -> CheckResult:
