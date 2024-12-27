@@ -5,6 +5,7 @@ Serve javascript over HTTP for receiving websocket messages in a browser.
 """
 
 import asyncio
+import glob
 import json
 import logging
 import os
@@ -14,7 +15,6 @@ import aionotify
 from tornado.httpserver import HTTPServer
 from tornado.web import Application, RequestHandler
 from websockets.asyncio.server import broadcast, serve
-import glob
 
 from template_checker import TemplateChecker
 
@@ -213,10 +213,10 @@ async def main(paths):
             flags=FOLLOW_FLAGS,
             # NB. prev had just aionotify.Flags.CREATE but that triggers too early (partial file)
         )  # aionotify.Flags.MODIFY|aionotify.Flags.CREATE |aionotify.Flags.DELETE)
-        for sub_path in glob.glob(path+"/*/"):
+        for sub_path in glob.glob(path + "/*/"):
             logging.info("trying to add %s", sub_path)
             if os.path.isdir(sub_path):
-                watcher.watch( path=sub_path, flags=FOLLOW_FLAGS)
+                watcher.watch(path=sub_path, flags=FOLLOW_FLAGS)
     asyncio.create_task(monitor_dirs(watcher, dcm_checker))
 
     http_run()
