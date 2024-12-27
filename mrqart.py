@@ -177,7 +177,9 @@ async def monitor_dirs(watcher, dcm_checker):
                        'type': 'update',
                        'content': current_ses.count}
                 broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
-                logging.debug("already have %s", STATE[seq["Station"]])
+                station = hdr.get("Station")
+                state = STATE.get(station)
+                logging.debug("already have station %s state %s", station, state)
 
             # TODO: if epi maybe try plotting motion?
             # async alignment
@@ -188,17 +190,18 @@ async def monitor_dirs(watcher, dcm_checker):
             #broadcast(WS_CONNECTIONS, f"non-dicom file: {event}")
 
 
-async def main(path):
+async def main(paths):
     """
     Run all services on different threads.
     HTTP and inotify are forked. Websocket holds the main thread.
     """
     dcm_checker = TemplateChecker()
     watcher = aionotify.Watcher()
-    watcher.watch(
-        path=path, flags=FOLLOW_FLAGS
-        # NB. prev had just aionotify.Flags.CREATE but that triggers too early (partial file)
-    )  # aionotify.Flags.MODIFY|aionotify.Flags.CREATE |aionotify.Flags.DELETE)
+    for path in paths:
+        watcher.watch(
+            path=path, flags=FOLLOW_FLAGS
+            # NB. prev had just aionotify.Flags.CREATE but that triggers too early (partial file)
+        )  # aionotify.Flags.MODIFY|aionotify.Flags.CREATE |aionotify.Flags.DELETE)
     asyncio.create_task(monitor_dirs(watcher, dcm_checker))
 
     http_run()
@@ -215,5 +218,14 @@ async def main(path):
 if __name__ == "__main__":
     # TODO: watch based on input argument
     # TODO: watch all sub directories?
-    watch_dir = os.path.join(FILEDIR, "/data/dicomstream/20241119.testMRQARAT.testMRQARAT/")
-    asyncio.run(main(watch_dir))
+    import argparse
+    parser = argparse.ArgumentParser(description="Watch folders for dicoms, update server over websockets")
+    parser.add_argument(
+        "watch_directories",
+        nargs="+",
+        help="List of directories to process.",
+        type=str
+    )
+    args = parser.parse_args()
+    # eg. "/data/dicomstream/20241119.testMRQARAT.testMRQARAT/"
+    asyncio.run(main(args.watch_directories))
