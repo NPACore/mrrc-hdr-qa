@@ -24,6 +24,7 @@ Sequence = str
 
 class CurSeqStation:
     "Current Sequence settings at a MR Scanner station"
+
     series_seqname: str
     station: str
     count: int
