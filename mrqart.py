@@ -82,6 +82,8 @@ class WebServer(Application):
     def __init__(self):
         handlers = [
             (r"/", HttpIndex),
+            # TODO(20250204): add GetState
+            # r"/state", GetState, # json state response
         ]
         settings = dict(
             static_path=os.path.join(FILEDIR, "static"),
@@ -240,7 +242,7 @@ if __name__ == "__main__":
         watch_dirs = ["/data/dicomstream/20241119.testMRQARAT.testMRQARAT/"]
 
     if not os.path.isdir(watch_dirs[0]):
-        raise Exception(f"{watch_dir} is not a directory!")
+        raise Exception(f"{watch_dirs} is not a directory!")
 
     # TODO: watch all sub directories?
     # watch_dir = os.path.join( FILEDIR, ...)

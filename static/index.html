@@ -14,6 +14,8 @@ function receivedMessage(msg) {
    if(data['type'] == 'new'){
       add_new_series(data['content'])
    }
+   // TODO(20250204): if 'update' but don't have state
+   // call to server and update UI
 }
 
 // new dicom data into table
