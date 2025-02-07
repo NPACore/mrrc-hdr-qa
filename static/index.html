@@ -11,12 +11,65 @@ function receivedMessage(msg) {
    //console.log("new message!", msg);
    data = JSON.parse(msg.data)
    console.log("new message data:", data);
+   
    if(data['type'] == 'new'){
       add_new_series(data['content'])
    }
-   // TODO(20250204): if 'update' but don't have state
-   // call to server and update UI
+   
+   if(data['type'] == 'update') {
+      console.log("Received update message:", data);
+
+      // If state is empty, fetch it
+      if (document.getElementById("stations").innerHTML == "waiting for scanner") {
+      	console.warn("State missing, fetching...");
+	fetchState();
+      }
+   }
+
 }
+
+// Fetch the current scanner state from /state and update UI
+function fetchState() {
+	fetch("/state")
+		.then(response => response.json())
+		.then(data => {
+		   console.log("Fetched state:", data);
+			updateUIFromState(data);
+		})
+		.catch(err => console.error("Error fetching state:", err));
+
+}
+
+// Update UI with the fetched state
+function updateUIFromState(stateData) {
+	const stationList = document.getElementById("stations");
+	stationList.innerHTML = ""; // Clear previous state
+
+	for (const [station, session] of Object.entries(stateData)) {
+		let el = document.createElement("li");
+		el.textContent = `${station}: ${session}`;
+		stationList.appendChild(el);
+	}
+
+}
+
+// Periodically refresh state every 60 seconds
+setInterval(fetchState, 60000);
+
+// Fetch state on page load
+window.onload = function() {
+	update_via_ws();
+	fetchState();
+}
+
+// Connects socket to main dispatcher `receivedMessage` 
+function update_via_ws() {
+	const host = "ws://" + location.hostname + ":5000/";
+	console.log("WebSocket connecting to:", host);
+	const ws = new WebSocket(host);
+	ws.addEventListener('message', receivedMessage);
+}
+
 
 // new dicom data into table
 function mktable(data){
