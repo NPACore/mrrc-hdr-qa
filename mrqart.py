@@ -84,7 +84,7 @@ class WebServer(Application):
         handlers = [
             (r"/", HttpIndex),
             # TODO(20250204): add GetState
-            (r"/state", GetState)
+            (r"/state", GetState),
         ]
         settings = dict(
             static_path=os.path.join(FILEDIR, "static"),
@@ -92,11 +92,13 @@ class WebServer(Application):
         )
         super().__init__(handlers, **settings)
 
+
 class GetState(RequestHandler):
     """Return the current state as JSON"""
 
     async def get(self):
         self.write(json.dumps({k: repr(v) for k, v in STATE.items()}))
+
 
 class HttpIndex(RequestHandler):
     """Handle index page request"""
@@ -156,21 +158,20 @@ async def monitor_dirs(watcher, dcm_checker):
     await watcher.setup()
     logging.debug("watching for new files")
     while True:
-        
-        # event = await asyncio.wait_for(watcher.get_event(), timeout=?) 
+
+        # event = await asyncio.wait_for(watcher.get_event(), timeout=?)
 
         event = await watcher.get_event()
-        
+
         # Refresh state every 60 seconds if no new event is found
-        if not event: 
+        if not event:
             logging.info("Refreshing state...")
             STATE.clear()
-            await asyncio.sleep(60) # 60 is the first attempt, we will see what works
+            await asyncio.sleep(60)  # 60 is the first attempt, we will see what works
             continue
 
         logging.debug("got event %s", event)
         file = os.path.join(event.alias, event.name)
-        
 
         if os.path.isdir(file):
             watcher.watch(path=file, flags=FOLLOW_FLAGS)
@@ -179,7 +180,7 @@ async def monitor_dirs(watcher, dcm_checker):
         if event.flags == aionotify.Flags.CREATE:
             logging.debug("file created but waiting for WRITE finish")
             continue
-        
+
         # Event(flags=256, cookie=0, name='a', alias='/home/foranw/src/work/mrrc-hdr-qa/./sim')
         if re.search("^MR.|.dcm$|.IMA$", event.name):
 
