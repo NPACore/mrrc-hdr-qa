@@ -235,17 +235,16 @@ async def main(paths):
 
 if __name__ == "__main__":
     import sys
+    import argparse
 
-    # TODO: use argparser?
-    if len(sys.argv) > 1:
-        watch_dirs = [os.path.abspath(x) for x in sys.argv[1:]]
-    else:
-        watch_dirs = ["/data/dicomstream/20241119.testMRQARAT.testMRQARAT/"]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--watch', required=True, nargs='+', help='One or more directory paths to watch')
+    #: port is useful to tweak, espcially for debugging
+    parser.add_argument('-p', '--port', type=int, default=8080, help='HTTP port (not websocket port) ')
+    args = parser.parse_args()
 
-    if not os.path.isdir(watch_dirs[0]):
-        raise Exception(f"{watch_dirs} is not a directory!")
 
-    # TODO: watch all sub directories?
-    # watch_dir = os.path.join( FILEDIR, ...)
-    print(watch_dirs)
-    asyncio.run(main(watch_dirs))
+    if not os.path.isdir(args.watch[0]):
+        raise Exception(f"{args.watch} is not a directory!")
+    print(args)
+    asyncio.run(main(args.watch))
