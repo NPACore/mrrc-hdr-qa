@@ -79,9 +79,6 @@ function updateUIFromState(stateData) {
     }
 }
 
-// Periodically refresh state every 60 seconds
-setInterval(fetchState, 60000);
-
 // Fetch state on page load
 window.onload = function() {
 	update_via_ws();
