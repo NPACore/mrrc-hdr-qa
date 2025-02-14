@@ -179,14 +179,6 @@ function add_new_series(data) {
     station.appendChild(el);
 }
 
-/* connects socket to main dispatcher `recievedMessages` */
-function update_via_ws() {
-  const host = "ws://" + location.hostname  + ":5000/";
-  console.log("host",host)
-  const ws = new WebSocket(host);
-  ws.addEventListener('message', receivedMessage);
-}
-
 // TODO: parse url to set
 function select_station(){
    const cur_station = document.getElementById("select_station").value;
@@ -208,8 +200,6 @@ function simdata(){
    data = JSON.parse(data.value)
    add_new_series(data)
 }
-
-window.onload = update_via_ws;
 
 </script>
 
