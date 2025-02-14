@@ -166,6 +166,7 @@ async def monitor_dirs(watcher, dcm_checker):
         # Refresh state every 60 seconds if no new event is found
         if not event:
             logging.info("Refreshing state...")
+            logging.debug("STATE before clearing: %s", STATE)
             STATE.clear()
             await asyncio.sleep(60)  # 60 is the first attempt, we will see what works
             continue
@@ -188,6 +189,9 @@ async def monitor_dirs(watcher, dcm_checker):
             # and skip without having to read the header
             # not sure how we'd get station
             hdr = dcm_checker.reader.read_dicom_tags(file)
+
+            logging.debug("DICOM HEADER: %s", hdr)
+
             current_ses = STATE.get(hdr["Station"])
             if not current_ses:
                 STATE[hdr["Station"]] = CurSeqStation(hdr["Station"])

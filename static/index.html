@@ -8,49 +8,75 @@
 
  /* Main websocket data parser. dispatches base on message type */
 function receivedMessage(msg) {
-   //console.log("new message!", msg);
-   data = JSON.parse(msg.data)
-   console.log("new message data:", data);
-   
-   if(data['type'] == 'new'){
-      add_new_series(data['content'])
-   }
-   
-   if(data['type'] == 'update') {
-      console.log("Received update message:", data);
+    data = JSON.parse(msg.data);
+    console.log("new message data:", data);
 
-      // If state is empty, fetch it
-      if (document.getElementById("stations").innerHTML == "waiting for scanner") {
-      	console.warn("State missing, fetching...");
-	fetchState();
-      }
-   }
+    if (data['type'] == 'new') {
+        add_new_series(data['content']);
+    }
 
+    if (data['type'] == 'update') {
+        console.log("Received update message:", data);
+
+        // Always fetch state when receiving an update
+        console.warn("Fetching state after update...");
+        fetchState();
+    }
 }
 
 // Fetch the current scanner state from /state and update UI
 function fetchState() {
-	fetch("/state")
-		.then(response => response.json())
-		.then(data => {
-		   console.log("Fetched state:", data);
-			updateUIFromState(data);
-		})
-		.catch(err => console.error("Error fetching state:", err));
+    fetch("/state")
+        .then(response => response.json())
+        .then(data => {
+            console.log("Fetched state:", data);
 
+            if (Object.keys(data).length === 0) {
+                console.warn("Fetched empty state, retrying in 5 seconds...");
+                setTimeout(fetchState, 5000);
+            } else {
+                console.warn("Updating UI with fetched state...");
+                updateUIFromState(data);
+            }
+        })
+        .catch(err => {
+            console.error("Error fetching state:", err);
+            console.warn("Retrying state fetch in 5 seconds...");
+            setTimeout(fetchState, 5000);
+        });
 }
 
 // Update UI with the fetched state
 function updateUIFromState(stateData) {
-	const stationList = document.getElementById("stations");
-	stationList.innerHTML = ""; // Clear previous state
+    const stationList = document.getElementById("stations");
 
-	for (const [station, session] of Object.entries(stateData)) {
-		let el = document.createElement("li");
-		el.textContent = `${station}: ${session}`;
-		stationList.appendChild(el);
-	}
+    // Loop through all stations in the fetched state
+    for (const [station, session] of Object.entries(stateData)) {
+        let stationId = `station-${station}`;
+        let existingStation = document.getElementById(stationId);
 
+        // If the station entry doesn't exist, create it
+        if (!existingStation) {
+            existingStation = document.createElement("div");
+            existingStation.id = stationId;
+            stationList.appendChild(existingStation);
+        }
+
+        // Extract session details
+        let sessionParts = session.split(" ");
+        let seqNumber = sessionParts[1] || "Unknown";
+        let seqName = sessionParts.slice(2, -1).join(" ") || "Unknown";
+        let count = sessionParts[sessionParts.length - 1] || "0";
+
+        // Update the UI content (replace text instead of appending)
+        existingStation.innerHTML = `<strong>${station}:</strong> Seq ${seqNumber}, ${seqName} (Count: ${count})`;
+
+        // Ensure the compliance table remains visible
+        let complianceTable = document.querySelector(".compliance-table");
+        if (complianceTable) {
+            stationList.prepend(complianceTable);
+        }
+    }
 }
 
 // Periodically refresh state every 60 seconds
@@ -72,71 +98,85 @@ function update_via_ws() {
 
 
 // new dicom data into table
-function mktable(data){
+function mktable(data) {
     const keys = [
         "SequenceType", "Phase", "PED_major", "TR", "TE", "Matrix",
         "PixelResol", "FoV", "BWP", "BWPPE", "FA", "TA",
-        "iPAT", "Shims"]
+        "iPAT", "Shims"
+    ];
 
-   let table = "<table>";
-     /*Object.entries(data['input']).map(
-      ([k,v]) => `<tr><th>${k}</th><td class=` +
-                  ((k in data['errors'])?"no-coform":"conform") +
-                  `>${v}</td><td>${data['template'][k]}</td></tr>`) +
-      */
-    let rows = ["<th></th>", "<th>input</th>", "<th>template</th>"]
-    for(const k of keys){
-        conf_css = ((k in data['errors'])?"no-conform":"conform")
-        rows[0] += `<th class=${conf_css}>${k}</th>`;;
+    let table = document.querySelector(".compliance-table");
+    
+    // If table doesn't exist, create it
+    if (!table) {
+        table = document.createElement("table");
+        table.classList.add("compliance-table");
+        document.getElementById("stations").prepend(table);
+    }
+
+    let rows = ["<th></th>", "<th>input</th>", "<th>template</th>"];
+    for (const k of keys) {
+        let conf_css = (k in data['errors']) ? "no-conform" : "conform";
+        rows[0] += `<th class=${conf_css}>${k}</th>`;
         rows[1] += `<td class=${conf_css}>${data['input'][k]}</td>`;
         rows[2] += `<td class=${conf_css}>${data['template'][k]}</td>`;
     }
-    table += `<tr>${rows[0]}</tr>` +
-             `<tr>${rows[1]}</tr>` +
-             `<tr>${rows[2]}</tr>`;
-    table += "</table>";
-    return(table)
+
+    table.innerHTML = `<tr>${rows[0]}</tr><tr>${rows[1]}</tr><tr>${rows[2]}</tr>`;
 }
 
 /* what to do with type=="new" data: a dicom from a new sequence */
 function add_new_series(data) {
-   let el = document.createElement("li");
-   el.className = data['conforms']?'conform':'no-conform';
-   dcm_in =  data['input'];
-   errors = data['errors'];
-   let summary = `<span class=seqnum>${dcm_in['SeriesNumber']}</span> <span class=seqname>${dcm_in['SequenceName']}</span> <span class=projname>${dcm_in['Project']}</span>`;
-   //JSON.stringify(errors);
-   for(k of Object.keys(errors)){
-       summary += `<br>${k} should be <b>${errors[k]['expect']}</b> but have <i>${errors[k]['have']}</i>`
-   }
+    let el = document.createElement("li");
+    el.className = data['conforms'] ? 'conform' : 'no-conform';
 
-   const details_status = data['conforms']?'':'open';
-   let note = `<details ${details_status}><summary>${summary}</summary>`
+    let dcm_in = data['input'];
+    let errors = data['errors'];
 
-   note += "<br>" + mktable(data) + "</details>";
+    let summary = `<span class=seqnum>${dcm_in['SeriesNumber']}</span> 
+                   <span class=seqname>${dcm_in['SequenceName']}</span> 
+                   <span class=projname>${dcm_in['Project']}</span>`;
 
-   el.innerHTML=note;
+    for (let k of Object.keys(errors)) {
+        summary += `<br>${k} should be <b>${errors[k]['expect']}</b> 
+                    but have <i>${errors[k]['have']}</i>`;
+    }
 
-   // clear waiting
-   let seq = document.getElementById("stations");
-   if(seq.innerHTML == "waiting for scanner"){
-      seq.innerHTML = ""
-   }
+    const details_status = data['conforms'] ? '' : 'open';
+    let note = `<details ${details_status}>
+                   <summary>${summary}</summary>`;
 
-   // TODO: per scanner tab
-   const station_id = `station-${data["input"]["Station"]}`
-   let station = document.getElementById(station_id);
-   if(station === null){
-    // selection box as option
-    document.getElementById("select_station").innerHTML += `<option value="${station_id}">${data["input"]["Station"]}</option>`
+    // Replace table instead of appending multiple tables
+    let existingTable = document.querySelector(".compliance-table");
+    if (existingTable) {
+        existingTable.remove();
+    }
 
-    let newstat = document.createElement("ul");
-    newstat.id = station_id
-    seq.prepend(newstat);
-    station = newstat
-   }
+    note += "<br>" + mktable(data) + "</details>";
+    el.innerHTML = note;
 
-   station.prepend(el); //appendChild(el);
+    // Clear "waiting for scanner" text
+    let seq = document.getElementById("stations");
+    if (seq.innerHTML === "waiting for scanner") {
+        seq.innerHTML = "";
+    }
+
+    const station_id = `station-${dcm_in["Station"]}`;
+    let station = document.getElementById(station_id);
+
+    if (!station) {
+        // Add new station entry
+        document.getElementById("select_station").innerHTML += `<option value="${station_id}">${dcm_in["Station"]}</option>`;
+
+        let newStation = document.createElement("ul");
+        newStation.id = station_id;
+        seq.prepend(newStation);
+        station = newStation;
+    }
+
+    // Replace content instead of appending multiple times
+    station.innerHTML = "";  
+    station.appendChild(el);
 }
 
 /* connects socket to main dispatcher `recievedMessages` */
