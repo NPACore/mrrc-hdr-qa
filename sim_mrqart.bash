@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# rerun in readline wrapper for a nicer prompt if not already and is avaiable
+# rerun in readline wrapper for a nicer prompt if not already and is available
 if [[ -z "${IN_RLWRAP:-}" && -n "$(command -v rlwrap)" ]]; then
    export IN_RLWRAP=1
    echo "# relaunching with rlwrap"
