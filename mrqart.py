@@ -56,7 +56,7 @@ class CurSeqStation:
 #: Websocket port used to send updates to browser
 WS_PORT = 5000
 #: HTTP port used to serve static/index.html
-HTTP_PORT = 8080
+HTTP_PORT = 9090
 
 FOLLOW_FLAGS = aionotify.Flags.CLOSE_WRITE | aionotify.Flags.CREATE
 #: list of all web socket connections to broadcast to
@@ -84,13 +84,20 @@ class WebServer(Application):
         handlers = [
             (r"/", HttpIndex),
             # TODO(20250204): add GetState
-            # r"/state", GetState, # json state response
+            (r"/state", GetState),
         ]
         settings = dict(
             static_path=os.path.join(FILEDIR, "static"),
             debug=True,
         )
         super().__init__(handlers, **settings)
+
+
+class GetState(RequestHandler):
+    """Return the current state as JSON"""
+
+    async def get(self):
+        self.write(json.dumps({k: repr(v) for k, v in STATE.items()}))
 
 
 class HttpIndex(RequestHandler):
@@ -151,9 +158,22 @@ async def monitor_dirs(watcher, dcm_checker):
     await watcher.setup()
     logging.debug("watching for new files")
     while True:
+
+        # event = await asyncio.wait_for(watcher.get_event(), timeout=?)
+
         event = await watcher.get_event()
+
+        # Refresh state every 60 seconds if no new event is found
+        if not event:
+            logging.info("Refreshing state...")
+            logging.debug("STATE before clearing: %s", STATE)
+            STATE.clear()
+            await asyncio.sleep(60)  # 60 is the first attempt, we will see what works
+            continue
+
         logging.debug("got event %s", event)
         file = os.path.join(event.alias, event.name)
+
         if os.path.isdir(file):
             watcher.watch(path=file, flags=FOLLOW_FLAGS)
             logging.info("%s is a dir! following with %d", file, FOLLOW_FLAGS)
@@ -161,6 +181,7 @@ async def monitor_dirs(watcher, dcm_checker):
         if event.flags == aionotify.Flags.CREATE:
             logging.debug("file created but waiting for WRITE finish")
             continue
+
         # Event(flags=256, cookie=0, name='a', alias='/home/foranw/src/work/mrrc-hdr-qa/./sim')
         if re.search("^MR.|.dcm$|.IMA$", event.name):
 
@@ -168,6 +189,9 @@ async def monitor_dirs(watcher, dcm_checker):
             # and skip without having to read the header
             # not sure how we'd get station
             hdr = dcm_checker.reader.read_dicom_tags(file)
+
+            logging.debug("DICOM HEADER: %s", hdr)
+
             current_ses = STATE.get(hdr["Station"])
             if not current_ses:
                 STATE[hdr["Station"]] = CurSeqStation(hdr["Station"])
