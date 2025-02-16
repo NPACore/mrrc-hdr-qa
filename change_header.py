@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from itertools import chain
 from pathlib import Path
 from typing import List, Optional
+import re
 
 import pydicom
 
@@ -35,9 +36,16 @@ def change_tags(
     >>> ex.ProtocolName
     'newpname'
     """
-    all_dicoms = chain(dcm_dir.glob("MR*"), dcm_dir.glob("*IMA"), dcm_dir.glob("*dcm"))
+    # if given a single file, just rewrite that
+    if os.path.isfile(dcm_dir):
+        all_dicoms = [dcm_dir]
+    else:
+        # list comprehension so we can use len()
+        all_dicoms = [x for x in chain(dcm_dir.glob("MR*"), dcm_dir.glob("*IMA"), dcm_dir.glob("*dcm"))]
+
     ex_dcm = None
     for ex_dcm_file in all_dicoms:
+        print(ex_dcm_file)
 
         try:
             ex_dcm = pydicom.dcmread(ex_dcm_file)
@@ -52,13 +60,19 @@ def change_tags(
         if out_dir is None:
             return ex_dcm
 
-        new_file = os.path.join(out_dir, os.path.basename(ex_dcm_file))
+        if re.search(r'\.dcm$',os.path.basename(out_dir)) and len(all_dicoms) == 1:
+            print("# warning: output matches '.dcm' and only one input. assuming you're saving to a file")
+            new_file = out_dir
+        else:
+            new_file = os.path.join(out_dir, os.path.basename(ex_dcm_file))
         # assume if we have one, we have them all (leave loop at first existing)
         if os.path.exists(new_file):
+            print(f"# {new_file} already exists")
             return ex_dcm
 
         # and save out
-        os.makedirs(out_dir, exist_ok=True)
+        print(f"save to {new_file}")
+        os.makedirs(os.path.dirname(new_file), exist_ok=True)
         ex_dcm.save_as(new_file)
 
     return ex_dcm
@@ -171,24 +185,32 @@ def main_make_mods():
         + gen_anon()
     )
 
+    # change Series Number
+    new_series = [pydicom.DataElement(value="2", VR="IS", tag=(0x0020, 0x0011))]
     change_tags(
-        Path("example/dicom/11903_20221222/HabitTask_704x752.18/"),
-        new_tags_mod1,
-        Path("example/dicom/mod1/HabitTask/"),
+        Path("example_dicoms/RewardedAnti_good.dcm"),
+        new_tags_mod1 + new_series,
+        Path("example_dicoms/RewardedAnti_wrongTR.dcm"),
     )
 
-    new_tags_mod2 = (
-        [pydicom.DataElement(value="1300", VR="DS", tag=(0x0018, 0x0080))]
-        + gen_ids("mod2")
-        + gen_acqdates()
-        + gen_anon()
-    )
+    #change_tags(
+    #    Path("example/dicom/11903_20221222/HabitTask_704x752.18/"),
+    #    new_tags_mod1,
+    #    Path("example/dicom/mod1/HabitTask/"),
+    #)
 
-    change_tags(
-        Path("example/dicom/mod1/HabitTask/"),
-        new_tags_mod2,
-        Path("example/dicom/mod2/HabitTask/"),
-    )
+    #new_tags_mod2 = (
+    #    [pydicom.DataElement(value="1300", VR="DS", tag=(0x0018, 0x0080))]
+    #    + gen_ids("mod2")
+    #    + gen_acqdates()
+    #    + gen_anon()
+    #)
+
+    #change_tags(
+    #    Path("example/dicom/mod1/HabitTask/"),
+    #    new_tags_mod2,
+    #    Path("example/dicom/mod2/HabitTask/"),
+    #)
 
 
 if __name__ == "__main__":
