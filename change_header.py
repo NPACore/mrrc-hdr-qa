@@ -5,11 +5,11 @@ Modify DICOM header information to simulate failing QA.
 import logging
 import os
 import random
+import re
 from datetime import datetime, timedelta
 from itertools import chain
 from pathlib import Path
 from typing import List, Optional
-import re
 
 import pydicom
 
@@ -41,7 +41,12 @@ def change_tags(
         all_dicoms = [dcm_dir]
     else:
         # list comprehension so we can use len()
-        all_dicoms = [x for x in chain(dcm_dir.glob("MR*"), dcm_dir.glob("*IMA"), dcm_dir.glob("*dcm"))]
+        all_dicoms = [
+            x
+            for x in chain(
+                dcm_dir.glob("MR*"), dcm_dir.glob("*IMA"), dcm_dir.glob("*dcm")
+            )
+        ]
 
     ex_dcm = None
     for ex_dcm_file in all_dicoms:
@@ -60,8 +65,10 @@ def change_tags(
         if out_dir is None:
             return ex_dcm
 
-        if re.search(r'\.dcm$',os.path.basename(out_dir)) and len(all_dicoms) == 1:
-            print("# warning: output matches '.dcm' and only one input. assuming you're saving to a file")
+        if re.search(r"\.dcm$", os.path.basename(out_dir)) and len(all_dicoms) == 1:
+            print(
+                "# warning: output matches '.dcm' and only one input. assuming you're saving to a file"
+            )
             new_file = out_dir
         else:
             new_file = os.path.join(out_dir, os.path.basename(ex_dcm_file))
@@ -193,24 +200,24 @@ def main_make_mods():
         Path("example_dicoms/RewardedAnti_wrongTR.dcm"),
     )
 
-    #change_tags(
+    # change_tags(
     #    Path("example/dicom/11903_20221222/HabitTask_704x752.18/"),
     #    new_tags_mod1,
     #    Path("example/dicom/mod1/HabitTask/"),
-    #)
+    # )
 
-    #new_tags_mod2 = (
+    # new_tags_mod2 = (
     #    [pydicom.DataElement(value="1300", VR="DS", tag=(0x0018, 0x0080))]
     #    + gen_ids("mod2")
     #    + gen_acqdates()
     #    + gen_anon()
-    #)
+    # )
 
-    #change_tags(
+    # change_tags(
     #    Path("example/dicom/mod1/HabitTask/"),
     #    new_tags_mod2,
     #    Path("example/dicom/mod2/HabitTask/"),
-    #)
+    # )
 
 
 if __name__ == "__main__":
