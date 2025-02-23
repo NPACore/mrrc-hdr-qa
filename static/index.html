@@ -2,7 +2,7 @@
 <html>
   <head><title>MRQART</title>
   <link rel="stylesheet" type="text/css" href="static/main.css" />
-  <script  type="text/javascript" src="static/index.js" />
+  <script  type="text/javascript" src="static/index.js" > </script>
 </head>
 <script>
 // Fetch state on page load
@@ -13,6 +13,7 @@ window.onload = function () {
 </script>
 
 <body>
+   <div style="position:absolute; right:0em; top: 0px;"><a href="#" style=text-decoration:none onclick="show_debug()">🐛</a></div>
   MR Station: <select id="select_station" onchange="select_station()"><option value="all">all</option></select>
   <div id="stations">waiting for scanner</div>
 

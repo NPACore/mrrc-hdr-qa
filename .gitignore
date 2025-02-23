@@ -18,3 +18,4 @@ templates.tsv
 *.sw[op]
 creds/
 log/
+node_modules/

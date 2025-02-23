@@ -1,7 +1,15 @@
 /* eslint "indent": ["error", 2] */
-/* Main websocket data parser. dispatches base on message type
-  @param {wsMessage} data from websocket
-    dict with 'type' = 'new' (new sequence) or 'update' (next volume of sequence) */
+
+/** Main websocket data parser. Dispatches based on message type
+ * :py:func:`mrqart.track_ws` is tracking this client
+ * :py:func:`mrqart.monitor_dirs` is sending the update
+
+ * if new :js:func:`add_new_series` and if unseen update :js:func:`updateUIFromState` (via :py:class:`mrqart.GetState`)
+
+ * @param {dict} wsMessage data from websocket
+ * @sideffect updates state
+ *  dict with 'type' = 'new' (new sequence) or 'update' (next volume of sequence)
+ */
 function receivedMessage(wsMessage) {
   const data = JSON.parse(wsMessage.data);
   console.log('New message from websocket:', data);
@@ -22,7 +30,8 @@ function receivedMessage(wsMessage) {
   }
 }
 
-// Fetch the current scanner state from /state and update UI
+/** Fetch the current scanner state from /state and update UI
+ */
 function fetchState() {
   fetch("/state")
     .then((response) => response.json())
@@ -37,7 +46,8 @@ function fetchState() {
     });
 }
 
-// Update UI with the fetched state
+/** Update UI with the fetched state
+ */
 function updateUIFromState(stateData) {
   // Loop through all stations in the fetched state
   for (const [station, msg] of Object.entries(stateData)) {
@@ -46,7 +56,8 @@ function updateUIFromState(stateData) {
   }
 }
 
-// Connects socket to main dispatcher `receivedMessage`
+/** Connects socket to main dispatcher `receivedMessage`
+ */
 function update_via_ws() {
   const host = "ws://" + location.hostname + ":5000/";
   console.log("WebSocket connecting to:", host);
@@ -54,13 +65,14 @@ function update_via_ws() {
   ws.addEventListener("message", receivedMessage);
 }
 
-// new dicom data into table
-/* returns table html element
-   will be embeded in collapsable 'details' for a sequence
-   elements styled by main.css such that
-     *  correct/expect ("conform" class) is small and grayed out
-     *  errors/unexpected values ("non-conform" class) are big and red
-   used by 'add_new_series()'
+/** new dicom data into table
+ * will be embeded in collapsable 'details' for a sequence
+ * elements styled by main.css such that
+ *   *  correct/expect ("conform" class) is small and grayed out
+ *   *  errors/unexpected values ("non-conform" class) are big and red
+ * used by 'add_new_series()'
+ *
+ * @return table html element
 */
 function mktable(data) {
   const keys = [
@@ -99,21 +111,22 @@ function mktable(data) {
   return table;
 }
 
-/* have we seen any data? */
+/** have we seen any data?
+ */
 function is_fresh_page() {
   let seq = document.getElementById("stations");
   return (seq.innerHTML === "waiting for scanner" || seq.innerHTML === "");
 }
 
-/* what to do with type=="new" data: a dicom from a new sequence
-   @param data object with keys 'input', 'template', 'errors', and 'conforms'
-     the 'content' part of websocket (or /state fetch) message
-     cf. msg['station'] and msg['type']
-     message built in python by 'monitor_dirs' (WS) or 'GetState' (HTTP)
-     'input' is dicom hdr.
-     'template' is the extected values
-     'errors' enumrate all paramters in input not matching template
-     'conforms' is true/false. when false, 'errors' should be {}
+/** what to do with type=="new" data: a dicom from a new sequence
+ * @param data object with keys 'input', 'template', 'errors', and 'conforms'
+ *   the 'content' part of websocket (or /state fetch) message
+ *   cf. msg['station'] and msg['type']
+ *   message built in python by 'monitor_dirs' (WS) or 'GetState' (HTTP)
+ *   'input' is dicom hdr.
+ *   'template' is the extected values
+ *   'errors' enumrate all paramters in input not matching template
+ *   'conforms' is true/false. when false, 'errors' should be {}
 */
 function add_new_series(data) {
   let el = document.createElement("li");
@@ -163,7 +176,8 @@ function add_new_series(data) {
   station.prepend(el);
 }
 
-// TODO: parse url to set
+/** TODO: parse url to set
+ */
 function select_station() {
   const cur_station = document.getElementById("select_station").value;
   for (el of document.getElementById("stations").children) {
@@ -175,7 +189,7 @@ function select_station() {
   }
 }
 
-/* hidden text box to test sending what would come from websocket
+/** hidden text box to test sending what would come from websocket
 */
 function show_debug() {
   let cur = document.getElementsByClassName("debug")[0].style.display;

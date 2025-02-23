@@ -2,5 +2,5 @@ black
 codespell
 isort
 sphinx
-sphinx_js
+sphinx-js
 pytest-mock

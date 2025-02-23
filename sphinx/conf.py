@@ -17,7 +17,7 @@ author = "EH, WF"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.autosummary", "sphinx.ext.linkcode"]
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.autosummary", "sphinx.ext.linkcode", "sphinx_js"]
 autodoc_default_options = {"members": True}
 autodoc_typehints = "description"
 autosummary_generate = True
@@ -32,6 +32,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "docs", ".venv", "lib"]
 html_theme = "alabaster"
 html_static_path = ["_static"]
 
+js_source_path = ["../static"]
 
 def linkcode_resolve(domain, info):
     if domain != "py":

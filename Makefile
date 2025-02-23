@@ -16,7 +16,7 @@ source_venv := . .venv/bin/activate
 
 ## documentation. github action pushes this to 'gh-pages' branch
 docs: docs/
-docs/: $(wildcard *.py) sphinx/conf.py $(wildcard sphinx/*.rst) docs/taglist.csv docs/_static/mrqart/index.html| venv-dev venv-program
+docs/: $(wildcard *.py) $(wildcard static/*.js) sphinx/conf.py $(wildcard sphinx/*.rst) docs/taglist.csv docs/_static/mrqart/index.html| venv-dev venv-program
 	$(source_venv) && sphinx-build sphinx/ docs/
 # sphinx can read in csv but not tsv, so convert for it
 docs/taglist.csv: taglist.txt
@@ -24,11 +24,14 @@ docs/taglist.csv: taglist.txt
 	sed '/^#/d;s/,//g;s/\t/,/g' $< > $@
 
 # copy mrqart but adjust for different directory and debugging
-docs/_static/mrqart/index.html: static/index.html | docs/_static/mrqart/main.css
-	sed 's/body>/body onload="show_debug()">/; s:static/main.css:main.css:' $^ > $@
+docs/_static/mrqart/index.html: static/index.html | docs/_static/mrqart/main.css docs/_static/mrqart/index.js
+	perl -pe 's/body>/body onload="show_debug()">/; s:static/(.*?(.js|.css)):\1:' $^ > $@
 
 docs/_static/mrqart/main.css: static/main.css
 	mkdir -p $(dir $@)
+	cp $^ $@
+
+docs/_static/mrqart/%: static/%
 	cp $^ $@
 
 ##
@@ -46,6 +49,7 @@ test: .test.doctest .test.pytest
 # dev requirements separate to hopefully run github actions a bit faster
 .venv/:
 	python3 -m venv .venv
+	npm install -g jsdoc
 venv-dev: .venv/bin/black
 .venv/bin/black: .venv/
 	$(source_venv) && pip install -r requirements_dev.txt

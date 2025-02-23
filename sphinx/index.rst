@@ -26,12 +26,13 @@ Code
    compliance_check_html
    mrrc_dbupdate
 
-
 Overview
 --------
 
 MRQART
 ++++++
+`mrqart main page <mrqart.html>`_
+
 MR Quality Assurance in (near) Real Time. See see `static debug-enabled page <_static/mrqart/index.html>`_ for a demonstration. Full toolchain uses
 
 #. Samba server receives files from scanner (iceconfig)
