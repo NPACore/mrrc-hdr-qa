@@ -2,122 +2,14 @@
 <html>
   <head><title>MRQART</title>
   <link rel="stylesheet" type="text/css" href="static/main.css" />
+  <script  type="text/javascript" src="static/index.js" />
 </head>
 <script>
-  /* TODO: move into own file. run tests? */
-
- /* Main websocket data parser. dispatches base on message type */
-function receivedMessage(msg) {
-   //console.log("new message!", msg);
-   data = JSON.parse(msg.data)
-   console.log("new message data:", data);
-   if(data['type'] == 'new'){
-      add_new_series(data['content'])
-   }
-   // TODO(20250204): if 'update' but don't have state
-   // call to server and update UI
-}
-
-// new dicom data into table
-function mktable(data){
-    const keys = [
-        "SequenceType", "Phase", "PED_major", "TR", "TE", "Matrix",
-        "PixelResol", "FoV", "BWP", "BWPPE", "FA", "TA",
-        "iPAT", "Shims"]
-
-   let table = "<table>";
-     /*Object.entries(data['input']).map(
-      ([k,v]) => `<tr><th>${k}</th><td class=` +
-                  ((k in data['errors'])?"no-coform":"conform") +
-                  `>${v}</td><td>${data['template'][k]}</td></tr>`) +
-      */
-    let rows = ["<th></th>", "<th>input</th>", "<th>template</th>"]
-    for(const k of keys){
-        conf_css = ((k in data['errors'])?"no-conform":"conform")
-        rows[0] += `<th class=${conf_css}>${k}</th>`;;
-        rows[1] += `<td class=${conf_css}>${data['input'][k]}</td>`;
-        rows[2] += `<td class=${conf_css}>${data['template'][k]}</td>`;
-    }
-    table += `<tr>${rows[0]}</tr>` +
-             `<tr>${rows[1]}</tr>` +
-             `<tr>${rows[2]}</tr>`;
-    table += "</table>";
-    return(table)
-}
-
-/* what to do with type=="new" data: a dicom from a new sequence */
-function add_new_series(data) {
-   let el = document.createElement("li");
-   el.className = data['conforms']?'conform':'no-conform';
-   dcm_in =  data['input'];
-   errors = data['errors'];
-   let summary = `<span class=seqnum>${dcm_in['SeriesNumber']}</span> <span class=seqname>${dcm_in['SequenceName']}</span> <span class=projname>${dcm_in['Project']}</span>`;
-   //JSON.stringify(errors);
-   for(k of Object.keys(errors)){
-       summary += `<br>${k} should be <b>${errors[k]['expect']}</b> but have <i>${errors[k]['have']}</i>`
-   }
-
-   const details_status = data['conforms']?'':'open';
-   let note = `<details ${details_status}><summary>${summary}</summary>`
-
-   note += "<br>" + mktable(data) + "</details>";
-
-   el.innerHTML=note;
-
-   // clear waiting
-   let seq = document.getElementById("stations");
-   if(seq.innerHTML == "waiting for scanner"){
-      seq.innerHTML = ""
-   }
-
-   // TODO: per scanner tab
-   const station_id = `station-${data["input"]["Station"]}`
-   let station = document.getElementById(station_id);
-   if(station === null){
-    // selection box as option
-    document.getElementById("select_station").innerHTML += `<option value="${station_id}">${data["input"]["Station"]}</option>`
-
-    let newstat = document.createElement("ul");
-    newstat.id = station_id
-    seq.prepend(newstat);
-    station = newstat
-   }
-
-   station.prepend(el); //appendChild(el);
-}
-
-/* connects socket to main dispatcher `recievedMessages` */
-function update_via_ws() {
-  const host = "ws://" + location.hostname  + ":5000/";
-  console.log("host",host)
-  const ws = new WebSocket(host);
-  ws.addEventListener('message', receivedMessage);
-}
-
-// TODO: parse url to set
-function select_station(){
-   const cur_station = document.getElementById("select_station").value;
-   for (el of document.getElementById("stations").children){
-     visibility = (el.id == cur_station || cur_station == "all")?"block":"none" ;
-     el.style.display = visibility;
-     console.log(el.id, visibility);
-   }
-}
-
-/* hidden text box to test sending what would come from websocket
-*/
-function show_debug(){
-  document.getElementsByClassName("debug")[0].style=""
-  //$("#select_station").children.map((el) => el.style.visibility="visible")
-}
-function simdata(){
-   let data = document.getElementById("debug");
-   data = JSON.parse(data.value)
-   add_new_series(data)
-}
-
-window.onload = update_via_ws;
-
+// Fetch state on page load
+window.onload = function () {
+  update_via_ws();
+  fetchState();
+};
 </script>
 
 <body>

@@ -25,9 +25,10 @@ Sequence = str
 class CurSeqStation:
     "Current Sequence settings at a MR Scanner station"
 
+    #: description of current scanner sequence: series and name concatenated
     series_seqname: str
-    station: str
-    count: int
+    station: str #: scanner identifier
+    count: int #: number of volumes (dicoms) seen
 
     def __init__(self, station: Station):
         "initialize new series"
@@ -37,7 +38,10 @@ class CurSeqStation:
 
     def update_isnew(self, series, seqname: Sequence) -> bool:
         """
-        Maintain count of repeats seen
+        Inspect new dicom. Maintain count of repeats seen if not new
+        Update object otherwise
+        :param series: series info TODO(20250223WF): is this a number?
+        :param seqname: sequence description
         :return:  True if is new
         """
         serseq = f"{series}{seqname}"
@@ -60,7 +64,6 @@ HTTP_PORT = 8080
 
 FOLLOW_FLAGS = aionotify.Flags.CLOSE_WRITE | aionotify.Flags.CREATE
 #: list of all web socket connections to broadcast to
-#: TODO: will eventually need to track station id when serving multiple scanners
 WS_CONNECTIONS = set()
 
 FILEDIR = os.path.dirname(__file__)
@@ -74,10 +77,11 @@ STATE: dict[Station, CurSeqStation] = {}
 
 class WebServer(Application):
     """HTTP server (tornado request handler)
-    Currently (20241102), this is just a fancy way to serve a static page.  Eventually
+    Currently (20241102), this is just a fancy way to serve a static page.
+    Also can update any client on current state.
 
-    * will match ``/scanner-id`` URL to ``station id`` dicom header for scanner specific page
-    * could give more insite into or  modify DB.
+    In the future, this could give more insight into or modify DB.
+    Expect motion (a la FIRMM) to be handled by websocket and javascript (not HTTP).
     """
 
     def __init__(self):
