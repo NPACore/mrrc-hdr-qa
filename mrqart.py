@@ -10,13 +10,14 @@ import json
 import logging
 import os
 import re
+from typing import Optional
 
 import aionotify
 from tornado.httpserver import HTTPServer
 from tornado.web import Application, RequestHandler
 from websockets.asyncio.server import broadcast, serve
 
-from template_checker import TemplateChecker
+from template_checker import TemplateChecker, CheckResult
 
 Station = str
 Sequence = str
@@ -34,6 +35,8 @@ class CurSeqStation:
         self.station = station
         self.series_seqname = ""
         self.count = 0
+        #: set using dcm_checker.check_header
+        self.hdr_check: Optional[CheckResult]= None
 
     def update_isnew(self, series, seqname: Sequence) -> bool:
         """
@@ -56,7 +59,7 @@ class CurSeqStation:
 #: Websocket port used to send updates to browser
 WS_PORT = 5000
 #: HTTP port used to serve static/index.html
-HTTP_PORT = 8080
+HTTP_PORT = 9090
 
 FOLLOW_FLAGS = aionotify.Flags.CLOSE_WRITE | aionotify.Flags.CREATE
 #: list of all web socket connections to broadcast to
@@ -84,7 +87,7 @@ class WebServer(Application):
         handlers = [
             (r"/", HttpIndex),
             # TODO(20250204): add GetState
-            # r"/state", GetState, # json state response
+            (r"/state", GetState),
         ]
         settings = dict(
             static_path=os.path.join(FILEDIR, "static"),
@@ -93,11 +96,37 @@ class WebServer(Application):
         super().__init__(handlers, **settings)
 
 
+class GetState(RequestHandler):
+    """Return the current state as JSON"""
+
+    async def get(self):
+        """
+        GET /state returns JSON similiar to data sent over websocket
+        via broadcast(WS_CONNECTIONS, json.dumps(...))
+
+        data here missing 'msg' but otherwise matches. it looks like
+        {'station': 'AWP167046',
+         'content': {"conforms": true, "errors": {},
+                     "template": {"iPAT": "p2", ...},
+                     "input": {"iPAT":"p2", .... }}}
+        """
+        #: 'station', 'content', and (not here) 'msg' (update|new)
+        #:  are sent when inotify sees a new file.
+        #: mimic that for code reuse on javascript side
+        state_like_ws = {k: {'station': v.station,
+                             'content': v.hdr_check}
+                         for k, v in STATE.items()}
+        logging.debug("/state data sent: %s", state_like_ws)
+        self.write(json.dumps(state_like_ws, default=str))
+
+
 class HttpIndex(RequestHandler):
     """Handle index page request"""
 
     async def get(self):
         """Default is just the index page"""
+        # TODO: replace websocket port with one given on CLI?
+        # ... or provide new route that specifies websocket port
         self.render("static/index.html")
 
 
@@ -151,9 +180,14 @@ async def monitor_dirs(watcher, dcm_checker):
     await watcher.setup()
     logging.debug("watching for new files")
     while True:
+
+        # event = await asyncio.wait_for(watcher.get_event(), timeout=?)
+
         event = await watcher.get_event()
+
         logging.debug("got event %s", event)
         file = os.path.join(event.alias, event.name)
+
         if os.path.isdir(file):
             watcher.watch(path=file, flags=FOLLOW_FLAGS)
             logging.info("%s is a dir! following with %d", file, FOLLOW_FLAGS)
@@ -161,6 +195,7 @@ async def monitor_dirs(watcher, dcm_checker):
         if event.flags == aionotify.Flags.CREATE:
             logging.debug("file created but waiting for WRITE finish")
             continue
+
         # Event(flags=256, cookie=0, name='a', alias='/home/foranw/src/work/mrrc-hdr-qa/./sim')
         if re.search("^MR.|.dcm$|.IMA$", event.name):
 
@@ -168,30 +203,43 @@ async def monitor_dirs(watcher, dcm_checker):
             # and skip without having to read the header
             # not sure how we'd get station
             hdr = dcm_checker.reader.read_dicom_tags(file)
-            current_ses = STATE.get(hdr["Station"])
+
+            logging.debug("DICOM HEADER: %s", hdr)
+
+            station = hdr["Station"]
+            current_ses = STATE.get(station)
             if not current_ses:
-                STATE[hdr["Station"]] = CurSeqStation(hdr["Station"])
-                current_ses = STATE.get(hdr["Station"])
+                STATE[station] = CurSeqStation(station)
+                current_ses = STATE.get(station)
 
             # only send to browser if new
-            # TODO: what if browser started up rate
+            # browser will check /state (HTTP instead of WS)
+            # if it messes this new
             if current_ses.update_isnew(hdr["SeriesNumber"], hdr["SequenceName"]):
                 logging.debug("first time seeing  %s", current_ses)
+
+                # keep this in memory in case browser asks for it again (HTTP vs WS)
+                # see '/state' route and GetState
+                hdr_check = dcm_checker.check_header(hdr)
+                STATE[station].hdr_check = hdr_check
+
+
                 msg = {
-                    "station": hdr["Station"],
+                    "station": station,
                     "type": "new",
-                    "content": dcm_checker.check_header(hdr),
+                    "content": hdr_check,
                 }
+                # logging here but not update
                 logging.debug(msg)
-                broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
             else:
                 msg = {
                     "station": hdr["Station"],
                     "type": "update",
                     "content": current_ses.count,
                 }
-                broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
-                logging.debug("already have %s", STATE[hdr["Station"]])
+                logging.debug("already have %s", current_ses)
+            # send data to browser via websocket
+            broadcast(WS_CONNECTIONS, json.dumps(msg, default=list))
 
             # TODO: if epi maybe try plotting motion?
             # async alignment
@@ -207,7 +255,7 @@ async def main(paths):
     Run all services on different threads.
     HTTP and inotify are forked. Websocket holds the main thread.
     """
-    dcm_checker = TemplateChecker()
+    dcm_checker = TemplateChecker() # TODO: this can be defined globally for the package?
     watcher = aionotify.Watcher()
     for path in paths:
         logging.info("watching %s", path)
