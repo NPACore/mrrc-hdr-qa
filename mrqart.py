@@ -59,7 +59,7 @@ class CurSeqStation:
 #: Websocket port used to send updates to browser
 WS_PORT = 5000
 #: HTTP port used to serve static/index.html
-HTTP_PORT = 9090
+HTTP_PORT = 8080
 
 FOLLOW_FLAGS = aionotify.Flags.CLOSE_WRITE | aionotify.Flags.CREATE
 #: list of all web socket connections to broadcast to
