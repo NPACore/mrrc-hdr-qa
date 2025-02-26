@@ -8,6 +8,12 @@ See
   * `make test` for using `doctests`
   * [`schema.sql`](schema.sql) for DB schema
 
+## TODO
+
+ - start at partial -- browser request, server send STATE
+ - don't throw error on null fields (calculate FoV, TA)
+ - remove data
+
 ## Strategy 
 
  * build sqlite db of all acquisitions with subset of parameters
@@ -34,9 +40,22 @@ See
 MR QA in Real Time (python port)
 ![](sphinx/imgs/mrqart-browserUI_20241124.png)
 
+### install
+for start menu shortcut, copy bat shortcut into file into
+```
+%AppData%\Microsoft\Internet Explorer\Quick Launch\User Pinned\StartMenu
+```
 ### Developing
 Use `show_debug` in a console to get a `simdata` textarea to send mock data.
 ![](sphinx/imgs/show_debug.png)
+
+### TODO
+ * not red on null -- use mrqart computer files to test
+ * make systemctl service file
+ * rename input/template Current/Reference
+ * cron rm find -mtype +2 days and rm 
+ * add help tooltips
+ * py motion affine -> FD and benchmark
 
 ### Extensions/plugins
 
