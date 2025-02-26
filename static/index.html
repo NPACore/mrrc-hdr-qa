@@ -67,7 +67,7 @@ function update_via_ws() {
 
 // new dicom data into table
 /* returns table html element 
-   will be embeded in collapsable 'details' for a sequence
+   will be embedded in collapsible 'details' for a sequence
    elements styled by main.css such that
      *  correct/expect ("conform" class) is small and grayed out
      *  errors/unexpected values ("non-conform" class) are big and red
@@ -112,7 +112,7 @@ function is_fresh_page(){
      message built in python by 'monitor_dirs' (WS) or 'GetState' (HTTP)
      'input' is dicom hdr. 
      'template' is the extected values
-     'errors' enumrate all paramters in input not matching template
+     'errors' enumrate all parameters in input not matching template
      'conforms' is true/false. when false, 'errors' should be {}
 */
 function add_new_series(data) {

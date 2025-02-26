@@ -17,7 +17,7 @@ from tornado.httpserver import HTTPServer
 from tornado.web import Application, RequestHandler
 from websockets.asyncio.server import broadcast, serve
 
-from template_checker import TemplateChecker, CheckResult
+from template_checker import CheckResult, TemplateChecker
 
 Station = str
 Sequence = str
@@ -36,7 +36,7 @@ class CurSeqStation:
         self.series_seqname = ""
         self.count = 0
         #: set using dcm_checker.check_header
-        self.hdr_check: Optional[CheckResult]= None
+        self.hdr_check: Optional[CheckResult] = None
 
     def update_isnew(self, series, seqname: Sequence) -> bool:
         """
@@ -101,7 +101,7 @@ class GetState(RequestHandler):
 
     async def get(self):
         """
-        GET /state returns JSON similiar to data sent over websocket
+        GET /state returns JSON similar to data sent over websocket
         via broadcast(WS_CONNECTIONS, json.dumps(...))
 
         data here missing 'msg' but otherwise matches. it looks like
@@ -113,9 +113,9 @@ class GetState(RequestHandler):
         #: 'station', 'content', and (not here) 'msg' (update|new)
         #:  are sent when inotify sees a new file.
         #: mimic that for code reuse on javascript side
-        state_like_ws = {k: {'station': v.station,
-                             'content': v.hdr_check}
-                         for k, v in STATE.items()}
+        state_like_ws = {
+            k: {"station": v.station, "content": v.hdr_check} for k, v in STATE.items()
+        }
         logging.debug("/state data sent: %s", state_like_ws)
         self.write(json.dumps(state_like_ws, default=str))
 
@@ -223,7 +223,6 @@ async def monitor_dirs(watcher, dcm_checker):
                 hdr_check = dcm_checker.check_header(hdr)
                 STATE[station].hdr_check = hdr_check
 
-
                 msg = {
                     "station": station,
                     "type": "new",
@@ -255,7 +254,9 @@ async def main(paths):
     Run all services on different threads.
     HTTP and inotify are forked. Websocket holds the main thread.
     """
-    dcm_checker = TemplateChecker() # TODO: this can be defined globally for the package?
+    dcm_checker = (
+        TemplateChecker()
+    )  # TODO: this can be defined globally for the package?
     watcher = aionotify.Watcher()
     for path in paths:
         logging.info("watching %s", path)
