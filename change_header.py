@@ -69,6 +69,7 @@ def change_tags(
             print(
                 "# warning: output matches '.dcm' and only one input. assuming you're saving to a file"
             )
+
             new_file = out_dir
         else:
             new_file = os.path.join(out_dir, os.path.basename(ex_dcm_file))

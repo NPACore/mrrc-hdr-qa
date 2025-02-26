@@ -8,90 +8,158 @@
 
  /* Main websocket data parser. dispatches base on message type */
 function receivedMessage(msg) {
-   //console.log("new message!", msg);
-   data = JSON.parse(msg.data)
-   console.log("new message data:", data);
-   if(data['type'] == 'new'){
-      add_new_series(data['content'])
-   }
-   // TODO(20250204): if 'update' but don't have state
-   // call to server and update UI
+    data = JSON.parse(msg.data);
+    console.log("New message from websocket:", data);
+
+    if (data['type'] == 'new') {
+        add_new_series(data['content']);
+    }
+
+    if (data['type'] == 'update') {
+        console.log("ws msg is update");
+        let seq = document.getElementById("stations");
+        if(is_fresh_page()){
+           console.warn("websocket update w/o browser state! HTTP fetch to update browser.");
+           fetchState();
+        }
+    }
 }
 
+// Fetch the current scanner state from /state and update UI
+function fetchState() {
+    fetch("/state")
+        .then(response => response.json())
+        .then(data => {
+            console.log("Fetched state:", data);
+            console.warn("Updating UI with fetched state...");
+            updateUIFromState(data);
+        })
+        .catch(err => {
+            // will wait for next websockets push. hopefully no error then
+            console.error("Error fetching state:", err);
+        });
+}
+
+// Update UI with the fetched state
+function updateUIFromState(stateData) {
+
+    // Loop through all stations in the fetched state
+   for (const [station, msg] of Object.entries(stateData)) {
+     console.log(`adding ${station} data`, msg)
+     add_new_series(msg['content']);
+   }
+}
+
+// Fetch state on page load
+window.onload = function() {
+	update_via_ws();
+	fetchState();
+}
+
+// Connects socket to main dispatcher `receivedMessage` 
+function update_via_ws() {
+	const host = "ws://" + location.hostname + ":5000/";
+	console.log("WebSocket connecting to:", host);
+	const ws = new WebSocket(host);
+	ws.addEventListener('message', receivedMessage);
+}
+
+
 // new dicom data into table
-function mktable(data){
+/* returns table html element 
+   will be embeded in collapsable 'details' for a sequence
+   elements styled by main.css such that
+     *  correct/expect ("conform" class) is small and grayed out
+     *  errors/unexpected values ("non-conform" class) are big and red
+   used by 'add_new_series()'
+*/
+function mktable(data) {
     const keys = [
         "SequenceType", "Phase", "PED_major", "TR", "TE", "Matrix",
         "PixelResol", "FoV", "BWP", "BWPPE", "FA", "TA",
-        "iPAT", "Shims"]
-
-   let table = "<table>";
-     /*Object.entries(data['input']).map(
-      ([k,v]) => `<tr><th>${k}</th><td class=` +
-                  ((k in data['errors'])?"no-coform":"conform") +
-                  `>${v}</td><td>${data['template'][k]}</td></tr>`) +
-      */
-    let rows = ["<th></th>", "<th>input</th>", "<th>template</th>"]
-    for(const k of keys){
-        conf_css = ((k in data['errors'])?"no-conform":"conform")
-        rows[0] += `<th class=${conf_css}>${k}</th>`;;
-        rows[1] += `<td class=${conf_css}>${data['input'][k]}</td>`;
-        rows[2] += `<td class=${conf_css}>${data['template'][k]}</td>`;
-    }
-    table += `<tr>${rows[0]}</tr>` +
-             `<tr>${rows[1]}</tr>` +
-             `<tr>${rows[2]}</tr>`;
-    table += "</table>";
-    return(table)
+        "iPAT", "Shims"
+    ];
+    let table = "<table>";
+      /*Object.entries(data['input']).map(
+       ([k,v]) => `<tr><th>${k}</th><td class=` +
+                   ((k in data['errors'])?"no-coform":"conform") +
+                   `>${v}</td><td>${data['template'][k]}</td></tr>`) +
+       */
+     let rows = ["<th></th>", "<th>input</th>", "<th>template</th>"]
+     for(const k of keys){
+         conf_css = ((k in data['errors'])?"no-conform":"conform")
+         rows[0] += `<th class=${conf_css}>${k}</th>`;;
+         rows[1] += `<td class=${conf_css}>${data['input'][k]}</td>`;
+         rows[2] += `<td class=${conf_css}>${data['template'][k]}</td>`;
+     }
+     table += `<tr>${rows[0]}</tr>` +
+              `<tr>${rows[1]}</tr>` +
+              `<tr>${rows[2]}</tr>`;
+     table += "</table>";
+     return(table)
 }
 
-/* what to do with type=="new" data: a dicom from a new sequence */
+/* have we seen any data? */
+function is_fresh_page(){
+  let seq = document.getElementById("stations");
+  return(seq.innerHTML === "waiting for scanner" || seq.innerHTML === "")
+}
+
+/* what to do with type=="new" data: a dicom from a new sequence
+   @param data object with keys 'input', 'template', 'errors', and 'conforms'
+     the 'content' part of websocket (or /state fetch) message
+     cf. msg['station'] and msg['type']
+     message built in python by 'monitor_dirs' (WS) or 'GetState' (HTTP)
+     'input' is dicom hdr. 
+     'template' is the extected values
+     'errors' enumrate all paramters in input not matching template
+     'conforms' is true/false. when false, 'errors' should be {}
+*/
 function add_new_series(data) {
-   let el = document.createElement("li");
-   el.className = data['conforms']?'conform':'no-conform';
-   dcm_in =  data['input'];
-   errors = data['errors'];
-   let summary = `<span class=seqnum>${dcm_in['SeriesNumber']}</span> <span class=seqname>${dcm_in['SequenceName']}</span> <span class=projname>${dcm_in['Project']}</span>`;
-   //JSON.stringify(errors);
-   for(k of Object.keys(errors)){
-       summary += `<br>${k} should be <b>${errors[k]['expect']}</b> but have <i>${errors[k]['have']}</i>`
-   }
+    let el = document.createElement("li");
+    el.className = data['conforms'] ? 'conform' : 'no-conform';
 
-   const details_status = data['conforms']?'':'open';
-   let note = `<details ${details_status}><summary>${summary}</summary>`
+    let dcm_in = data['input'];
+    let errors = data['errors'];
 
-   note += "<br>" + mktable(data) + "</details>";
+    let summary = `<span class=seqnum>${dcm_in['SeriesNumber']}</span> 
+                   <span class=seqname>${dcm_in['SequenceName']}</span> 
+                   <span class=projname>${dcm_in['Project']}</span>`;
 
-   el.innerHTML=note;
+    for (let k of Object.keys(errors)) {
+        summary += `<br>${k} should be <b>${errors[k]['expect']}</b> 
+                    but have <i>${errors[k]['have']}</i>`;
+    }
 
-   // clear waiting
-   let seq = document.getElementById("stations");
-   if(seq.innerHTML == "waiting for scanner"){
-      seq.innerHTML = ""
-   }
+    const details_status = data['conforms'] ? '' : 'open';
+    let note = `<details ${details_status}>
+                   <summary>${summary}</summary>`;
 
-   // TODO: per scanner tab
-   const station_id = `station-${data["input"]["Station"]}`
-   let station = document.getElementById(station_id);
-   if(station === null){
-    // selection box as option
-    document.getElementById("select_station").innerHTML += `<option value="${station_id}">${data["input"]["Station"]}</option>`
+    note += "<br>" + mktable(data) + "</details>";
+    el.innerHTML = note;
 
-    let newstat = document.createElement("ul");
-    newstat.id = station_id
-    seq.prepend(newstat);
-    station = newstat
-   }
+    // Clear "waiting for scanner" text
+    let seq = document.getElementById("stations");
+    if(is_fresh_page()) {
+        seq.innerHTML = "";
+    }
 
-   station.prepend(el); //appendChild(el);
-}
+    const station_id = `station-${dcm_in["Station"]}`;
+    let station = document.getElementById(station_id);
 
-/* connects socket to main dispatcher `recievedMessages` */
-function update_via_ws() {
-  const host = "ws://" + location.hostname  + ":5000/";
-  console.log("host",host)
-  const ws = new WebSocket(host);
-  ws.addEventListener('message', receivedMessage);
+    if (!station) {
+        // Add new station entry
+        document.getElementById("select_station").innerHTML += `<option value="${station_id}">${dcm_in["Station"]}</option>`;
+
+        let newStation = document.createElement("ul");
+        newStation.id = station_id;
+        seq.prepend(newStation);
+        station = newStation;
+    }
+
+    // browser accumulates sequences it's seen
+    // newest is always on top
+    station.prepend(el);
 }
 
 // TODO: parse url to set
@@ -107,8 +175,9 @@ function select_station(){
 /* hidden text box to test sending what would come from websocket
 */
 function show_debug(){
-  document.getElementsByClassName("debug")[0].style=""
-  //$("#select_station").children.map((el) => el.style.visibility="visible")
+  let cur = document.getElementsByClassName("debug")[0].style.display;
+  let toggled = cur==='block'?'none':'block';
+  document.getElementsByClassName("debug")[0].style.display=toggled;
 }
 function simdata(){
    let data = document.getElementById("debug");
@@ -116,11 +185,10 @@ function simdata(){
    add_new_series(data)
 }
 
-window.onload = update_via_ws;
-
 </script>
 
 <body>
+   <div style="position:absolute; right:0em; top: 0px;"><a href="#" style=text-decoration:none onclick="show_debug()">🐛</a></div>
   MR Station: <select id="select_station" onchange="select_station()"><option value="all">all</option></select>
   <div id="stations">waiting for scanner</div>
 
