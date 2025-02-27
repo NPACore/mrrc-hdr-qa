@@ -101,14 +101,16 @@ class GetState(RequestHandler):
 
     async def get(self):
         """
-        GET /state returns JSON similar to data sent over websocket
-        via broadcast(WS_CONNECTIONS, json.dumps(...))
+        GET ``/state`` returns JSON similar to data sent over websocket
+        via ``broadcast(WS_CONNECTIONS, json.dumps(...))``
 
-        data here missing 'msg' but otherwise matches. it looks like
-        {'station': 'AWP167046',
-         'content': {"conforms": true, "errors": {},
-                     "template": {"iPAT": "p2", ...},
-                     "input": {"iPAT":"p2", .... }}}
+        data here missing 'msg' but otherwise matches. it looks like::
+
+            {'station': 'AWP167046',
+             'content': {"conforms": true, "errors": {},
+                         "template": {"iPAT": "p2", ...},
+                         "input": {"iPAT":"p2", .... }}}
+
         """
         #: 'station', 'content', and (not here) 'msg' (update|new)
         #:  are sent when inotify sees a new file.
@@ -255,7 +257,7 @@ async def main(paths):
     HTTP and inotify are forked. Websocket holds the main thread.
     """
     dcm_checker = (
-        TemplateChecker()
+        TemplateChecker(context="RT")
     )  # TODO: this can be defined globally for the package?
     watcher = aionotify.Watcher()
     for path in paths:

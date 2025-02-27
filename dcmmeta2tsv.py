@@ -44,12 +44,15 @@ def tagpair_to_hex(csv_str) -> TagTuple:
     return tuple(hex(int(x, 16)) for x in csv_str.split(","))
 
 
+#: TagKey is dicom header e.g. TR in taglist.txt
+TagKey = str
+
 TagDicts = list[
-    TypedDict("Tag", {"name": str, "tag": TagTuple, "loc": str, "desc": str})
+    TypedDict("Tag", {"name": TagKey, "tag": TagTuple, "loc": str, "desc": str})
 ]
 
 #: keys are names from ``taglist.txt``, also has ``dcm_path`` key for file
-TagValues = dict[str, str]
+TagValues = dict[TagKey, str]
 
 
 def read_known_tags(tagfile="taglist.txt") -> TagDicts:
