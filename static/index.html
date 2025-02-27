@@ -102,7 +102,7 @@ function mktable(data) {
 /* have we seen any data? */
 function is_fresh_page(){
   let seq = document.getElementById("stations");
-  return(seq.innerHTML === "waiting for scanner" || seq.innerHTML === "")
+  return(seq.innerText === "waiting for scanner\n" || seq.innerHTML === "")
 }
 
 /* what to do with type=="new" data: a dicom from a new sequence
@@ -190,7 +190,7 @@ function simdata(){
 <body>
    <div style="position:absolute; right:0em; top: 0px;"><a href="#" style=text-decoration:none onclick="show_debug()">🐛</a></div>
   MR Station: <select id="select_station" onchange="select_station()"><option value="all">all</option></select>
-  <div id="stations">waiting for scanner</div>
+  <div id="stations">waiting for scanner<br><img src="static/batch_script_run.png" /></div>
 
  <div class="debug" style="display:none">
 <textarea id="debug" cols=100 rows=10>
