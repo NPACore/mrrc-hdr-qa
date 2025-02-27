@@ -59,13 +59,16 @@ sim_cp(){
    cp $1 sim/$(basename $1).$(date +%s).dcm
    echo "# $_"
 }
-options_msg="'rew', 'B0', 'bad', 'restart', or 'quit'"
+options_msg="'rew', 'B0', 'bad', 'sag', 'sag-rt', 'rest-bad-rt' 'restart', or 'quit'"
 echo "Input $options_msg"
 while read -p "send: " choice; do
    case $choice in
       rew*) sim_cp example_dicoms/RewardedAnti_good.dcm ;;
       B*) sim_cp example_dicoms/B1Map_newline.dcm ;;
       bad) sim_cp example_dicoms/RewardedAnti_wrongTR.dcm ;;
+      rest-bad-rt) simp_cp example_dicoms/phantom20240226/001_000011_000001.dcm ;;
+      sag) simp_cp example_dicoms/phantom20240226/002_20241009_scout_sag.dcm;;
+      sag-rt) simp_cp example_dicoms/phantom20240226/001_000001_000001.dcm;;
       # send sigusr1 to this process. trap will catch and trigger py restart
       restart) kill -s SIGUSR1 $$; echo "# restart via pid $$!";;
       q*) echo "goodbye"; kill_mrqart; break;;
