@@ -256,8 +256,8 @@ async def main(paths):
     Run all services on different threads.
     HTTP and inotify are forked. Websocket holds the main thread.
     """
-    dcm_checker = (
-        TemplateChecker(context="RT")
+    dcm_checker = TemplateChecker(
+        context="RT"
     )  # TODO: this can be defined globally for the package?
     watcher = aionotify.Watcher()
     for path in paths:
@@ -294,7 +294,11 @@ if __name__ == "__main__":
     )
     #: port is useful to tweak, especially for debugging
     parser.add_argument(
-        "-p", "--port", type=int, default=HTTP_PORT, help="HTTP port (not websocket port) "
+        "-p",
+        "--port",
+        type=int,
+        default=HTTP_PORT,
+        help="HTTP port (not websocket port) ",
     )
     args = parser.parse_args()
     HTTP_PORT = args.port

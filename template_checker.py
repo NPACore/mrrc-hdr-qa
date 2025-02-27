@@ -5,7 +5,7 @@ check a header against best template
 from typing import TypedDict
 
 from acq2sqlite import DBQuery
-from dcmmeta2tsv import DicomTagReader, TagValues, TagKey
+from dcmmeta2tsv import DicomTagReader, TagKey, TagValues
 
 #: Dictionary for mismatches in input (``have`` key) and template (``expect`` key)
 ErrorCompare = TypedDict("ErrorCompare", {"have": str, "expect": str})
