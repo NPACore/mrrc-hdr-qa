@@ -1,0 +1,31 @@
+﻿dcmmeta2tsv
+===========
+
+.. automodule:: dcmmeta2tsv
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      TagKey
+      TagValues
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      csa_fetch
+      read_csa
+      read_known_tags
+      read_shims
+      read_tags
+      tagpair_to_hex
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      DicomTagReader
+      NULLVAL
+   

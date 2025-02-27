@@ -1,0 +1,34 @@
+﻿mrqart
+======
+
+.. automodule:: mrqart
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      WS_PORT
+      HTTP_PORT
+      WS_CONNECTIONS
+      STATE
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      http_run
+      main
+      monitor_dirs
+      session_from_fname
+      track_ws
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CurSeqStation
+      GetState
+      HttpIndex
+      WebServer
+   
