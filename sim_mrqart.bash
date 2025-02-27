@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+test -r .venv/bin/activate && source $_
 
 # rerun in readline wrapper for a nicer prompt if not already and is available
 if [[ -z "${IN_RLWRAP:-}" && -n "$(command -v rlwrap)" ]]; then
