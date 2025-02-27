@@ -85,7 +85,7 @@ function mktable(data) {
                    ((k in data['errors'])?"no-coform":"conform") +
                    `>${v}</td><td>${data['template'][k]}</td></tr>`) +
        */
-     let rows = ["<th></th>", "<th>input</th>", "<th>template</th>"]
+     let rows = ["<th></th>", "<th class=current>Current</th>", "<th>Reference</th>"]
      for(const k of keys){
          conf_css = ((k in data['errors'])?"no-conform":"conform")
          rows[0] += `<th class=${conf_css}>${k}</th>`;;

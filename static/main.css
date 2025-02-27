@@ -16,7 +16,9 @@ li {
 details>table {font-size: smaller;}
 td.no-conform { background: red}
 th.no-conform { background: red}
+th.current { background: lightblue; border-bottom: solid black 1px; }
 td.conform { background: gray; font-size: .5em;}
+td.conform:hover { scale: 200%;}
 th.conform { background: lightgreen; font-size: .5em;}
 .projname {font-size:smaller;}
 .seqname {font-weight:bold;}
