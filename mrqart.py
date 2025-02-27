@@ -292,9 +292,10 @@ if __name__ == "__main__":
     )
     #: port is useful to tweak, especially for debugging
     parser.add_argument(
-        "-p", "--port", type=int, default=8080, help="HTTP port (not websocket port) "
+        "-p", "--port", type=int, default=HTTP_PORT, help="HTTP port (not websocket port) "
     )
     args = parser.parse_args()
+    HTTP_PORT = args.port
 
     if not os.path.isdir(args.watch[0]):
         raise Exception(f"{args.watch} is not a directory!")
