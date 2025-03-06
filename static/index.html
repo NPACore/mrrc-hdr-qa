@@ -7,9 +7,16 @@
   /* TODO: move into own file. run tests? */
 
  /* Main websocket data parser. dispatches base on message type */
-function receivedMessage(msg) {
+ function receivedMessage(msg) {
     data = JSON.parse(msg.data);
     console.log("New message from websocket:", data);
+
+    // Dispatch a Custom Event for React
+    const event = new CustomEvent("websocketData", {
+        detail: data
+    });
+
+    document.dispatchEvent(event); // Broadcast event to React
 
     if (data['type'] == 'new') {
         add_new_series(data['content']);
@@ -18,12 +25,13 @@ function receivedMessage(msg) {
     if (data['type'] == 'update') {
         console.log("ws msg is update");
         let seq = document.getElementById("stations");
-        if(is_fresh_page()){
-           console.warn("websocket update w/o browser state! HTTP fetch to update browser.");
-           fetchState();
+        if (is_fresh_page()) {
+            console.warn("websocket update w/o browser state! HTTP fetch to update browser.");
+            fetchState();
         }
     }
 }
+
 
 // Fetch the current scanner state from /state and update UI
 function fetchState() {
