@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "pydicom",
+# ]
+# ///
 """
 Give a tab separated metadata value line per dicom file.
 """

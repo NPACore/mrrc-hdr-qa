@@ -5,10 +5,13 @@
 # paper over centOS7+guix config issues
 export SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt LC_ALL=C LOGLEVEL=WARN
 # system dependencies:
-# guix install parallel python
+#   guix install parallel python sqlite3
+# use in cron:
+#   0 0 * * * /path/to/00_build_mrrc_db.bash
 
+cd "$(dirname "$0")"
 make db.sqlite
-make .venv
+make .venv/bin/pydicom  # ensure we depends for build_db.bash:dcmmeta2tsv.py and acq2sqlite.py
 . .venv/bin/activate
 
 log(){ echo "$(date +"[%s] %F %T"):: $*" | tee -a build.log; }
@@ -24,4 +27,4 @@ for db in db/*.txt; do
 done
 
 log build template
-make templates.csv
+make templates.tsv

@@ -8,7 +8,7 @@ db.sqlite:
 	sqlite3 $@ < schema.sql
 templates.tsv: db.sqlite
 	sqlite3 $< < make_template_by_count.sql
-	sqlite3 -header -separator $$'\t' $< \
+	sqlite3 -header -separator '	' $< \
 		'select * from template_by_count c join acq_param p on c.param_id=p.rowid' > $@
 
 # how to get into the python virtual environment
