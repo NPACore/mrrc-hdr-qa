@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 import os
-import sys
 import subprocess
-from pathlib import Path
+import sys
 from datetime import datetime
-from typing import List, Dict, Optional
+from pathlib import Path
+from typing import Dict, List, Optional
 
 DEFAULT_ROOT = "/Volumes/Hera/Raw/MRprojects/Habit"
 DEFAULT_PATTERN = "RewardedAntisaccade_704x75"
 
-EMAIL_TOML = (Path(__file__).resolve().parent.parent / "config" / "email_settings.toml")
+EMAIL_TOML = Path(__file__).resolve().parent.parent / "config" / "email_settings.toml"
 
 try:
     import tomllib as toml  # Python 3.11+
 except Exception:  # py3.10 fallback
     import toml  # type: ignore
+
 
 def load_email_entries(toml_path: Path) -> List[Dict[str, str]]:
     """
@@ -63,7 +64,9 @@ def most_recent_scan_dir(root: Path, contains: str) -> Optional[Path]:
 def pick_a_dicom(scan_dir: Path) -> Optional[Path]:
     """Grab a likely DICOM file from the scan folder."""
     for p in scan_dir.iterdir():
-        if p.is_file() and (p.name.startswith("MR") or p.suffix.lower() in (".dcm", ".ima")):
+        if p.is_file() and (
+            p.name.startswith("MR") or p.suffix.lower() in (".dcm", ".ima")
+        ):
             return p
     for p in scan_dir.rglob("*"):
         if p.is_file():
@@ -78,8 +81,9 @@ def extract_flip_angle(dicom_path: Path) -> Optional[float]:
     Split by '//' and take the 3rd field.
     """
     try:
-        out = subprocess.check_output(["dicom_hdr", str(dicom_path)],
-                                      text=True, stderr=subprocess.DEVNULL)
+        out = subprocess.check_output(
+            ["dicom_hdr", str(dicom_path)], text=True, stderr=subprocess.DEVNULL
+        )
     except Exception:
         return None
     for line in out.splitlines():
@@ -111,6 +115,7 @@ def send_via_local_mail(subject: str, body: str, recipient: str) -> bool:
         print(f"[warn] local mail send failed to {recipient}: {e}", file=sys.stderr)
         return False
 
+
 def main() -> int:
     root = Path(os.environ.get("MRQART_ROOT", DEFAULT_ROOT))
     pattern = os.environ.get("MRQART_PATTERN", DEFAULT_PATTERN)
@@ -126,7 +131,9 @@ def main() -> int:
 
     scan_dir = most_recent_scan_dir(root, pattern)
     if not scan_dir:
-        print(f"[error] No scan dirs matching *{pattern}* under {root}", file=sys.stderr)
+        print(
+            f"[error] No scan dirs matching *{pattern}* under {root}", file=sys.stderr
+        )
         return 3
 
     dcm = pick_a_dicom(scan_dir)
@@ -162,5 +169,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
