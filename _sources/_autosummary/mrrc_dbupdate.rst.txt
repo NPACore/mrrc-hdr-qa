@@ -1,0 +1,14 @@
+﻿mrrc\_dbupdate
+==============
+
+.. automodule:: mrrc_dbupdate
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      find_first_dicoms
+      is_project
+      update_mrrc_db
+   

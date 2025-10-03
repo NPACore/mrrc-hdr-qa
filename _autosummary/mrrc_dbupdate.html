@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>mrrc_dbupdate &#8212; mrrc-hdr-qa  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="compliance_check_html" href="compliance_check_html.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-mrrc_dbupdate">
+<span id="mrrc-dbupdate"></span><h1>mrrc_dbupdate<a class="headerlink" href="#module-mrrc_dbupdate" title="Link to this heading">¶</a></h1>
+<p>Find MRRC organized study acquisitions directories newer than what’s in the DB
+and update them.</p>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrrc_dbupdate.find_first_dicoms" title="mrrc_dbupdate.find_first_dicoms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_first_dicoms</span></code></a>(session_root)</p></td>
+<td><p>Find a representative dicom for each acquisition in <code class="docutils literal notranslate"><span class="pre">session_root</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrrc_dbupdate.is_project" title="mrrc_dbupdate.is_project"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_project</span></code></a>(pdir)</p></td>
+<td><p>Is input a MR project dir? should have subfolder like <code class="docutils literal notranslate"><span class="pre">2024.06.27-09.19.11/</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrrc_dbupdate.update_mrrc_db" title="mrrc_dbupdate.update_mrrc_db"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_mrrc_db</span></code></a>([project_dir_list])</p></td>
+<td><p>Use DB dates to find projects with new sessions.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="mrrc_dbupdate.find_first_dicoms">
+<span class="sig-prename descclassname"><span class="pre">mrrc_dbupdate.</span></span><span class="sig-name descname"><span class="pre">find_first_dicoms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_root</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrrc_dbupdate.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrrc_dbupdate.find_first_dicoms" title="Link to this definition">¶</a></dt>
+<dd><p>Find a representative dicom for each acquisition in <code class="docutils literal notranslate"><span class="pre">session_root</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session_root</strong> (<em>str</em>) – path to session root directory. likely like <code class="docutils literal notranslate"><span class="pre">.../ProjectName/yyyy.mm.dd-hh.mm.ss</span></code></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of first dicoms like <code class="docutils literal notranslate"><span class="pre">sessroot/subjid/acquisitonname/MR*</span></code></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrrc_dbupdate.is_project">
+<span class="sig-prename descclassname"><span class="pre">mrrc_dbupdate.</span></span><span class="sig-name descname"><span class="pre">is_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pdir</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrrc_dbupdate.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrrc_dbupdate.is_project" title="Link to this definition">¶</a></dt>
+<dd><p>Is input a MR project dir?
+should have subfolder like <code class="docutils literal notranslate"><span class="pre">2024.06.27-09.19.11/</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pdir</strong> (<em>str</em>) – directory to test</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if is a project directory</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+<p>#&gt;&gt;&gt; is_project(‘/disk/mace2/scan_data/WPC-8620/’)
+#True
+#&gt;&gt;&gt; is_project(‘/disk/mace2/scan_data/7T/’)
+#False</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrrc_dbupdate.update_mrrc_db">
+<span class="sig-prename descclassname"><span class="pre">mrrc_dbupdate.</span></span><span class="sig-name descname"><span class="pre">update_mrrc_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">project_dir_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrrc_dbupdate.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrrc_dbupdate.update_mrrc_db" title="Link to this definition">¶</a></dt>
+<dd><p>Use DB dates to find projects with new sessions. Add acquisitions.
+Dicoms in structure like <code class="docutils literal notranslate"><span class="pre">Project/yyyy.mm.dd-*/SessionId/AcqustionName-FOV.num/MR*</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>project_dir_list</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – list of project dirs. Default is <code class="docutils literal notranslate"><span class="pre">glob(&quot;/disk/mace2/scan_data/*&quot;)</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">mrrc-hdr-qa</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mrqart.html">mrqart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dcmmeta2tsv.html">dcmmeta2tsv</a></li>
+<li class="toctree-l1"><a class="reference internal" href="acq2sqlite.html">acq2sqlite</a></li>
+<li class="toctree-l1"><a class="reference internal" href="change_header.html">change_header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="template_checker.html">template_checker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compliance_check_html.html">compliance_check_html</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">mrrc_dbupdate</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#mrrc_dbupdate.find_first_dicoms"><code class="docutils literal notranslate"><span class="pre">find_first_dicoms()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mrrc_dbupdate.is_project"><code class="docutils literal notranslate"><span class="pre">is_project()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mrrc_dbupdate.update_mrrc_db"><code class="docutils literal notranslate"><span class="pre">update_mrrc_db()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="compliance_check_html.html" title="previous chapter">compliance_check_html</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, EH, WF.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/_autosummary/mrrc_dbupdate.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>dcmmeta2tsv &#8212; mrrc-hdr-qa  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="acq2sqlite" href="acq2sqlite.html" />
+    <link rel="prev" title="mrqart" href="mrqart.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-dcmmeta2tsv">
+<span id="dcmmeta2tsv"></span><h1>dcmmeta2tsv<a class="headerlink" href="#module-dcmmeta2tsv" title="Link to this heading">¶</a></h1>
+<p>Give a tab separated metadata value line per dicom file.</p>
+<p class="rubric">Module Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dcmmeta2tsv.TagKey" title="dcmmeta2tsv.TagKey"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TagKey</span></code></a></p></td>
+<td><p>TagKey is dicom header e.g. TR in taglist.txt.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dcmmeta2tsv.TagValues" title="dcmmeta2tsv.TagValues"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TagValues</span></code></a></p></td>
+<td><p>keys are names from <code class="docutils literal notranslate"><span class="pre">taglist.txt</span></code>, also has <code class="docutils literal notranslate"><span class="pre">dcm_path</span></code> key for file</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dcmmeta2tsv.csa_fetch" title="dcmmeta2tsv.csa_fetch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">csa_fetch</span></code></a>(csa_tr, itemname)</p></td>
+<td><p>safely look into <code class="docutils literal notranslate"><span class="pre">csa_tr</span></code> dicom dictionary.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dcmmeta2tsv.read_csa" title="dcmmeta2tsv.read_csa"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_csa</span></code></a>(csa)</p></td>
+<td><p>extract parameters from siemens CSA :param csa: content of siemens private tag (0x0029, 0x1010) :return: nibabel's csareader dictionary or None if cannot read</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dcmmeta2tsv.read_known_tags" title="dcmmeta2tsv.read_known_tags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_known_tags</span></code></a>([tagfile])</p></td>
+<td><p>read in tsv file like with header name,tag,desc.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dcmmeta2tsv.read_shims" title="dcmmeta2tsv.read_shims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_shims</span></code></a>(csa_s)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dcmmeta2tsv.read_tags" title="dcmmeta2tsv.read_tags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_tags</span></code></a>(dcm_path, tags)</p></td>
+<td><p>Read dicom header and isolate tags</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dcmmeta2tsv.tagpair_to_hex" title="dcmmeta2tsv.tagpair_to_hex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tagpair_to_hex</span></code></a>(csv_str)</p></td>
+<td><p>move our text files has tags like &quot;0051,1017&quot; to pydicom indexe like (0x51,0x1017)</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dcmmeta2tsv.DicomTagReader" title="dcmmeta2tsv.DicomTagReader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DicomTagReader</span></code></a>()</p></td>
+<td><p>Class to cache <a class="reference internal" href="#dcmmeta2tsv.read_known_tags" title="dcmmeta2tsv.read_known_tags"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_known_tags()</span></code></a> output</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dcmmeta2tsv.NULLVAL" title="dcmmeta2tsv.NULLVAL"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NULLVAL</span></code></a>()</p></td>
+<td><p>Container to imitate <code class="docutils literal notranslate"><span class="pre">pydicom.dcmread</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="dcmmeta2tsv.DicomTagReader">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dcmmeta2tsv.</span></span><span class="sig-name descname"><span class="pre">DicomTagReader</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/dcmmeta2tsv.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dcmmeta2tsv.DicomTagReader" title="Link to this definition">¶</a></dt>
+<dd><p>Class to cache <a class="reference internal" href="#dcmmeta2tsv.read_known_tags" title="dcmmeta2tsv.read_known_tags"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_known_tags()</span></code></a> output</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="dcmmeta2tsv.DicomTagReader.read_dicom_tags">
+<span class="sig-name descname"><span class="pre">read_dicom_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dcm_path</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/dcmmeta2tsv.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dcmmeta2tsv.DicomTagReader.read_dicom_tags" title="Link to this definition">¶</a></dt>
+<dd><p>return values of dicom header priority fields
+ordered as defined in <code class="docutils literal notranslate"><span class="pre">taglist.txt</span></code>
+:param dcm_path: path to dciom
+:return: dict[taglist.txt tagname, tag value]</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dtr</span> <span class="o">=</span> <span class="n">DicomTagReader</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdr</span> <span class="o">=</span> <span class="n">dtr</span><span class="o">.</span><span class="n">read_dicom_tags</span><span class="p">(</span><span class="s1">&#39;example_dicoms/RewardedAnti_good.dcm&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">hdr</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<span class="go">[1, &#39;p2&#39;, &#39;154833.265000&#39;, &#39;20220913&#39;, ...</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">hdr</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="go">&#39;example_dicoms/RewardedAnti_good.dcm&#39;</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dcm_path</strong> (<em>PathLike</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dcmmeta2tsv.NULLVAL">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dcmmeta2tsv.</span></span><span class="sig-name descname"><span class="pre">NULLVAL</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/dcmmeta2tsv.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dcmmeta2tsv.NULLVAL" title="Link to this definition">¶</a></dt>
+<dd><p>Container to imitate <code class="docutils literal notranslate"><span class="pre">pydicom.dcmread</span></code>.
+object that has <code class="docutils literal notranslate"><span class="pre">obj.value</span></code> for when a dicom tag does not exist.
+Using “null” to match AFNI’s dicom_hinfo missing text</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dcmmeta2tsv.TagKey">
+<span class="sig-prename descclassname"><span class="pre">dcmmeta2tsv.</span></span><span class="sig-name descname"><span class="pre">TagKey</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/dcmmeta2tsv.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dcmmeta2tsv.TagKey" title="Link to this definition">¶</a></dt>
+<dd><p>TagKey is dicom header e.g. TR in taglist.txt</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="dcmmeta2tsv.TagValues">
+<span class="sig-prename descclassname"><span class="pre">dcmmeta2tsv.</span></span><span class="sig-name descname"><span class="pre">TagValues</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/dcmmeta2tsv.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dcmmeta2tsv.TagValues" title="Link to this definition">¶</a></dt>
+<dd><p>keys are names from <code class="docutils literal notranslate"><span class="pre">taglist.txt</span></code>, also has <code class="docutils literal notranslate"><span class="pre">dcm_path</span></code> key for file</p>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dcmmeta2tsv.csa_fetch">
+<span class="sig-prename descclassname"><span class="pre">dcmmeta2tsv.</span></span><span class="sig-name descname"><span class="pre">csa_fetch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">csa_tr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">itemname</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/dcmmeta2tsv.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dcmmeta2tsv.csa_fetch" title="Link to this definition">¶</a></dt>
+<dd><p>safely look into <code class="docutils literal notranslate"><span class="pre">csa_tr</span></code> dicom dictionary.
+Expect nested structure like <code class="docutils literal notranslate"><span class="pre">'tags'-&gt;itemname-&gt;'items'-&gt;[0]</span></code>.</p>
+<p>In future, might want to check itemname and pull out more than the first array item.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">csa_fetch</span><span class="p">({</span><span class="s1">&#39;notags&#39;</span><span class="p">:</span><span class="s1">&#39;badinput&#39;</span><span class="p">},</span> <span class="s1">&#39;PhaseEncodingDirectionPositive&#39;</span><span class="p">)</span>
+<span class="go">&#39;null&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">csa_fetch</span><span class="p">({</span><span class="s1">&#39;tags&#39;</span><span class="p">:{</span><span class="s1">&#39;ImaPATModeText&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;items&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]}}},</span> <span class="s1">&#39;ImaPATModeText&#39;</span><span class="p">)</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>csa_tr</strong> (<em>dict</em>)</p></li>
+<li><p><strong>itemname</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dcmmeta2tsv.read_csa">
+<span class="sig-prename descclassname"><span class="pre">dcmmeta2tsv.</span></span><span class="sig-name descname"><span class="pre">read_csa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">csa</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/dcmmeta2tsv.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dcmmeta2tsv.read_csa" title="Link to this definition">¶</a></dt>
+<dd><p>extract parameters from siemens CSA
+:param csa: content of siemens private tag (0x0029, 0x1010)
+:return: nibabel’s csareader dictionary or None if cannot read</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">read_csa</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dcmmeta2tsv.read_known_tags">
+<span class="sig-prename descclassname"><span class="pre">dcmmeta2tsv.</span></span><span class="sig-name descname"><span class="pre">read_known_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tagfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'taglist.txt'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/dcmmeta2tsv.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dcmmeta2tsv.read_known_tags" title="Link to this definition">¶</a></dt>
+<dd><p>read in tsv file like with header name,tag,desc.
+skip comments and header</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>tagfile</strong> – text tsv file to get name,tag(hex pair),desc from</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>file parsed into a list of dictonaires</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[<em>Tag</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dcmmeta2tsv.read_shims">
+<span class="sig-prename descclassname"><span class="pre">dcmmeta2tsv.</span></span><span class="sig-name descname"><span class="pre">read_shims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">csa_s</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/dcmmeta2tsv.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dcmmeta2tsv.read_shims" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Param<span class="colon">:</span></dt>
+<dd class="field-odd"><p>csa_s <code class="docutils literal notranslate"><span class="pre">0x0029,0x1020</span></code> CSA <strong>Series</strong> Header Info::
+csa_s = dcmmeta2tsv.read_csa(dcm.get(())</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of shim values in order of CHM matlab code</p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>csa_s</strong> (<em>dict</em><em> | </em><em>None</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>CHM maltab code concats</dt><dd><p>sAdjData.uiAdjShimMode
+sGRADSPEC.asGPAData[0].lOffset{X,Y,Z}
+sGRADSPEC.alShimCurrent[0:4]
+sTXSPEC.asNucleusInfo[0].lFrequency</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">csa_s</span> <span class="o">=</span> <span class="n">pydicom</span><span class="o">.</span><span class="n">dcmread</span><span class="p">(</span><span class="s1">&#39;example_dicoms/RewardedAnti_good.dcm&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="mh">0x0029</span><span class="p">,</span> <span class="mh">0x1020</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">read_shims</span><span class="p">(</span><span class="n">read_csa</span><span class="p">(</span><span class="n">csa_s</span><span class="p">)))</span>
+<span class="go">&#39;1174,-2475,4575,531,-20,59,54,-8,123160323,4&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">read_shims</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+<span class="go">[&#39;null&#39;, ...&#39;null&#39;]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dcmmeta2tsv.read_tags">
+<span class="sig-prename descclassname"><span class="pre">dcmmeta2tsv.</span></span><span class="sig-name descname"><span class="pre">read_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dcm_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/dcmmeta2tsv.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dcmmeta2tsv.read_tags" title="Link to this definition">¶</a></dt>
+<dd><p>Read dicom header and isolate tags</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dcm_path</strong> (<em>PathLike</em>) – dicom file with headers to extract</p></li>
+<li><p><strong>tags</strong> (<em>list</em><em>[</em><em>Tag</em><em>]</em>) – ordered dictionary with ‘tag’ key as hex pair, see <a class="reference internal" href="#dcmmeta2tsv.tagpair_to_hex" title="dcmmeta2tsv.tagpair_to_hex"><code class="xref py py-func docutils literal notranslate"><span class="pre">tagpair_to_hex()</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[tag,value] values in same order as <code class="docutils literal notranslate"><span class="pre">tags</span></code></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, str]</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">tr</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;TR&#39;</span><span class="p">,</span> <span class="s1">&#39;tag&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mh">0x0018</span><span class="p">,</span><span class="mh">0x0080</span><span class="p">),</span> <span class="s1">&#39;loc&#39;</span><span class="p">:</span> <span class="s1">&#39;header&#39;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ipat</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;iPAT&#39;</span><span class="p">,</span> <span class="s1">&#39;tag&#39;</span><span class="p">:</span> <span class="s1">&#39;ImaPATModeText&#39;</span><span class="p">,</span> <span class="s1">&#39;loc&#39;</span><span class="p">:</span> <span class="s1">&#39;csa&#39;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">read_tags</span><span class="p">(</span><span class="s1">&#39;example_dicoms/RewardedAnti_good.dcm&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">ipat</span><span class="p">,</span> <span class="n">tr</span><span class="p">])</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<span class="go">[&#39;p2&#39;, &#39;1300.0&#39;, &#39;example_dicoms/RewardedAnti_good.dcm&#39;]</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">read_tags</span><span class="p">(</span><span class="s1">&#39;example_dicoms/DNE.dcm&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">ipat</span><span class="p">,</span><span class="n">tr</span><span class="p">])</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<span class="go">[&#39;null&#39;, &#39;null&#39;, &#39;example_dicoms/DNE.dcm&#39;]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dcmmeta2tsv.tagpair_to_hex">
+<span class="sig-prename descclassname"><span class="pre">dcmmeta2tsv.</span></span><span class="sig-name descname"><span class="pre">tagpair_to_hex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">csv_str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/dcmmeta2tsv.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dcmmeta2tsv.tagpair_to_hex" title="Link to this definition">¶</a></dt>
+<dd><p>move our text files has tags like “0051,1017”
+to pydicom indexe like (0x51,0x1017)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>csv_str</strong> – comma separated string to convert</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dicom header tag hex pair</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int, int]</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">tagpair_to_hex</span><span class="p">(</span><span class="s2">&quot;0051,1017&quot;</span><span class="p">)</span>
+<span class="go">(&#39;0x51&#39;, &#39;0x1017&#39;)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">mrrc-hdr-qa</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mrqart.html">mrqart</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">dcmmeta2tsv</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#dcmmeta2tsv.DicomTagReader"><code class="docutils literal notranslate"><span class="pre">DicomTagReader</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dcmmeta2tsv.DicomTagReader.read_dicom_tags"><code class="docutils literal notranslate"><span class="pre">DicomTagReader.read_dicom_tags()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#dcmmeta2tsv.NULLVAL"><code class="docutils literal notranslate"><span class="pre">NULLVAL</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dcmmeta2tsv.TagKey"><code class="docutils literal notranslate"><span class="pre">TagKey</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dcmmeta2tsv.TagValues"><code class="docutils literal notranslate"><span class="pre">TagValues</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dcmmeta2tsv.csa_fetch"><code class="docutils literal notranslate"><span class="pre">csa_fetch()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dcmmeta2tsv.read_csa"><code class="docutils literal notranslate"><span class="pre">read_csa()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dcmmeta2tsv.read_known_tags"><code class="docutils literal notranslate"><span class="pre">read_known_tags()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dcmmeta2tsv.read_shims"><code class="docutils literal notranslate"><span class="pre">read_shims()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dcmmeta2tsv.read_tags"><code class="docutils literal notranslate"><span class="pre">read_tags()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dcmmeta2tsv.tagpair_to_hex"><code class="docutils literal notranslate"><span class="pre">tagpair_to_hex()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="acq2sqlite.html">acq2sqlite</a></li>
+<li class="toctree-l1"><a class="reference internal" href="change_header.html">change_header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="template_checker.html">template_checker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compliance_check_html.html">compliance_check_html</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mrrc_dbupdate.html">mrrc_dbupdate</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="mrqart.html" title="previous chapter">mrqart</a></li>
+      <li>Next: <a href="acq2sqlite.html" title="next chapter">acq2sqlite</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, EH, WF.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/_autosummary/dcmmeta2tsv.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

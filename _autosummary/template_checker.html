@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>template_checker &#8212; mrrc-hdr-qa  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="compliance_check_html" href="compliance_check_html.html" />
+    <link rel="prev" title="change_header" href="change_header.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-template_checker">
+<span id="template-checker"></span><h1>template_checker<a class="headerlink" href="#module-template_checker" title="Link to this heading">¶</a></h1>
+<p>check a header against best template</p>
+<p class="rubric">Module Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#template_checker.ErrorCompare" title="template_checker.ErrorCompare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ErrorCompare</span></code></a></p></td>
+<td><p>Dictionary for mismatches in input (<code class="docutils literal notranslate"><span class="pre">have</span></code> key) and template (<code class="docutils literal notranslate"><span class="pre">expect</span></code> key)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#template_checker.CheckResult" title="template_checker.CheckResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CheckResult</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#template_checker.arraystr_to_float" title="template_checker.arraystr_to_float"><code class="xref py py-obj docutils literal notranslate"><span class="pre">arraystr_to_float</span></code></a>(val)</p></td>
+<td><p>Parse array values from different dicom types</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#template_checker.clean_rt" title="template_checker.clean_rt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clean_rt</span></code></a>(errors)</p></td>
+<td><p>Clean up errors that are not actually errors in &quot;realtime&quot; dicom headers.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#template_checker.find_errors" title="template_checker.find_errors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_errors</span></code></a>(template, current_hdr[, allow_null])</p></td>
+<td><p>Given a template and hdr, find any mismatches (non-conforming errors).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#template_checker.float_or_0" title="template_checker.float_or_0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">float_or_0</span></code></a>(val)</p></td>
+<td><p>float or zero</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#template_checker.fuzzy_arr_check" title="template_checker.fuzzy_arr_check"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fuzzy_arr_check</span></code></a>(have, expect)</p></td>
+<td><p>Compare only 3 decimals of a float or array of floats.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#template_checker.CheckResult" title="template_checker.CheckResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CheckResult</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#template_checker.ErrorCompare" title="template_checker.ErrorCompare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ErrorCompare</span></code></a></p></td>
+<td><p>Dictionary for mismatches in input (<code class="docutils literal notranslate"><span class="pre">have</span></code> key) and template (<code class="docutils literal notranslate"><span class="pre">expect</span></code> key)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#template_checker.TemplateChecker" title="template_checker.TemplateChecker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TemplateChecker</span></code></a>([db, context])</p></td>
+<td><p>cache db connection and list of tags read a dicom file and report if it conforms to the expected template</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="template_checker.CheckResult">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">template_checker.</span></span><span class="sig-name descname"><span class="pre">CheckResult</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/template_checker.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#template_checker.CheckResult" title="Link to this definition">¶</a></dt>
+<dd><ul>
+<li><div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">conforms</span></code>: false when a <a class="reference internal" href="acq2sqlite.html#acq2sqlite.DBQuery.CONSTS" title="acq2sqlite.DBQuery.CONSTS"><code class="xref py py-data docutils literal notranslate"><span class="pre">acq2sqlite.DBQuery.CONSTS</span></code></a></div>
+<div class="line">template-parameter between <code class="docutils literal notranslate"><span class="pre">input</span></code> and <code class="docutils literal notranslate"><span class="pre">template</span></code> mismatch</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">errors</span></code>: nested dict of {<code class="docutils literal notranslate"><span class="pre">mismatched_param</span></code>: <code class="docutils literal notranslate"><span class="pre">{'have':...,'expect':...}}</span></code>
+(parameter keyed dictionary with <a class="reference internal" href="#template_checker.ErrorCompare" title="template_checker.ErrorCompare"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorCompare</span></code></a> values)</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">input</span></code>: dict of all parameters of an input dicom header</div>
+<div class="line">(<a class="reference internal" href="dcmmeta2tsv.html#dcmmeta2tsv.TagValues" title="dcmmeta2tsv.TagValues"><code class="xref py py-class docutils literal notranslate"><span class="pre">dcmmeta2tsv.TagValues</span></code></a>)</div>
+</div>
+</li>
+<li><div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">template</span></code>: all the parameters of a template (matching Study, SeriesName)</div>
+<div class="line">Also a <a class="reference internal" href="dcmmeta2tsv.html#dcmmeta2tsv.TagValues" title="dcmmeta2tsv.TagValues"><code class="xref py py-class docutils literal notranslate"><span class="pre">dcmmeta2tsv.TagValues</span></code></a></div>
+</div>
+</li>
+</ul>
+<p>Here’s an example of <a class="reference internal" href="#template_checker.CheckResult" title="template_checker.CheckResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">CheckResult</span></code></a> datastructure in html/javascript
+on the <a class="reference external" href="../_static/mrqart/index.html">static debug-enabled page</a></p>
+<img alt="../_images/CheckResults_mrqart.png" src="../_images/CheckResults_mrqart.png" />
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="template_checker.ErrorCompare">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">template_checker.</span></span><span class="sig-name descname"><span class="pre">ErrorCompare</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/template_checker.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#template_checker.ErrorCompare" title="Link to this definition">¶</a></dt>
+<dd><p>Dictionary for mismatches in input (<code class="docutils literal notranslate"><span class="pre">have</span></code> key) and template (<code class="docutils literal notranslate"><span class="pre">expect</span></code> key)</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="template_checker.TemplateChecker">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">template_checker.</span></span><span class="sig-name descname"><span class="pre">TemplateChecker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'DB'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/template_checker.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#template_checker.TemplateChecker" title="Link to this definition">¶</a></dt>
+<dd><p>cache db connection and list of tags
+read a dicom file and report if it conforms to the expected template</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="template_checker.TemplateChecker.check_file">
+<span class="sig-name descname"><span class="pre">check_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dcm_path</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/template_checker.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#template_checker.TemplateChecker.check_file" title="Link to this definition">¶</a></dt>
+<dd><p>File disbatch for <a class="reference internal" href="#template_checker.TemplateChecker.check_header" title="template_checker.TemplateChecker.check_header"><code class="xref py py-func docutils literal notranslate"><span class="pre">TemplateChecker.check_header()</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dcm_path</strong> – path to dicom file with header/parameters to read.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>output of check_header</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#template_checker.CheckResult" title="template_checker.CheckResult"><em>CheckResult</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="template_checker.TemplateChecker.check_header">
+<span class="sig-name descname"><span class="pre">check_header</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hdr</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/template_checker.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#template_checker.TemplateChecker.check_header" title="Link to this definition">¶</a></dt>
+<dd><p>Check acquisition parameters against it’s template.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>hdr</strong> – DB row or file dictionary desc. acq. to check against template</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Conforming status, errors, and comparison information</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#template_checker.CheckResult" title="template_checker.CheckResult"><em>CheckResult</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="template_checker.arraystr_to_float">
+<span class="sig-prename descclassname"><span class="pre">template_checker.</span></span><span class="sig-name descname"><span class="pre">arraystr_to_float</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/template_checker.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#template_checker.arraystr_to_float" title="Link to this definition">¶</a></dt>
+<dd><p>Parse array values from different dicom types</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>val</strong> (<em>str</em>) – array of floats stored as string</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>converted to python list</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[float]</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">arraystr_to_float</span><span class="p">(</span><span class="s2">&quot;[1.0, 2.0]&quot;</span><span class="p">)</span> <span class="c1"># saved dicomes</span>
+<span class="go">[1.0, 2.0]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">arraystr_to_float</span><span class="p">(</span><span class="s2">&quot;1.0,2.0&quot;</span><span class="p">)</span> <span class="c1"># realtime dicoms</span>
+<span class="go">[1.0, 2.0]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="template_checker.clean_rt">
+<span class="sig-prename descclassname"><span class="pre">template_checker.</span></span><span class="sig-name descname"><span class="pre">clean_rt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">errors</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/template_checker.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#template_checker.clean_rt" title="Link to this definition">¶</a></dt>
+<dd><p>Clean up errors that are not actually errors in “realtime” dicom headers.</p>
+<p>Currently (2025-02-26) only checks <code class="docutils literal notranslate"><span class="pre">PixelResol</span></code> using <a class="reference internal" href="#template_checker.fuzzy_arr_check" title="template_checker.fuzzy_arr_check"><code class="xref py py-func docutils literal notranslate"><span class="pre">fuzzy_arr_check()</span></code></a>
+:param errors: have/expect dict of errors
+:returns: errors with close ones removed</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>errors</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><a class="reference internal" href="#template_checker.ErrorCompare" title="template_checker.ErrorCompare"><em>ErrorCompare</em></a><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, <a class="reference internal" href="#template_checker.ErrorCompare" title="template_checker.ErrorCompare"><em>ErrorCompare</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="template_checker.find_errors">
+<span class="sig-prename descclassname"><span class="pre">template_checker.</span></span><span class="sig-name descname"><span class="pre">find_errors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">template</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_hdr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_null</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/template_checker.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#template_checker.find_errors" title="Link to this definition">¶</a></dt>
+<dd><p>Given a template and hdr, find any mismatches (non-conforming errors).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>template</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – expected values</p></li>
+<li><p><strong>current_hdr</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – values we currently have</p></li>
+<li><p><strong>allow_null</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – current keys that can be null.
+see py:class:<cite>TemplateChecker.context</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dictionary of tag key names and the have/expect values</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, <a class="reference internal" href="#template_checker.ErrorCompare" title="template_checker.ErrorCompare"><em>ErrorCompare</em></a>]</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">find_errors</span><span class="p">({</span><span class="s2">&quot;TR&quot;</span><span class="p">:</span> <span class="s2">&quot;1300&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;TR&quot;</span><span class="p">:</span> <span class="s2">&quot;1300&quot;</span><span class="p">})</span>
+<span class="go">{}</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">find_errors</span><span class="p">({</span><span class="s2">&quot;TR&quot;</span><span class="p">:</span> <span class="s2">&quot;1300&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;TR&quot;</span><span class="p">:</span> <span class="s2">&quot;2000&quot;</span><span class="p">})</span>
+<span class="go">{&#39;TR&#39;: {&#39;expect&#39;: &#39;1300&#39;, &#39;have&#39;: &#39;2000&#39;}}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="template_checker.float_or_0">
+<span class="sig-prename descclassname"><span class="pre">template_checker.</span></span><span class="sig-name descname"><span class="pre">float_or_0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/template_checker.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#template_checker.float_or_0" title="Link to this definition">¶</a></dt>
+<dd><p>float or zero</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>val</strong> (<em>str</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="template_checker.fuzzy_arr_check">
+<span class="sig-prename descclassname"><span class="pre">template_checker.</span></span><span class="sig-name descname"><span class="pre">fuzzy_arr_check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">have</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expect</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/template_checker.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#template_checker.fuzzy_arr_check" title="Link to this definition">¶</a></dt>
+<dd><p>Compare only 3 decimals of a float or array of floats.
+Used by <a class="reference internal" href="#template_checker.clean_rt" title="template_checker.clean_rt"><code class="xref py py-func docutils literal notranslate"><span class="pre">clean_rt()</span></code></a> when comparing realtime dicom headers to DB</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>have</strong> – string of floats on one side</p></li>
+<li><p><strong>expect</strong> – string of floats on another</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>true if they are roughly the same</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fuzzy_arr_check</span><span class="p">(</span><span class="s1">&#39;2.00001&#39;</span><span class="p">,</span> <span class="s1">&#39;2&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fuzzy_arr_check</span><span class="p">(</span><span class="s1">&#39;[2.00001, 0.0]&#39;</span><span class="p">,</span> <span class="s1">&#39;2.0,0.0000001&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fuzzy_arr_check</span><span class="p">(</span><span class="s1">&#39;[2,0]&#39;</span><span class="p">,</span> <span class="s1">&#39;2,1&#39;</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">mrrc-hdr-qa</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mrqart.html">mrqart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dcmmeta2tsv.html">dcmmeta2tsv</a></li>
+<li class="toctree-l1"><a class="reference internal" href="acq2sqlite.html">acq2sqlite</a></li>
+<li class="toctree-l1"><a class="reference internal" href="change_header.html">change_header</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">template_checker</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#template_checker.CheckResult"><code class="docutils literal notranslate"><span class="pre">CheckResult</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#template_checker.ErrorCompare"><code class="docutils literal notranslate"><span class="pre">ErrorCompare</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#template_checker.TemplateChecker"><code class="docutils literal notranslate"><span class="pre">TemplateChecker</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#template_checker.TemplateChecker.check_file"><code class="docutils literal notranslate"><span class="pre">TemplateChecker.check_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#template_checker.TemplateChecker.check_header"><code class="docutils literal notranslate"><span class="pre">TemplateChecker.check_header()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#template_checker.arraystr_to_float"><code class="docutils literal notranslate"><span class="pre">arraystr_to_float()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#template_checker.clean_rt"><code class="docutils literal notranslate"><span class="pre">clean_rt()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#template_checker.find_errors"><code class="docutils literal notranslate"><span class="pre">find_errors()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#template_checker.float_or_0"><code class="docutils literal notranslate"><span class="pre">float_or_0()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#template_checker.fuzzy_arr_check"><code class="docutils literal notranslate"><span class="pre">fuzzy_arr_check()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="compliance_check_html.html">compliance_check_html</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mrrc_dbupdate.html">mrrc_dbupdate</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="change_header.html" title="previous chapter">change_header</a></li>
+      <li>Next: <a href="compliance_check_html.html" title="next chapter">compliance_check_html</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, EH, WF.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/_autosummary/template_checker.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
