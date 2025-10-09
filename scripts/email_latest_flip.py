@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import os
-import sys
 import sqlite3
 import subprocess
-from pathlib import Path
+import sys
 from datetime import datetime
-from typing import List, Dict, Optional, Any, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 # --------- Config ---------
 DEFAULT_ROOT = "/Volumes/Hera/Raw/MRprojects/Habit"
@@ -71,7 +71,9 @@ def most_recent_scan_dir(root: Path, contains: str) -> Optional[Path]:
 
 def pick_a_dicom(scan_dir: Path) -> Optional[Path]:
     for p in scan_dir.iterdir():
-        if p.is_file() and (p.name.startswith("MR") or p.suffix.lower() in (".dcm", ".ima")):
+        if p.is_file() and (
+            p.name.startswith("MR") or p.suffix.lower() in (".dcm", ".ima")
+        ):
             return p
     for p in scan_dir.rglob("*"):
         if p.is_file():
@@ -123,11 +125,14 @@ def _norm_str(x) -> Optional[str]:
     if x is None:
         return None
     import re
+
     s = re.sub(r"\s+", " ", str(x)).strip()
     return s.casefold()  # case/locale robust lowercase
 
 
-def compare_against_template(hdr: Dict[str, Any], tmpl: Dict[str, Any]) -> Dict[str, str]:
+def compare_against_template(
+    hdr: Dict[str, Any], tmpl: Dict[str, Any]
+) -> Dict[str, str]:
     """
     Compare header vs template using DBQuery.CONSTS fields.
     - Numeric fields compare with tolerance
@@ -159,7 +164,9 @@ def compare_against_template(hdr: Dict[str, Any], tmpl: Dict[str, Any]) -> Dict[
     for db_key in DBQuery.CONSTS:
         if db_key not in keymap:
             continue
-        hdr_val = next((hdr.get(k) for k in keymap[db_key] if hdr.get(k) is not None), None)
+        hdr_val = next(
+            (hdr.get(k) for k in keymap[db_key] if hdr.get(k) is not None), None
+        )
         db_val = tmpl.get(db_key)
 
         hvf, dvf = _as_float(hdr_val), _as_float(db_val)
@@ -189,7 +196,9 @@ def main() -> int:
 
     scan_dir = most_recent_scan_dir(root, pattern)
     if not scan_dir:
-        print(f"[error] No scan dirs matching *{pattern}* under {root}", file=sys.stderr)
+        print(
+            f"[error] No scan dirs matching *{pattern}* under {root}", file=sys.stderr
+        )
         return 3
 
     dcm = pick_a_dicom(scan_dir)
@@ -219,7 +228,7 @@ def main() -> int:
     if tmpl_row:
         tmpl = dict(tmpl_row)
         errors = compare_against_template(hdr, tmpl)
-        conforms = (len(errors) == 0)
+        conforms = len(errors) == 0
         conforms_str = "True" if conforms else "False"
         err_count = len(errors)
         err_text = "\n".join(f" - {k}: {v}" for k, v in errors.items()) or " - None"
@@ -275,4 +284,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
