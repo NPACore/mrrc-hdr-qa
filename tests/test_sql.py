@@ -3,7 +3,6 @@ import sqlite3
 from datetime import datetime, timedelta
 
 import pytest
-
 from mrqart.acq2sqlite import DBQuery
 from mrqart.dcmmeta2tsv import DicomTagReader, TagDicts
 from mrqart.template_checker import CheckResult, TemplateChecker

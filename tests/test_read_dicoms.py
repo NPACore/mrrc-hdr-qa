@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import pytest
-
 from mrqart.dcmmeta2tsv import DicomTagReader, TagDicts
 
 
