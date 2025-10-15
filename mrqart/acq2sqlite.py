@@ -8,8 +8,9 @@ import re
 import sqlite3
 import sys
 from datetime import datetime, timedelta
+from importlib import resources
 from typing import Optional
-from importlib import resources 
+
 from .dcmmeta2tsv import NULLVAL, TagValues
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
@@ -36,7 +37,11 @@ def column_names():
     so it works whether running from source, editable install, or wheel.
     """
     # mrqart/data/taglist.txt
-    txt = resources.files("mrqart.data").joinpath("taglist.txt").read_text(encoding="utf-8")
+    txt = (
+        resources.files("mrqart.data")
+        .joinpath("taglist.txt")
+        .read_text(encoding="utf-8")
+    )
     tag_colnames = [
         line.split("\t")[0]
         for line in txt.splitlines()

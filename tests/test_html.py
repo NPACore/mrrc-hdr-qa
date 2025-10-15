@@ -1,6 +1,7 @@
 # test compliance_check_html.py
 import pytest
 from jinja2 import Template
+
 from mrqart.compliance_check_html import generate_html_report
 
 # from template_checker import CheckResult, TemplateChecker

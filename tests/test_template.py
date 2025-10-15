@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import pytest
+
 from mrqart.template_checker import TemplateChecker, find_errors
 
 

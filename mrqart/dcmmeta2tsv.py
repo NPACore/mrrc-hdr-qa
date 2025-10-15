@@ -13,8 +13,9 @@ import os
 import re
 import sys
 import warnings
-from typing import Optional, TypedDict
 from importlib import resources
+from typing import Optional, TypedDict
+
 import pydicom
 
 with warnings.catch_warnings():
@@ -69,7 +70,11 @@ def read_known_tags(tagfile: Optional[str] = None) -> TagDicts:
     """
     if tagfile is None or os.path.basename(tagfile) == "taglist.txt":
         # read packaged data
-        txt = resources.files("mrqart.data").joinpath("taglist.txt").read_text(encoding="utf-8")
+        txt = (
+            resources.files("mrqart.data")
+            .joinpath("taglist.txt")
+            .read_text(encoding="utf-8")
+        )
         lines = txt.splitlines()
     else:
         # allow explicit external files for power users
@@ -88,7 +93,7 @@ def read_known_tags(tagfile: Optional[str] = None) -> TagDicts:
         if re.search(r"^[0-9]{4},", tags[i]["tag"]):
             tags[i]["tag"] = tagpair_to_hex(tags[i]["tag"])
             tags[i]["loc"] = "header"
-        elif name.lower() == "shims":   # case-insensitive to match 'Shims'
+        elif name.lower() == "shims":  # case-insensitive to match 'Shims'
             tags[i]["loc"] = "asccov"
         else:
             tags[i]["loc"] = "csa"
