@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>mrrc-hdr-qa documentation &#8212; mrrc-hdr-qa  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="mrqart" href="_autosummary/mrqart.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="mrrc-hdr-qa-documentation">
+<h1>mrrc-hdr-qa documentation<a class="headerlink" href="#mrrc-hdr-qa-documentation" title="Link to this heading">¶</a></h1>
+<p>Code to parse dicoms into a template database and alert on non-conforming sequences.</p>
+<section id="code">
+<h2>Code<a class="headerlink" href="#code" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/mrqart.html#module-mrqart" title="mrqart"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mrqart</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_autosummary/dcmmeta2tsv.html#module-dcmmeta2tsv" title="dcmmeta2tsv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dcmmeta2tsv</span></code></a></p></td>
+<td><p>Give a tab separated metadata value line per dicom file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/acq2sqlite.html#module-acq2sqlite" title="acq2sqlite"><code class="xref py py-obj docutils literal notranslate"><span class="pre">acq2sqlite</span></code></a></p></td>
+<td><p>Convert <code class="docutils literal notranslate"><span class="pre">db.txt</span></code> into a sqlite database.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_autosummary/change_header.html#module-change_header" title="change_header"><code class="xref py py-obj docutils literal notranslate"><span class="pre">change_header</span></code></a></p></td>
+<td><p>Modify DICOM header information to simulate failing QA.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/template_checker.html#module-template_checker" title="template_checker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">template_checker</span></code></a></p></td>
+<td><p>check a header against best template</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_autosummary/compliance_check_html.html#module-compliance_check_html" title="compliance_check_html"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compliance_check_html</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/mrrc_dbupdate.html#module-mrrc_dbupdate" title="mrrc_dbupdate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mrrc_dbupdate</span></code></a></p></td>
+<td><p>Find MRRC organized study acquisitions directories newer than what's in the DB and update them.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<section id="mrqart">
+<h3>MRQART<a class="headerlink" href="#mrqart" title="Link to this heading">¶</a></h3>
+<p>MR Quality Assurance in (near) Real Time. See see <a class="reference external" href="_static/mrqart/index.html">static debug-enabled page</a> for a demonstration. Full toolchain uses</p>
+<ol class="arabic">
+<li><p>Samba server receives files from scanner (iceconfig)</p></li>
+<li><p><code class="xref py py-func docutils literal notranslate"><span class="pre">mrqart.main()</span></code> initializes an inotify watcher</p></li>
+<li><p>New dcm files parsed with <a class="reference internal" href="_autosummary/dcmmeta2tsv.html#dcmmeta2tsv.DicomTagReader.read_dicom_tags" title="dcmmeta2tsv.DicomTagReader.read_dicom_tags"><code class="xref py py-func docutils literal notranslate"><span class="pre">dcmmeta2tsv.DicomTagReader.read_dicom_tags()</span></code></a></p></li>
+<li><p>Headers compared to template <a class="reference internal" href="_autosummary/template_checker.html#template_checker.TemplateChecker.check_header" title="template_checker.TemplateChecker.check_header"><code class="xref py py-func docutils literal notranslate"><span class="pre">template_checker.TemplateChecker.check_header()</span></code></a></p></li>
+<li><p>Dicom vs template comparisons is sent to the web browser via web sockets</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>socket and http server managed by <cite>mrqart</cite></p></li>
+<li><p>javascript in <code class="docutils literal notranslate"><span class="pre">static/index.html</span></code> provides client websockets ingest and styling</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+<img alt="_images/mrqart-browserUI_20241124.png" src="_images/mrqart-browserUI_20241124.png" />
+</section>
+<section id="template">
+<h3>Template<a class="headerlink" href="#template" title="Link to this heading">¶</a></h3>
+<p>See <a class="reference internal" href="_autosummary/acq2sqlite.html#acq2sqlite.DBQuery.CONSTS" title="acq2sqlite.DBQuery.CONSTS"><code class="xref py py-data docutils literal notranslate"><span class="pre">acq2sqlite.DBQuery.CONSTS</span></code></a></p>
+<p>Here’s an example for the <code class="docutils literal notranslate"><span class="pre">RewardedAnti</span></code> task acquisitions in the <code class="docutils literal notranslate"><span class="pre">WPC-8620</span></code> project. The ideal template is found finding the most frequent set of repeated key parameters. 150 of the <code class="docutils literal notranslate"><span class="pre">RewardedAnti</span></code> seqeuences share the same <code class="docutils literal notranslate"><span class="pre">acq_param</span></code> set, here stored in the sqlite db on rowid=35. But 4 acquisitions (rows in <code class="docutils literal notranslate"><span class="pre">acq</span></code>) don’t match. In this case all mismatches can be found in <code class="docutils literal notranslate"><span class="pre">TA</span></code>.</p>
+<img alt="_images/nonconforming_example.png" src="_images/nonconforming_example.png" />
+</section>
+</section>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h2>
+<blockquote>
+<div><table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Dicom tag list</span><a class="headerlink" href="#id1" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>name</p></th>
+<th class="head"><p>tag</p></th>
+<th class="head"><p>desc</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Phase</p></td>
+<td><p>PhaseEncodingDirectionPositive</p></td>
+<td><p>csa header phase 0/1</p></td>
+</tr>
+<tr class="row-odd"><td><p>iPAT</p></td>
+<td><p>ImaPATModeText</p></td>
+<td><p>csa header grappa acceleration</p></td>
+</tr>
+<tr class="row-even"><td><p>AcqTime</p></td>
+<td><p>00080032</p></td>
+<td><p>Acquisition Time like 145446.685000</p></td>
+</tr>
+<tr class="row-odd"><td><p>AcqDate</p></td>
+<td><p>00080022</p></td>
+<td><p>like 20241004</p></td>
+</tr>
+<tr class="row-even"><td><p>SeriesNumber</p></td>
+<td><p>00200011</p></td>
+<td><p>REL Series Number</p></td>
+</tr>
+<tr class="row-odd"><td><p>SubID</p></td>
+<td><p>00100010</p></td>
+<td><p>patient name</p></td>
+</tr>
+<tr class="row-even"><td><p>Comments</p></td>
+<td><p>00204000</p></td>
+<td><p>REL Image Comments//Unaliased MB3/PE4/LB SENSE1</p></td>
+</tr>
+<tr class="row-odd"><td><p>Operator</p></td>
+<td><p>00081070</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Station</p></td>
+<td><p>00081010</p></td>
+<td><p>unique scanner id</p></td>
+</tr>
+<tr class="row-odd"><td><p>Project</p></td>
+<td><p>00081030</p></td>
+<td><p>ID Study Description//Brain^wpc-8620</p></td>
+</tr>
+<tr class="row-even"><td><p>SequenceName</p></td>
+<td><p>0008103e</p></td>
+<td><p>series description</p></td>
+</tr>
+<tr class="row-odd"><td><p>SequenceType</p></td>
+<td><p>00180024</p></td>
+<td><p>ACQ Sequence Name</p></td>
+</tr>
+<tr class="row-even"><td><p>PED_major</p></td>
+<td><p>00181312</p></td>
+<td><p>ACQ Phase Encoding Direction ROW or COL</p></td>
+</tr>
+<tr class="row-odd"><td><p>TR</p></td>
+<td><p>00180080</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>TE</p></td>
+<td><p>00180081</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Matrix</p></td>
+<td><p>00181310</p></td>
+<td><p>ACQ Acquisition Matrix</p></td>
+</tr>
+<tr class="row-even"><td><p>PixelResol</p></td>
+<td><p>00280030</p></td>
+<td><p>IMG Pixel Spacing//2.29787230491642.2978723049164</p></td>
+</tr>
+<tr class="row-odd"><td><p>BWP</p></td>
+<td><p>00180095</p></td>
+<td><p>ACQ Pixel Bandwidth (?) also unimplemented? need CSA value?</p></td>
+</tr>
+<tr class="row-even"><td><p>BWPPE</p></td>
+<td><p>00191028</p></td>
+<td><p>in matlab S.BandwidthPerPixelPhaseEncode;</p></td>
+</tr>
+<tr class="row-odd"><td><p>FA</p></td>
+<td><p>00181314</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>TA</p></td>
+<td><p>0051100a</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>FoV</p></td>
+<td><p>0051100c</p></td>
+<td><p>eg FoV 1617*1727; but actually cocaluated from matrix and spacing?</p></td>
+</tr>
+<tr class="row-even"><td><p>Shims</p></td>
+<td><p>ASCCOV</p></td>
+<td><p>sAdjData.uiAdjShimModesGRADSPEC.asGPAData[0].lOffset{XYZ}sGRADSPEC.alShimCurrent[0:4]sTXSPEC.asNucleusInfo[0].lFrequency</p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">mrrc-hdr-qa</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="_autosummary/mrqart.html">mrqart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_autosummary/dcmmeta2tsv.html">dcmmeta2tsv</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_autosummary/acq2sqlite.html">acq2sqlite</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_autosummary/change_header.html">change_header</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_autosummary/template_checker.html">template_checker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_autosummary/compliance_check_html.html">compliance_check_html</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_autosummary/mrrc_dbupdate.html">mrrc_dbupdate</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="_autosummary/mrqart.html" title="next chapter">mrqart</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, EH, WF.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

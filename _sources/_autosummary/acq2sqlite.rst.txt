@@ -1,0 +1,20 @@
+﻿acq2sqlite
+==========
+
+.. automodule:: acq2sqlite
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      column_names
+      have_pipe_data
+      none_to_null
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      DBQuery
+   

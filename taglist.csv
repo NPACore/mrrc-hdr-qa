@@ -1,0 +1,24 @@
+name,tag,desc
+Phase,PhaseEncodingDirectionPositive, csa header phase 0/1
+iPAT,ImaPATModeText,csa header grappa acceleration
+AcqTime,00080032, Acquisition Time like 145446.685000
+AcqDate,00080022, like 20241004
+SeriesNumber,00200011, REL Series Number
+SubID,00100010, patient name
+Comments,00204000,REL Image Comments//Unaliased MB3/PE4/LB SENSE1
+Operator,00081070
+Station,00081010,unique scanner id
+Project,00081030, ID Study Description//Brain^wpc-8620
+SequenceName,0008103e, series description
+SequenceType,00180024, ACQ Sequence Name
+PED_major,00181312,   ACQ Phase Encoding Direction ROW or COL
+TR,00180080
+TE,00180081
+Matrix,00181310, ACQ Acquisition Matrix
+PixelResol,00280030,  IMG Pixel Spacing//2.2978723049164\2.2978723049164
+BWP,00180095, ACQ Pixel Bandwidth (?) also unimplemented? need CSA value?
+BWPPE,00191028, in matlab S.BandwidthPerPixelPhaseEncode;
+FA,00181314        
+TA,0051100a
+FoV,0051100c, eg FoV 1617*1727; but actually cocaluated from matrix and spacing?
+Shims,ASCCOV,sAdjData.uiAdjShimModesGRADSPEC.asGPAData[0].lOffset{XYZ}sGRADSPEC.alShimCurrent[0:4]sTXSPEC.asNucleusInfo[0].lFrequency

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>change_header &#8212; mrrc-hdr-qa  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="template_checker" href="template_checker.html" />
+    <link rel="prev" title="acq2sqlite" href="acq2sqlite.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-change_header">
+<span id="change-header"></span><h1>change_header<a class="headerlink" href="#module-change_header" title="Link to this heading">¶</a></h1>
+<p>Modify DICOM header information to simulate failing QA.</p>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#change_header.change_tags" title="change_header.change_tags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">change_tags</span></code></a>(dcm_dir, new_data[, out_dir])</p></td>
+<td><p>Change specified tags of all dicoms in a directory.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#change_header.gen_acqdates" title="change_header.gen_acqdates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gen_acqdates</span></code></a>()</p></td>
+<td><p>Generate DataElements for random acquisition day and time.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#change_header.gen_anon" title="change_header.gen_anon"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gen_anon</span></code></a>()</p></td>
+<td><p>Make random date of birth, age, and sex.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#change_header.gen_ids" title="change_header.gen_ids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gen_ids</span></code></a>(new_id)</p></td>
+<td><p>Generate ID DataElements.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#change_header.main_make_mods" title="change_header.main_make_mods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main_make_mods</span></code></a>()</p></td>
+<td><p>Exercise header modification code to make example data we can use.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="change_header.change_tags">
+<span class="sig-prename descclassname"><span class="pre">change_header.</span></span><span class="sig-name descname"><span class="pre">change_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dcm_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/change_header.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#change_header.change_tags" title="Link to this definition">¶</a></dt>
+<dd><p>Change specified tags of all dicoms in a directory. Optionally make copies in out_dir.</p>
+<p>sideffect:  writes copies of <code class="docutils literal notranslate"><span class="pre">dcm_dir</span></code> dicoms into <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> unless <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dcm_dir</strong> (<em>Path</em>) – input directory with dicom files (<code class="docutils literal notranslate"><span class="pre">MR*</span></code>, <code class="docutils literal notranslate"><span class="pre">*IMA</span></code> , or <code class="docutils literal notranslate"><span class="pre">*dcm</span></code>)</p></li>
+<li><p><strong>new_data</strong> (<em>List</em><em>[</em><em>DataElement</em><em>]</em>) – list of data elements to replace
+like <code class="docutils literal notranslate"><span class="pre">[pydicom.DataElement(value=&quot;newpname&quot;,</span> <span class="pre">VR=&quot;LO&quot;,</span> <span class="pre">tag=(0x0018,</span> <span class="pre">0x1030))]</span></code></p></li>
+<li><p><strong>out_dir</strong> (<em>Path</em><em> | </em><em>None</em>) – Optional. Where to save modified dicoms</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>example modified dicom. last if out_dir, first and only if no <code class="docutils literal notranslate"><span class="pre">out_dir</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>FileDataset</em> | None</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">new_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">pydicom</span><span class="o">.</span><span class="n">DataElement</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;newpname&quot;</span><span class="p">,</span> <span class="n">VR</span><span class="o">=</span><span class="s2">&quot;LO&quot;</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="p">(</span><span class="mh">0x0018</span><span class="p">,</span> <span class="mh">0x1030</span><span class="p">))]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ex_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;example_dicoms/&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ex</span> <span class="o">=</span> <span class="n">change_tags</span><span class="p">(</span><span class="n">ex_path</span><span class="p">,</span> <span class="n">new_data</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ex</span><span class="o">.</span><span class="n">ProtocolName</span>
+<span class="go">&#39;newpname&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="change_header.gen_acqdates">
+<span class="sig-prename descclassname"><span class="pre">change_header.</span></span><span class="sig-name descname"><span class="pre">gen_acqdates</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/change_header.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#change_header.gen_acqdates" title="Link to this definition">¶</a></dt>
+<dd><p>Generate DataElements for random acquisition day and time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ID DataElements List</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>List</em>[<em>DataElement</em>]</p>
+</dd>
+</dl>
+<p>See <a class="reference internal" href="#change_header.gen_anon" title="change_header.gen_anon"><code class="xref py py-func docutils literal notranslate"><span class="pre">gen_anon()</span></code></a> for tag and VR info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="change_header.gen_anon">
+<span class="sig-prename descclassname"><span class="pre">change_header.</span></span><span class="sig-name descname"><span class="pre">gen_anon</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/change_header.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#change_header.gen_anon" title="Link to this definition">¶</a></dt>
+<dd><p>Make random date of birth, age, and sex.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of DataElements with randomized values</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>List</em>[<em>DataElement</em>]</p>
+</dd>
+</dl>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Field tag type and location can be extracted like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">pydicom</span><span class="o">.</span><span class="n">dcmread</span><span class="p">(</span><span class="n">example_fname</span><span class="p">)</span>
+<span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;AcquisitionDate&#39;</span><span class="p">,</span> <span class="s1">&#39;AcquisitionTime&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;PatientBirthDate&#39;</span><span class="p">,</span> <span class="s1">&#39;PatientAge&#39;</span><span class="p">,</span> <span class="s1">&#39;PatientSex&#39;</span><span class="p">]</span>
+<span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">]</span>
+
+<span class="c1"># yields</span>
+<span class="p">[(</span><span class="mi">0008</span><span class="p">,</span><span class="mi">0022</span><span class="p">)</span> <span class="n">Acquisition</span> <span class="n">Date</span>                    <span class="n">DA</span><span class="p">:</span> <span class="s1">&#39;20221222&#39;</span><span class="p">,</span>
+ <span class="p">(</span><span class="mi">0008</span><span class="p">,</span><span class="mi">0032</span><span class="p">)</span> <span class="n">Acquisition</span> <span class="n">Time</span>                    <span class="n">TM</span><span class="p">:</span> <span class="s1">&#39;092132.722500&#39;</span><span class="p">,</span>
+ <span class="p">(</span><span class="mi">0010</span><span class="p">,</span><span class="mi">0030</span><span class="p">)</span> <span class="n">Patient</span><span class="s1">&#39;s Birth Date                DA: &#39;</span><span class="mi">20070404</span><span class="s1">&#39;,</span>
+ <span class="p">(</span><span class="mi">0010</span><span class="p">,</span><span class="mi">1010</span><span class="p">)</span> <span class="n">Patient</span><span class="s1">&#39;s Age                       AS: &#39;</span><span class="mi">015</span><span class="n">Y</span><span class="s1">&#39;,</span>
+ <span class="p">(</span><span class="mi">0010</span><span class="p">,</span><span class="mi">0040</span><span class="p">)</span> <span class="n">Patient</span><span class="s1">&#39;s Sex                       CS: &#39;</span><span class="sa">F</span><span class="s1">&#39;]</span>
+</pre></div>
+</div>
+</div>
+<p>Where the tag is the tuple and “<code class="docutils literal notranslate"><span class="pre">XX</span></code>:” is the type</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="change_header.gen_ids">
+<span class="sig-prename descclassname"><span class="pre">change_header.</span></span><span class="sig-name descname"><span class="pre">gen_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_id</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/change_header.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#change_header.gen_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Generate ID DataElements.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>new_id</strong> (<em>str</em>) – id string to put into pat name and pat id dicom headers.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>ID DataElements List</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>List</em>[<em>DataElement</em>]</p>
+</dd>
+</dl>
+<p>See <a class="reference internal" href="#change_header.gen_anon" title="change_header.gen_anon"><code class="xref py py-func docutils literal notranslate"><span class="pre">gen_anon()</span></code></a> for tag and VR info.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data_els</span> <span class="o">=</span> <span class="n">gen_ids</span><span class="p">(</span><span class="s1">&#39;example_name&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data_els</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+<span class="go">&#39;example_name&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data_els</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">VR</span>
+<span class="go">&#39;PN&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data_els</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tag</span>
+<span class="go">(0010, 0010)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="change_header.main_make_mods">
+<span class="sig-prename descclassname"><span class="pre">change_header.</span></span><span class="sig-name descname"><span class="pre">main_make_mods</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/change_header.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#change_header.main_make_mods" title="Link to this definition">¶</a></dt>
+<dd><p>Exercise header modification code to make example data we can use.</p>
+<p>We can confirm changes are made from shell using AFNI’s <code class="docutils literal notranslate"><span class="pre">dicom_hinfo</span></code></p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>find<span class="w"> </span>example/dicom/mod*<span class="w"> </span>-iname<span class="w"> </span><span class="s1">&#39;MR*&#39;</span><span class="w"> </span>-exec<span class="w"> </span>dicom_hinfo<span class="w"> </span>-tag<span class="w"> </span><span class="m">0010</span>,0010<span class="w"> </span>-sepstr<span class="w"> </span><span class="s1">$&#39;\t&#39;</span><span class="w"> </span>-last<span class="w"> </span><span class="o">{}</span><span class="w"> </span><span class="se">\+</span>
+
+<span class="c1">#   mod1 example/dicom/mod1/HabitTask/MR.1.3.12.2.1107.5.2.43.167046.2022122209214150118864465</span>
+<span class="c1">#   mod1 example/dicom/mod1/HabitTask/MR.1.3.12.2.1107.5.2.43.167046.2022122209214176799264617</span>
+<span class="c1">#   mod2 example/dicom/mod2/HabitTask/MR.1.3.12.2.1107.5.2.43.167046.2022122209214150118864465</span>
+<span class="c1">#   mod2 example/dicom/mod2/HabitTask/MR.1.3.12.2.1107.5.2.43.167046.2022122209214176799264617</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">mrrc-hdr-qa</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mrqart.html">mrqart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dcmmeta2tsv.html">dcmmeta2tsv</a></li>
+<li class="toctree-l1"><a class="reference internal" href="acq2sqlite.html">acq2sqlite</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">change_header</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#change_header.change_tags"><code class="docutils literal notranslate"><span class="pre">change_tags()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#change_header.gen_acqdates"><code class="docutils literal notranslate"><span class="pre">gen_acqdates()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#change_header.gen_anon"><code class="docutils literal notranslate"><span class="pre">gen_anon()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#change_header.gen_ids"><code class="docutils literal notranslate"><span class="pre">gen_ids()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#change_header.main_make_mods"><code class="docutils literal notranslate"><span class="pre">main_make_mods()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="template_checker.html">template_checker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compliance_check_html.html">compliance_check_html</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mrrc_dbupdate.html">mrrc_dbupdate</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="acq2sqlite.html" title="previous chapter">acq2sqlite</a></li>
+      <li>Next: <a href="template_checker.html" title="next chapter">template_checker</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, EH, WF.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/_autosummary/change_header.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

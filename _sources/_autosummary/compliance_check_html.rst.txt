@@ -1,0 +1,13 @@
+﻿compliance\_check\_html
+=======================
+
+.. automodule:: compliance_check_html
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      generate_html_report
+      load_template
+   

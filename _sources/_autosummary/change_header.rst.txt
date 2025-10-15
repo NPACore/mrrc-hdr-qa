@@ -1,0 +1,16 @@
+﻿change\_header
+==============
+
+.. automodule:: change_header
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      change_tags
+      gen_acqdates
+      gen_anon
+      gen_ids
+      main_make_mods
+   
