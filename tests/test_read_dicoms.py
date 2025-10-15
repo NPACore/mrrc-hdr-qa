@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import pytest
 
-from dcmmeta2tsv import DicomTagReader, TagDicts
+from mrqart.dcmmeta2tsv import DicomTagReader, TagDicts
 
 
 def test_newlinecomment():

@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from acq2sqlite import DBQuery
-from dcmmeta2tsv import DicomTagReader, TagDicts
-from template_checker import CheckResult, TemplateChecker
+from mrqart.acq2sqlite import DBQuery
+from mrqart.dcmmeta2tsv import DicomTagReader, TagDicts
+from mrqart.template_checker import CheckResult, TemplateChecker
 
 #: Example template to test against. Previously used within test like::
 #:   mocker.patch.object(template_checker.db, "get_template", return_value=mock_template)
