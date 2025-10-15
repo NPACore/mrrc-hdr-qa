@@ -17,7 +17,7 @@ from tornado.httpserver import HTTPServer
 from tornado.web import Application, RequestHandler
 from websockets.asyncio.server import broadcast, serve
 
-from template_checker import CheckResult, TemplateChecker
+from .template_checker import CheckResult, TemplateChecker
 
 Station = str
 Sequence = str

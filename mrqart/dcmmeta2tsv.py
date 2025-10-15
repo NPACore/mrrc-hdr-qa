@@ -14,7 +14,7 @@ import re
 import sys
 import warnings
 from typing import Optional, TypedDict
-
+from importlib import resources
 import pydicom
 
 with warnings.catch_warnings():
@@ -61,27 +61,34 @@ TagDicts = list[
 TagValues = dict[TagKey, str]
 
 
-def read_known_tags(tagfile="taglist.txt") -> TagDicts:
+def read_known_tags(tagfile: Optional[str] = None) -> TagDicts:
     """
-    read in tsv file like with header name,tag,desc.
-    skip comments and header
-
-    :param tagfile: text tsv file to get name,tag(hex pair),desc from
-    :return: file parsed into a list of dictonaires
+    Read the tag list from package data (mrqart/data/taglist.txt) so it works
+    from source, editable installs, and wheels. You can override with a path
+    by passing tagfile=<path>.
     """
-    with open(tagfile, "r") as f:
-        tags = [
-            dict(zip(["name", "tag", "desc"], line.split("\t")))
-            for line in f.readlines()
-            if not re.search("^name|^#", line)
-        ]
+    if tagfile is None or os.path.basename(tagfile) == "taglist.txt":
+        # read packaged data
+        txt = resources.files("mrqart.data").joinpath("taglist.txt").read_text(encoding="utf-8")
+        lines = txt.splitlines()
+    else:
+        # allow explicit external files for power users
+        with open(tagfile, "r") as f:
+            lines = f.read().splitlines()
 
-    # second pass to make '0x0018,0x0080' into (0x0018,0x0080)
+    tags = [
+        dict(zip(["name", "tag", "desc"], line.split("\t")))
+        for line in lines
+        if not re.search(r"^name|^#", line)
+    ]
+
+    # second pass to make '0x0018,0x0080' into (0x0018,0x0080) and set 'loc'
     for i in range(len(tags)):
-        if re.search("^[0-9]{4},", tags[i]["tag"]):
+        name = tags[i]["name"]
+        if re.search(r"^[0-9]{4},", tags[i]["tag"]):
             tags[i]["tag"] = tagpair_to_hex(tags[i]["tag"])
             tags[i]["loc"] = "header"
-        elif tags[i]["name"] == "shims":
+        elif name.lower() == "shims":   # case-insensitive to match 'Shims'
             tags[i]["loc"] = "asccov"
         else:
             tags[i]["loc"] = "csa"

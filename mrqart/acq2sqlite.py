@@ -9,8 +9,8 @@ import sqlite3
 import sys
 from datetime import datetime, timedelta
 from typing import Optional
-
-from dcmmeta2tsv import NULLVAL, TagValues
+from importlib import resources 
+from .dcmmeta2tsv import NULLVAL, TagValues
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", logging.INFO))
 
@@ -30,30 +30,18 @@ def none_to_null(row: Optional[sqlite3.Row]):
 
 def column_names():
     """
-    These names match what's used by dcmmeta2tsv.py and 00_build_db.bash
-    CSA first, normal dicom headers, and then filename.
+    Column names used by dcmmeta2tsv.py and schema.sql.
 
-    Defaults to reading from ``taglist.txt``
-    This provides a language agnostic lookup for columns in ``schema.sql``
-
-
-    These column names should match what is output by
-    ``./dcmmeta2tsv.bash`` or ``./dcmmeta2tsv.py``
-
-    Also see :py:func:`dcmmeta2tsv.read_known_tags`
-
-    >>> cn = column_names() # reads taglist.txt
-    >>> cn[0] # hard coded here
-    'Phase'
-    >>> cn[3] # from taglist.xt
-    'AcqDate'
+    Now reads from mrqart/data/taglist.txt (packaged data) via importlib.resources,
+    so it works whether running from source, editable install, or wheel.
     """
-    with open("taglist.txt", "r") as f:
-        tag_colnames = [
-            line.split("\t")[0]
-            for line in f.readlines()
-            if not re.search("^name|^#", line)
-        ]
+    # mrqart/data/taglist.txt
+    txt = resources.files("mrqart.data").joinpath("taglist.txt").read_text(encoding="utf-8")
+    tag_colnames = [
+        line.split("\t")[0]
+        for line in txt.splitlines()
+        if not re.search(r"^name|^#", line)
+    ]
 
     # final file name column also not in taglist.txt (not a tag)
     tag_colnames += ["filename"]

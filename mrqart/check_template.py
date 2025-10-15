@@ -8,7 +8,7 @@ Added 2024-10-08. Consider removing 2024-11-20
 """
 import sys
 
-from acq2sqlite import DBQuery, have_pipe_data
+from .acq2sqlite import DBQuery, have_pipe_data
 
 db = DBQuery()
 
