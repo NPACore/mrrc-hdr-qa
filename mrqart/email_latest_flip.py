@@ -86,6 +86,9 @@ def fetch_with_backoffs(conn: sqlite3.Connection, pattern: str) -> tuple[Optiona
     tried: List[str] = []
 
     def try_pat(p: str) -> Optional[sqlite3.Row]:
+        """
+        Inline function, closure to modify `tried` list only for new data.
+        """
         if p in tried:
             return None
         tried.append(p)
@@ -169,6 +172,23 @@ def compose_email_body(
 
 
 def main() -> int:
+    """
+    Send mail on conformance of last sequence matching `DEFAULT_PATTERN`
+    Combines
+    1. email settings from :func:`load_email_entries` and sent with  :func:`send_via_local_mail`
+    2. Search for DEFAULT_PATTERN (:func:`fetch_with_backoffs`)
+    3. conformance against :func:`TemplateChecker.check_header`
+    3. compose mail py:func:`compose_email_body`
+
+    TODO:
+      * replace fetch_with_backoffs w/ updated acq2sqlite.find_acquisitions_since
+      * loop over all recent acqs returned (ideally midnight catches all scans for prev day)
+         * optionally/eventually skip if conforming
+      * compose_email_body -> format_acq: use jinja template?
+        * for current email, skip if SequenceType not re.find('diff|*epfid2d')
+        * append each acq for day to coalesced document-to-email and to-save
+        * write out .html for static serving
+    """
     pattern = DEFAULT_PATTERN
 
     # recipients
