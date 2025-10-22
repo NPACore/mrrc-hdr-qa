@@ -5,22 +5,22 @@ import sqlite3
 import subprocess
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Optional, Any, Tuple
+from typing import List, Dict, Optional, Any
 
 # --------- Config ---------
-DEFAULT_ROOT = "/Volumes/Hera/Raw/MRprojects/Habit"
-DEFAULT_PATTERN = "RewardedAntisaccade_704x75"
+# Default to the shorter name that exists in your DB.
+DEFAULT_PATTERN = os.environ.get("MRQART_PATTERN", "RewardedAnti")
 
-EMAIL_TOML = Path(__file__).resolve().parent.parent / "config" / "email_settings.toml"
-DB_PATH = Path(__file__).resolve().parent.parent / "db.sqlite"
-os.environ.setdefault("MRQART_DB", str(DB_PATH))
+BASE_DIR = Path(__file__).resolve().parent.parent
+EMAIL_TOML = BASE_DIR / "config" / "email_settings.toml"
+DB_PATH = Path(os.environ.get("MRQART_DB", BASE_DIR / "db.sqlite"))
 
 try:
     import tomllib as toml  # py3.11+
 except Exception:
     import toml  # type: ignore
 
-from mrqart.acq2sqlite import DBQuery
+from mrqart.acq2sqlite import DBQuery, none_to_null
 from mrqart.template_checker import TemplateChecker
 
 
@@ -42,59 +42,6 @@ def load_email_entries(toml_path: Path) -> List[Dict[str, str]]:
     return entries
 
 
-def most_recent_scan_dir(root: Path, contains: str) -> Optional[Path]:
-    candidates = []
-    try:
-        for d0 in root.iterdir():
-            if not d0.is_dir():
-                continue
-            for d1 in d0.iterdir():
-                if not d1.is_dir():
-                    continue
-                for d2 in d1.iterdir():
-                    if d2.is_dir() and contains in d2.name:
-                        try:
-                            candidates.append((d2.stat().st_mtime, d2))
-                        except Exception:
-                            pass
-    except FileNotFoundError:
-        return None
-    if not candidates:
-        return None
-    candidates.sort(key=lambda t: t[0], reverse=True)
-    return candidates[0][1]
-
-
-def pick_a_dicom(scan_dir: Path) -> Optional[Path]:
-    for p in scan_dir.iterdir():
-        if p.is_file() and (p.name.startswith("MR") or p.suffix.lower() in (".dcm", ".ima")):
-            return p
-    for p in scan_dir.rglob("*"):
-        if p.is_file():
-            return p
-    return None
-
-
-def get_flip_angle(hdr: Dict[str, Any]) -> Optional[float]:
-    candidates = ("FlipAngle", "Flip Angle", "FA", "AcqFlipAngle", "ACQ Flip Angle")
-    raw: Optional[str | float | int] = None
-    for k in candidates:
-        if k in hdr and hdr[k] is not None:
-            raw = hdr[k]
-            break
-    if raw is None:
-        return None
-    try:
-        return float(raw)
-    except Exception:
-        s = str(raw)
-        num = "".join(ch for ch in s if ch.isdigit() or ch == "." or ch == "-")
-        try:
-            return float(num) if num else None
-        except Exception:
-            return None
-
-
 def send_via_local_mail(subject: str, body: str, recipient: str) -> bool:
     try:
         proc = subprocess.run(
@@ -108,72 +55,124 @@ def send_via_local_mail(subject: str, body: str, recipient: str) -> bool:
         return False
 
 
-def _as_float(x):
-    try:
-        return float(x)
-    except Exception:
-        return None
-
-
-def _norm_str(x) -> Optional[str]:
-    if x is None:
-        return None
-    import re
-    s = re.sub(r"\s+", " ", str(x)).strip()
-    return s.casefold()  # case/locale robust lowercase
-
-
-def compare_against_template(hdr: Dict[str, Any], tmpl: Dict[str, Any]) -> Dict[str, str]:
+def fetch_latest_row_for_pattern(conn: sqlite3.Connection, pattern_like: str) -> Optional[sqlite3.Row]:
     """
-    Compare header vs template using DBQuery.CONSTS fields.
-    - Numeric fields compare with tolerance
-    - Strings compare case/whitespace-insensitively
-    Returns {field: "expected X, got Y"}; empty dict means conforming.
+    Return the most recent acquisition row joined with its acq_param,
+    filtered by SequenceName LIKE %pattern_like%.
     """
-    errors: Dict[str, str] = {}
-
-    # Map DB key
-    keymap: Dict[str, Tuple[str, ...]] = {
-        "FA": ("FlipAngle", "FA"),
-        "TR": ("TR",),
-        "TE": ("TE",),
-        "iPAT": ("iPAT",),
-        "Phase": ("Phase",),
-        "SequenceType": ("SequenceType",),
-        "PED_major": ("PED_major",),
-        "Matrix": ("Matrix",),
-        "PixelResol": ("PixelResol",),
-        "BWP": ("BWP",),
-        "BWPPE": ("BWPPE",),
-        "TA": ("TA",),
-        "FoV": ("FoV",),
-        "Project": ("Project",),
-        "SequenceName": ("SequenceName",),
-        "Comments": ("Comments",),
-    }
-
-    for db_key in DBQuery.CONSTS:
-        if db_key not in keymap:
-            continue
-        hdr_val = next((hdr.get(k) for k in keymap[db_key] if hdr.get(k) is not None), None)
-        db_val = tmpl.get(db_key)
-
-        hvf, dvf = _as_float(hdr_val), _as_float(db_val)
-        if hvf is not None and dvf is not None:
-            if abs(hvf - dvf) > 1e-3:
-                errors[db_key] = f"expected {db_val}, got {hdr_val}"
-        else:
-            if _norm_str(hdr_val) != _norm_str(db_val):
-                errors[db_key] = f"expected {db_val}, got {hdr_val}"
-
-    return errors
+    like = pattern_like if "%" in pattern_like else f"%{pattern_like}%"
+    q = """
+        SELECT
+          a.*,                 -- variable fields (AcqDate, AcqTime, SeriesNumber, SubID, Operator, Station, Shims)
+          p.*                  -- invariant fields (Project, SequenceName, TR, TE, FA, etc.)
+        FROM acq a
+        JOIN acq_param p ON a.param_id = p.rowid
+        WHERE p.SequenceName LIKE ?
+        ORDER BY (a.AcqDate || ' ' || a.AcqTime) DESC
+        LIMIT 1
+    """
+    cur = conn.execute(q, (like,))
+    row = cur.fetchone()
+    return none_to_null(row)
 
 
-# --------- Main ---------
+def fetch_with_backoffs(conn: sqlite3.Connection, pattern: str) -> tuple[Optional[sqlite3.Row], List[str]]:
+    """
+    Try progressively looser patterns:
+      1) as-is
+      2) strip suffix after first underscore
+      3) known variants: 'RewardedAntisaccade', 'RewardedAnti'
+    Returns (row, tried_patterns)
+    """
+    tried: List[str] = []
+
+    def try_pat(p: str) -> Optional[sqlite3.Row]:
+        if p in tried:
+            return None
+        tried.append(p)
+        return fetch_latest_row_for_pattern(conn, p)
+
+    # 1) exact-ish (LIKE with wildcards)
+    row = try_pat(pattern)
+    if row:
+        return row, tried
+
+    # 2) strip suffix after first underscore (e.g., '_704x75')
+    if "_" in pattern:
+        base = pattern.split("_", 1)[0]
+        row = try_pat(base)
+        if row:
+            return row, tried
+
+    # 3) known variants (order matters—most specific first)
+    for variant in ("RewardedAntisaccade", "RewardedAnti"):
+        row = try_pat(variant)
+        if row:
+            return row, tried
+
+    return None, tried
+
+
+def row_to_hdr_dict(row: sqlite3.Row) -> Dict[str, Any]:
+    """
+    Convert the joined acq+acq_param row into the header dict shape expected by TemplateChecker.
+    """
+    d = dict(row) if row is not None else {}
+    for k, v in list(d.items()):
+        if isinstance(v, str):
+            d[k] = v.replace("\t", " ").replace("\n", " ").strip()
+    return d
+
+
+def compose_email_body(
+    pattern: str,
+    check: Dict[str, Any],
+    row: Optional[sqlite3.Row],
+    db_used: str,
+) -> str:
+    conforms = check.get("conforms", False)
+    errors = check.get("errors", {}) or {}
+    err_count = len(errors)
+    err_text = "\n".join([f" - {k}: expect={v['expect']} have={v['have']}" for k, v in errors.items()]) or " - None"
+
+    hdr = check.get("input", {}) or {}
+    project = hdr.get("Project", "N/A")
+    seqname = hdr.get("SequenceName", "N/A")
+    fa = hdr.get("FA", "N/A")
+    station = hdr.get("Station", "N/A")
+    series = hdr.get("SeriesNumber", "N/A")
+
+    when = "N/A"
+    if row is not None:
+        try:
+            when = f"{row['AcqDate']} {row['AcqTime']}"
+        except Exception:
+            pass
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    body = (
+        "Header compliance check for latest scan (from DB)\n"
+        f"Pattern (SequenceName LIKE): {pattern}\n"
+        f"Project: {project}\n"
+        f"Sequence: {seqname}\n"
+        f"Conforms: {'True' if conforms else 'False'}\n"
+        f"Errors ({err_count}):\n{err_text}\n\n"
+        f"Flip Angle (FA): {fa}\n"
+        f"Station: {station}\n"
+        f"SeriesNumber: {series}\n"
+        f"Acq timestamp (DB): {when}\n\n"
+        f"Timestamp (script): {now}\n"
+        f"(DB used: {db_used})\n"
+        "— MRQART\n"
+    )
+    return body
+
+
 def main() -> int:
-    root = Path(os.environ.get("MRQART_ROOT", DEFAULT_ROOT))
-    pattern = os.environ.get("MRQART_PATTERN", DEFAULT_PATTERN)
+    pattern = DEFAULT_PATTERN
 
+    # recipients
     try:
         email_entries = load_email_entries(EMAIL_TOML)
     except Exception as e:
@@ -183,80 +182,35 @@ def main() -> int:
         print(f"[error] No usable recipients in {EMAIL_TOML}", file=sys.stderr)
         return 2
 
-    scan_dir = most_recent_scan_dir(root, pattern)
-    if not scan_dir:
-        print(f"[error] No scan dirs matching *{pattern}* under {root}", file=sys.stderr)
+    # DB connect
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.row_factory = sqlite3.Row
+    except Exception as e:
+        print(f"[error] cannot open DB {DB_PATH}: {e}", file=sys.stderr)
+        return 2
+
+    # Fetch the most recent matching acquisition (with fallbacks)
+    row, tried = fetch_with_backoffs(conn, pattern)
+    if not row:
+        print(
+            f"[error] No recent acquisitions for SequenceName LIKE any of: "
+            + ", ".join([f"'%{p}%'" for p in tried]),
+            file=sys.stderr,
+        )
+        conn.close()
         return 3
 
-    dcm = pick_a_dicom(scan_dir)
-    if not dcm:
-        print(f"[error] No files inside {scan_dir}", file=sys.stderr)
-        return 4
+    # Build current header dict from DB row
+    hdr = row_to_hdr_dict(row)
 
-    # Parse the DICOM header using the repo reader
-    try:
-        reader = TemplateChecker(context="RT").reader
-        hdr = reader.read_dicom_tags(dcm)
-    except Exception as e:
-        print(f"[error] read_dicom_tags failed for {dcm}: {e}", file=sys.stderr)
-        return 5
+    # Official conformance check (uses tolerant string compare you added)
+    checker = TemplateChecker(db=conn, context="RT")
+    check = checker.check_header(hdr)
 
-    # Pull expected template directly from DB
-    project = hdr.get("Project", "%")
-    seqname = hdr.get("SequenceName", "%")
-
-    try:
-        dbq = DBQuery(sqlite3.connect(str(DB_PATH)))
-        tmpl_row = dbq.get_template(project, seqname)
-    except Exception as e:
-        print(f"[error] DBQuery.get_template failed: {e}", file=sys.stderr)
-        tmpl_row = None
-
-    if tmpl_row:
-        tmpl = dict(tmpl_row)
-        errors = compare_against_template(hdr, tmpl)
-        conforms = (len(errors) == 0)
-        conforms_str = "True" if conforms else "False"
-        err_count = len(errors)
-        err_text = "\n".join(f" - {k}: {v}" for k, v in errors.items()) or " - None"
-        hint = ""
-    else:
-        conforms_str = "N/A (no template match)"
-        err_count = 0
-        err_text = " - None"
-        hint = (
-            "Hint: No template row found for this Project/SequenceName in DB. "
-            "Check casing and naming conventions."
-        )
-
-    # Compose and send email
-    fa = get_flip_angle(hdr)
-    fa_text = f"{fa:g}°" if isinstance(fa, (int, float)) else str(fa)
-    station = hdr.get("Station", "N/A")
-    series = hdr.get("SeriesNumber", "N/A")
-    project = hdr.get("Project", "N/A")
-    seqname = hdr.get("SequenceName", "N/A")
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    db_used = os.environ.get("MRQART_DB", str(DB_PATH))
-
-    subject = f"MRQART: Latest {pattern} — conforms={conforms_str} — errors={err_count}"
-    body = (
-        "Header compliance check for latest scan\n"
-        f"Pattern: {pattern}\n"
-        f"Project: {project}\n"
-        f"Conforms: {conforms_str}\n"
-        f"Errors ({err_count}):\n{err_text}\n"
-        f"{hint}\n\n"
-        f"Flip Angle: {fa_text}\n"
-        f"Station: {station}\n"
-        f"Sequence: {seqname}\n"
-        f"SeriesNumber: {series}\n\n"
-        f"Scan dir: {scan_dir}\n"
-        f"Sample file: {dcm.name}\n"
-        f"Timestamp: {now}\n"
-        f"(DB used: {db_used})\n"
-        "— MRQART\n"
-    )
+    conforms_str = "True" if check.get("conforms") else "False"
+    subject = f"MRQART: Latest {pattern} — conforms={conforms_str} — errors={len(check.get('errors', {}))}"
+    body = compose_email_body(pattern, check, row, str(DB_PATH))
 
     any_fail = False
     for e in email_entries:
@@ -266,6 +220,7 @@ def main() -> int:
         else:
             any_fail = True
 
+    conn.close()
     return 0 if not any_fail else 7
 
 
