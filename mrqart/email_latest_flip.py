@@ -8,7 +8,6 @@ from datetime import datetime
 from typing import List, Dict, Optional, Any
 
 # --------- Config ---------
-# Default to the shorter name that exists in your DB.
 DEFAULT_PATTERN = os.environ.get("MRQART_PATTERN", "RewardedAnti")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
