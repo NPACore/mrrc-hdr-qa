@@ -103,7 +103,7 @@ def fetch_with_backoffs(conn: sqlite3.Connection, pattern: str) -> tuple[Optiona
         if row:
             return row, tried
 
-    # 3) known variants (order matters—most specific first)
+    # 3) known variants
     for variant in ("RewardedAntisaccade", "RewardedAnti"):
         row = try_pat(variant)
         if row:
@@ -203,7 +203,7 @@ def main() -> int:
     # Build current header dict from DB row
     hdr = row_to_hdr_dict(row)
 
-    # Official conformance check (uses tolerant string compare you added)
+    # Official conformance check
     checker = TemplateChecker(db=conn, context="RT")
     check = checker.check_header(hdr)
 
