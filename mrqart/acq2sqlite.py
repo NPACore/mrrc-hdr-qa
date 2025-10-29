@@ -321,6 +321,81 @@ class DBQuery:
         cur = self.sql.execute(query, (since_date,))
         return cur.fetchall()
 
+    # -------- Filtered queries to avoid scanning the whole DB --------
+
+    def find_acquisitions_since_filtered(
+        self,
+        since_date: Optional[str] = None,
+        project_like: str = "%",
+        seq_like: str = "%",
+    ):
+        """
+        Like find_acquisitions_since, but filter *in SQL* by Project and SequenceName.
+        Only returns acquisitions whose acq_param matches the LIKE filters.
+        """
+        if since_date is None:
+            since_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+        query = """
+        select a.*
+        from acq a
+        join acq_param p on a.param_id = p.rowid
+        where a.AcqDate > ?
+          and p.Project like ?
+          and p.SequenceName like ?
+        """
+        logging.info(
+            "Finding acquisitions since %s (Project like %s, Seq like %s)",
+            since_date, project_like, seq_like
+        )
+        cur = self.sql.execute(query, (since_date, project_like, seq_like))
+        return cur.fetchall()
+
+    def find_recent_per_pair(
+        self,
+        since_date: Optional[str] = None,
+        project_like: str = "%",
+        seq_like: str = "%",
+        per_pair_limit: int = 3,
+    ):
+        """
+        Return up to N most-recent acquisitions per (Project, SequenceName) since date.
+        Greatly reduces volume while still catching fresh issues.
+        Requires SQLite with window functions (ROW_NUMBER()).
+        """
+        if since_date is None:
+            since_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+        query = f"""
+        with cand as (
+          select a.*, p.Project, p.SequenceName,
+                 (a.AcqDate || ' ' || a.AcqTime) as ts
+          from acq a
+          join acq_param p on a.param_id = p.rowid
+          where a.AcqDate > ?
+            and p.Project like ?
+            and p.SequenceName like ?
+        ),
+        ranked as (
+          select *,
+                 row_number() over (
+                   partition by Project, SequenceName
+                   order by ts desc
+                 ) as rn
+          from cand
+        )
+        select * from ranked
+        where rn <= ?
+        """
+        logging.info(
+            "Finding up to %d recent per (Project,Seq) since %s (Project like %s, Seq like %s)",
+            per_pair_limit, since_date, project_like, seq_like
+        )
+        cur = self.sql.execute(query, (since_date, project_like, seq_like, per_pair_limit))
+        return cur.fetchall()
+
+    # ---------------------------------------------------------------------
+
     def most_recent(self, project: str = "%") -> sqlite3.Row:
         """
         Find a projects most recent scan in the database
@@ -356,3 +431,4 @@ if __name__ == "__main__":
             db.dict_to_db_row(d)
 
     db.sql.commit()
+
