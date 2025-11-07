@@ -70,10 +70,16 @@ def fetch_param_row(sql: sqlite3.Connection, param_id: int) -> Optional[Dict[str
     row = cur.fetchone()
     return rowdict(row) if row else None
 
-def compare_params(acq_param: Dict[str, Any], tmpl_param: Dict[str, Any], skip_caseonly: bool=False) -> Dict[str, str]:
+# TODO: restrict parameters
+def compare_params(acq_param: Dict[str, Any], tmpl_param: Dict[str, Any], skip_caseonly: bool=False, to_report=["PED_major", "Phase"]) -> Dict[str, str]:
+    """
+    :param to_report: restrict to just some parameters, None or empyt list to report all
+    """
     from mrqart.acq2sqlite import DBQuery as _DBQ
     errors: Dict[str, str] = {}
     for key in _DBQ.CONSTS:
+        # TODO: skip
+        # if to_report and key not in to_report: continue
         got, exp = acq_param.get(key), tmpl_param.get(key)
         gv, ev = _as_float(got), _as_float(exp)
         if gv is not None and ev is not None:
@@ -144,6 +150,8 @@ def main() -> int:
     dbq = DBQuery(sql)
 
     # Query rows (use filtered/per-pair helpers you added to DBQuery)
+    # per_pair - Return up to N most-recent acquisitions per (Project, SequenceName) since date. -- THIS DOES MORE but returns fewer (limited by N)
+    # since_filtered - just date, proj, seqname
     try:
         if per_pair_limit > 0:
             acqs_rows = dbq.find_recent_per_pair(since_arg, project_like, seq_like, per_pair_limit)
@@ -152,12 +160,25 @@ def main() -> int:
     except Exception as e:
         print(f"[error] filtered query failed: {e}", file=sys.stderr); return 3
 
+    # all acquistions, conforming or not
     results_for_web: List[Dict[str, Any]] = []
+    # failures are what we want to email -- just what whent wrong
+    failures: List[str] = []
 
+    # when SPLIT_EMAILS is set, this gets populated
+    # tupple like ("{proj} / {seq}", "blah")
+    # TODO: dict keys proj => list (seq, )
+    # LATER: lookup project email contact  -- so per_email_payloads keys match eventual keys of email_lookup like {'WPC-6287': ['foran@pitt.edu','luna@pitt.edu']}
+    per_email_payloads: List[Tuple[str, str]] = []
+
+
+    # force email send with scanned=0 (for testing/debugging, ensuring we are doing something)
+    # even if no email, still write the report (and exit)
     if not acqs_rows:
         if not force_email:
             print("[info] No acquisitions found in the given window (after filters).")
-            persist_report(results_for_web); return 0
+            persist_report(results_for_web)
+            return 0
         # forced summary (0 scanned)
         since_str = since_arg or "yesterday"
         subject = f"MRQART: Forced summary since {since_str} — 0 non-conforming (scanned=0)"
@@ -169,14 +190,13 @@ def main() -> int:
             ok = send_via_local_mail(subject, body, e["to"])
             print(f"[{'ok' if ok else 'fail'}] mailed {e['to']}"); any_fail |= (not ok)
         persist_report(results_for_web); return 0 if not any_fail else 7
-
-    failures: List[str] = []
-    per_email_payloads: List[Tuple[str, str]] = []
+        # return 0 # nothign to report?
 
     for acq_row in acqs_rows:
         acq = rowdict(acq_row)
         param_id = acq.get("param_id")
         if param_id is None: continue
+        # specific parameteres, maybe already exists in acq_row from SQL join above
         ap = fetch_param_row(sql, int(param_id))
         if not ap: continue
 
@@ -204,7 +224,9 @@ def main() -> int:
             "status": "NO_TEMPLATE" if not tmpl else ("OK" if not errors else "NONCONFORM"),
         })
 
-        # emails only for issues / missing template (optional)
+        ## emails only for issues / missing template (optional)
+
+        # No template for this acq? That's an error (but one where we dont' know what could have gone wrong)
         if not tmpl:
             if notify_no_tmpl:
                 body = (
@@ -220,6 +242,7 @@ def main() -> int:
                     failures.append(body)
             continue
 
+        # acq does not match something in the template
         if errors:
             if split_emails:
                 subj = f"MRQART: Non-conforming — {proj} / {seq}"
@@ -227,7 +250,7 @@ def main() -> int:
             else:
                 failures.append(format_one_failure(acq, ap, errors, db_used))
 
-    # notify
+    # notify with what we collected from parsing all the acqs above
     any_fail = False
     if not failures and not per_email_payloads:
         if not force_email:
@@ -244,19 +267,21 @@ def main() -> int:
             ok = send_via_local_mail(subject, body, e["to"])
             print(f"[{'ok' if ok else 'fail'}] mailed {e['to']}"); any_fail |= (not ok)
         persist_report(results_for_web); return 0 if not any_fail else 7
+        # could return here -- nothing to send after
 
-    if not split_emails:
+    if not split_emails: # one consolidated email
         since_str = since_arg or "yesterday"
         subject, body = summarize_failures(failures, since_str)
         for e in email_entries:
             ok = send_via_local_mail(subject, body, e["to"])
             print(f"[{'ok' if ok else 'fail'}] mailed {e['to']}"); any_fail |= (not ok)
-    else:
+    else: # a per issue email
         for subj, body in per_email_payloads:
             for e in email_entries:
                 ok = send_via_local_mail(subj, body, e["to"])
                 print(f"[{'ok' if ok else 'fail'}] mailed {e['to']}"); any_fail |= (not ok)
 
+    # write to file always. everything.
     persist_report(results_for_web)
     return 0 if not any_fail else 7
 

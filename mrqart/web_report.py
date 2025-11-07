@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Iterable, Dict, Any, List, Optional
 from datetime import datetime
 
+# Why not always have jinja2?
 try:
     from jinja2 import Environment, FileSystemLoader, select_autoescape, Template
     _HAS_JINJA = True
