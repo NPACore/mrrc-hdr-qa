@@ -7,17 +7,22 @@ LOGDIR="$REPO/logs"
 mkdir -p "$LOGDIR"
 
 # ---- MRQART daily QA config ----
-export MRQART_PROJECT='Brain^wpc-%'
-export MRQART_SEQNAME='RewardedAnti%'
-export MRQART_PER_PAIR_LIMIT=3
+# All projects / all sequences
+export MRQART_PROJECT='%'
+export MRQART_SEQNAME='%'
 
-# Only look at today's acquisitions
-export MRQART_SINCE="$(date +%m-%d-%Y)"
+# Limit per (Project,Sequence)
+export MRQART_PER_PAIR_LIMIT=0
 
-# --- only send if issues ---
-unset MRQART_FORCE_EMAIL
+# Only look at yesterday's acquisitions
+export MRQART_SINCE="$(date -d 'yesterday' +%m-%d-%Y)"
 
-# Still regenerate the static dashboard each run
+# Send an email even if no issues are found
+export MRQART_FORCE_EMAIL=1
+
+# export MRQART_SKIP_CASEONLY=1
+
+# Web dashboard (static) — still regenerate each run
 export MRQART_WEB_LOG="$REPO/static/mrqart_log.jsonl"
 export MRQART_WEB_HTML="$REPO/static/mrqart_report.html"
 export MRQART_WEB_TITLE="MRRC Header QA — Feed"

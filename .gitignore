@@ -18,3 +18,12 @@ templates.tsv
 *.sw[op]
 creds/
 log/
+config/
+*.html
+*.jsonl
+dist/
+logs/
+uv.lock
+.pytest_cache/
+.python-version
+*.202*-*/ # backup files

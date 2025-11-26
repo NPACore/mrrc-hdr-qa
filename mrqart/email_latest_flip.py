@@ -70,12 +70,30 @@ def fetch_param_row(sql: sqlite3.Connection, param_id: int) -> Optional[Dict[str
     row = cur.fetchone()
     return rowdict(row) if row else None
 
-def compare_params(acq_param: Dict[str, Any], tmpl_param: Dict[str, Any], skip_caseonly: bool=False) -> Dict[str, str]:
+def compare_params(
+    acq_param: Dict[str, Any],
+    tmpl_param: Dict[str, Any],
+    skip_caseonly: bool = False,
+    to_report: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """
+    Compare acquisition parameters to template parameters.
+
+    :param to_report: list of parameter names to include in comparison.
+                      Defaults to ["PED_major", "Phase"].
+                      Use None or [] to compare all parameters.
+    """
     from mrqart.acq2sqlite import DBQuery as _DBQ
     errors: Dict[str, str] = {}
+    report_keys = to_report or ["PED_major", "Phase"]
+
     for key in _DBQ.CONSTS:
+        if report_keys and key not in report_keys:
+            continue
+
         got, exp = acq_param.get(key), tmpl_param.get(key)
         gv, ev = _as_float(got), _as_float(exp)
+
         if gv is not None and ev is not None:
             if abs(gv - ev) > 1e-6:
                 errors[key] = f"expected {exp}, got {got}"
@@ -113,7 +131,7 @@ def main() -> int:
     notify_no_tmpl = os.environ.get("MRQART_NOTIFY_ON_NO_TEMPLATE", "0") == "1"
     split_emails   = os.environ.get("MRQART_SPLIT_EMAILS", "0") == "1"
     skip_caseonly  = os.environ.get("MRQART_SKIP_CASEONLY", "0") == "1"
-    project_like   = os.environ.get("MRQART_PROJECT", "%")
+    project_like   = os.environ.get("MRQART_PROJECT", "Brain^wpc-8620")
     seq_like       = os.environ.get("MRQART_SEQNAME", "%")
     since_arg      = os.environ.get("MRQART_SINCE")
     per_pair_limit = int(os.environ.get("MRQART_PER_PAIR_LIMIT", "0") or 0)
