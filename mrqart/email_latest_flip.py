@@ -8,6 +8,7 @@ Daily header-compliance summary email based on db.sqlite.
 - Groups by (Project, SequenceName).
 - Skips SeriesNumber > 200; formats SeriesNumber as %03d.
 - Reports non-conforming acquisitions (marquee cols) and missing templates split by onboarding state.
+- Reporting behavior (filtering + marquee cols + float tolerances) is driven by config/reporting.toml.
 - Optional logging:
   - MRQART_LOG=1 appends run info to logs/mrqart_daily.log
   - MRQART_LOG_PATH can override the log file path
@@ -30,85 +31,9 @@ from .acq2sqlite import DBQuery
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = BASE_DIR / "db.sqlite"
 EMAIL_TOML = BASE_DIR / "config" / "email_settings.toml"
+REPORTING_TOML = BASE_DIR / "config" / "reporting.toml"
 TEMPLATE_SQL = BASE_DIR / "make_template_by_count.sql"
 DEFAULT_LOG_PATH = BASE_DIR / "logs" / "mrqart_daily.log"
-
-INTERESTING_SUBSTRINGS: List[str] = [
-    "rewardedanti",
-    "abcd",
-    "t1",
-    "vnav",
-]
-
-BLACKLIST_SEQTYPE_PREFIXES: List[str] = [
-    # High-frequency EPI / spin-echo types
-    "epfid2d1",
-    "epfid2d3",
-    "epse2d1",
-    "ep",
-    "*epfid2d1",
-    "*ep",
-
-    # Common 3D/2D gradient sequences and scouts
-    "*tfl3d1",
-    "tfl3d1",
-    "tfl2d1",
-    "*fl2d1",
-    "fl2d1",
-    "*fl3d1",
-    "*fl3d1r",
-    "*fl3d2",
-    "*fl3d4",
-    "*fl3d5",
-    "*fl3d5r",
-    "*fl3d6",
-    "*fl3d6r",
-    "fl3d2r",
-    "*fldyn3d1",
-
-    # Field maps and SWI variants
-    "*fm2d2r",
-    "fm2d2",
-    "fm2d3",
-    "fm2d5",
-    "swi3d2r",
-    "*swi3d2r",
-    "*swi3d1r",
-
-    # TSE / inversion recovery variants
-    "*tse2d1",
-    "tse2d1",
-    "*tse2d1rr13",
-    "*tse2d1rr32",
-    "*qtse2d1",
-    "*qtir2d1",
-    "*tir2d1",
-
-    # MP2RAGE / SPC families and related
-    "*spc",
-    "spc3d1",
-    "spc",
-    "*spcr",
-    "*spcrrr80",
-
-    # Other common sequences
-    "afi3d3",
-    "mbpcasl2d1",
-    "*tgse3d1",
-    "tgse3d1",
-    "*h2d1",
-    "wip",
-]
-
-MARQUEE_COLS: List[str] = [
-    "PED_major",
-    "iPAT",
-    "TR",
-    "TE",
-    "Matrix",
-    "FA",
-    "FoV",
-]
 
 try:
     import tomllib as toml  # Python 3.11+
@@ -175,6 +100,60 @@ def send_via_local_mail(subject: str, body: str, recipient: str) -> bool:
     except Exception as e:
         print(f"[warn] local mail send failed to {recipient}: {e}", file=sys.stderr)
         return False
+
+
+def load_reporting_config(toml_path: Path) -> Dict[str, Any]:
+    """
+    Load reporting settings from config/reporting.toml.
+
+    Expected structure:
+      [filter]
+      interesting_substrings = [...]
+      blacklist_seqtype_prefixes = [...]
+      disable_blacklist = bool
+
+      [compare]
+      marquee_cols = [...]
+      float_tolerance_default = float
+      float_tolerance_by_col = { TE = 0.05, TR = 1.0 }
+    """
+    if not toml_path.exists():
+        raise FileNotFoundError(f"Missing reporting TOML: {toml_path}")
+
+    cfg = toml.load(toml_path.open("rb"))
+
+    filt = cfg.get("filter", {}) or {}
+    comp = cfg.get("compare", {}) or {}
+
+    # Normalize a little so we don't crash on weird values
+    interesting = list(filt.get("interesting_substrings", []) or [])
+    blacklist = list(filt.get("blacklist_seqtype_prefixes", []) or [])
+    disable_blacklist = bool(filt.get("disable_blacklist", False))
+
+    marquee = list(comp.get("marquee_cols", []) or [])
+    tol_default = comp.get("float_tolerance_default", 1e-3)
+    tol_by_col = dict(comp.get("float_tolerance_by_col", {}) or {})
+
+    try:
+        tol_default_f = float(tol_default)
+    except Exception:
+        tol_default_f = 1e-3
+
+    tol_by_col_f: Dict[str, float] = {}
+    for k, v in tol_by_col.items():
+        try:
+            tol_by_col_f[str(k)] = float(v)
+        except Exception:
+            continue
+
+    return {
+        "interesting_substrings": interesting,
+        "blacklist_seqtype_prefixes": blacklist,
+        "disable_blacklist": disable_blacklist,
+        "marquee_cols": marquee,
+        "float_tol_default": tol_default_f,
+        "float_tol_by_col": tol_by_col_f,
+    }
 
 
 def _as_float(x: Any) -> float | None:
@@ -262,7 +241,14 @@ def compare_row_against_template(
     tmpl: Dict[str, Any],
     consts: List[str],
     marquee_cols: List[str],
+    float_tol_default: float,
+    float_tol_by_col: Dict[str, float],
 ) -> Tuple[Dict[str, str], bool]:
+    """
+    Returns:
+      errors: {col: "expected X, got Y"}
+      marquee_mismatch: True if any marquee col differs
+    """
     errors: Dict[str, str] = {}
     marquee_mismatch = False
     marquee_set = set(marquee_cols)
@@ -275,7 +261,8 @@ def compare_row_against_template(
         mismatch = False
 
         if hvf is not None and dvf is not None:
-            if abs(hvf - dvf) > 1e-3:
+            tol = float_tol_by_col.get(col, float_tol_default)
+            if abs(hvf - dvf) > tol:
                 mismatch = True
         else:
             hv_norm = normalize_for_compare(hdr_val)
@@ -291,15 +278,32 @@ def compare_row_against_template(
     return errors, marquee_mismatch
 
 
-def is_interesting_sequence_with_blacklist(project: str, seqname: str, seqtype: str | None) -> bool:
+def is_interesting_sequence_with_blacklist(
+    seqname: str,
+    seqtype: str | None,
+    interesting_substrings: List[str],
+    blacklist_seqtype_prefixes: List[str],
+    disable_blacklist: bool,
+) -> bool:
+    """
+    Rules:
+      1) If SequenceName contains any interesting substring, include.
+      2) Else if disable_blacklist is True, include.
+      3) Else if SequenceType prefix is in blacklist, exclude.
+      4) Else include.
+    """
     sname = (seqname or "").lower()
-    if INTERESTING_SUBSTRINGS and any(sub in sname for sub in INTERESTING_SUBSTRINGS):
+    if interesting_substrings and any(sub.lower() in sname for sub in interesting_substrings):
+        return True
+
+    if disable_blacklist:
         return True
 
     stype = (seqtype or "").lower()
-    if stype and BLACKLIST_SEQTYPE_PREFIXES:
+    if stype and blacklist_seqtype_prefixes:
         prefix = stype.split("_", 1)[0]
-        if prefix in [p.lower() for p in BLACKLIST_SEQTYPE_PREFIXES]:
+        blk = {p.lower() for p in blacklist_seqtype_prefixes}
+        if prefix in blk:
             return False
 
     return True
@@ -385,6 +389,26 @@ def main() -> int:
     sql.row_factory = sqlite3.Row
 
     rebuild_templates(sql)
+
+    # Reporting config path can be overridden
+    reporting_path = Path(os.environ.get("MRQART_REPORTING_TOML", str(REPORTING_TOML)))
+    try:
+        rpt = load_reporting_config(reporting_path)
+    except Exception as e:
+        print(f"[error] {e}", file=sys.stderr)
+        return 2
+
+    interesting_substrings: List[str] = rpt["interesting_substrings"]
+    blacklist_prefixes: List[str] = rpt["blacklist_seqtype_prefixes"]
+    disable_blacklist: bool = rpt["disable_blacklist"]
+    marquee_cols: List[str] = rpt["marquee_cols"]
+    float_tol_default: float = rpt["float_tol_default"]
+    float_tol_by_col: Dict[str, float] = rpt["float_tol_by_col"]
+
+    if not marquee_cols:
+        # Hard fail rather than silently reporting "no marquee" (too easy to miss)
+        print("[error] reporting.toml: compare.marquee_cols is empty", file=sys.stderr)
+        return 2
 
     try:
         email_entries = load_email_entries(EMAIL_TOML)
@@ -475,11 +499,20 @@ def main() -> int:
     for row in acq_rows:
         if series_is_posthoc(row["SeriesNumber"]):
             continue
+
         project = row["Project"]
         seqname = row["SequenceName"]
         seqtype = row["SequenceType"]
-        if not is_interesting_sequence_with_blacklist(project, seqname, seqtype):
+
+        if not is_interesting_sequence_with_blacklist(
+            seqname=seqname,
+            seqtype=seqtype,
+            interesting_substrings=interesting_substrings,
+            blacklist_seqtype_prefixes=blacklist_prefixes,
+            disable_blacklist=disable_blacklist,
+        ):
             continue
+
         eligible_rows.append(row)
         study_counts_today[project] += 1
         seq_counts_today[(project, seqname)] += 1
@@ -521,7 +554,14 @@ def main() -> int:
                 missing_templates[key]["examples"].append(f"{project} / {row['SubID']} / {seqname}.{s3}")
             continue
 
-        errors, marquee_mismatch = compare_row_against_template(row, tmpl, consts, MARQUEE_COLS)
+        errors, marquee_mismatch = compare_row_against_template(
+            row,
+            tmpl,
+            consts,
+            marquee_cols,
+            float_tol_default,
+            float_tol_by_col,
+        )
 
         if errors:
             seq_summary[key]["anydiff"] += 1
@@ -536,7 +576,7 @@ def main() -> int:
             total_nonconforming += 1
             if len(seq_summary[key]["examples"]) < 3:
                 s3 = format_series_003(row["SeriesNumber"])
-                diff_list = compact_diff_list(errors, MARQUEE_COLS, max_items=6)
+                diff_list = compact_diff_list(errors, marquee_cols, max_items=6)
                 seq_summary[key]["examples"].append(
                     f"{project} / {row['SubID']} / {seqname}.{s3} (diffs: {diff_list})"
                 )
@@ -565,7 +605,8 @@ def main() -> int:
             top_all = sorted(info["mismatch_counts"].items(), key=lambda kv: kv[1], reverse=True)
             shown = 0
             for ((col, exp, got), n) in top_all:
-                if col not in set(MARQUEE_COLS) and col != "TA":
+                # keep the email focused; include marquee cols + TA if present
+                if col not in set(marquee_cols) and col != "TA":
                     continue
                 lines.append(f"   {format_expected_got(col, exp, got)} ({n})")
                 shown += 1
@@ -623,7 +664,7 @@ def main() -> int:
     lines.append("ℹ️ Summary:")
     lines.append(f"  {total_seen_today} acquisitions were seen.")
     lines.append(f"  {total_checked} matched inspection criteria (interesting + series<=200).")
-    lines.append(f"  {total_nonconforming} of those are nonconforming by marquee cols ({', '.join(MARQUEE_COLS)}).")
+    lines.append(f"  {total_nonconforming} of those are nonconforming by marquee cols ({', '.join(marquee_cols)}).")
     lines.append(f"  {total_anydiff} of those differ from template for any reason (across CONSTS).")
     lines.append(f"  {total_missing_templates} do not have a template.")
     lines.append("")
