@@ -2,18 +2,17 @@
 """
 Daily header-compliance summary email based on db.sqlite.
 
-- Looks at acquisitions with AcqDate = yesterday (or MRQART_DATE override).
-- Rebuilds template_by_count each run from make_template_by_count.sql.
-- Uses TemplateChecker (template selection + CONSTS comparison).
-- Groups by (Project, SubID, SequenceName).
-- Skips SeriesNumber > 200; formats SeriesNumber as %03d.
-- Reports non-conforming acquisitions (marquee cols) and missing templates split by onboarding state.
-- Reporting behavior (filtering + marquee cols) is driven by config/reporting.toml.
-  (TemplateChecker comparisons are currently strict, per its implementation.)
-- Optional logging:
-  - MRQART_LOG=1 appends run info to logs/mrqart_daily.log
-  - MRQART_LOG_PATH can override the log file path
-  - MRQART_DEBUG=1 prints debug to stderr
+Refactor note:
+- main() is now a thin orchestration layer.
+- Core logic is split into testable helpers:
+  - get_report_date()
+  - fetch_acquisitions()
+  - select_eligible_rows()
+  - evaluate_rows()
+  - build_email()
+  - send_all()
+
+Behavior should be identical to the previous version.
 """
 
 from __future__ import annotations
@@ -23,11 +22,13 @@ import sys
 import sqlite3
 import subprocess
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Tuple
 
 from .template_checker import TemplateChecker
+
 try:
     import tomllib as toml  # Python 3.11+
 except Exception:
@@ -45,20 +46,26 @@ DEFAULT_LOG_PATH = BASE_DIR / "logs" / "mrqart_daily.log"
 SeqKey = Tuple[str, str, str]
 
 
+# -----------------------------
+# Logging / debug
+# -----------------------------
 def _now_iso() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _debug_enabled() -> bool:
-    return os.environ.get("MRQART_DEBUG", "").strip() not in ("", "0", "false", "False")
+def _debug_enabled(env: Mapping[str, str] | None = None) -> bool:
+    env = env or os.environ
+    return env.get("MRQART_DEBUG", "").strip() not in ("", "0", "false", "False")
 
 
-def _log_enabled() -> bool:
-    return os.environ.get("MRQART_LOG", "").strip() not in ("", "0", "false", "False")
+def _log_enabled(env: Mapping[str, str] | None = None) -> bool:
+    env = env or os.environ
+    return env.get("MRQART_LOG", "").strip() not in ("", "0", "false", "False")
 
 
-def _log_path() -> Path:
-    p = os.environ.get("MRQART_LOG_PATH", "").strip()
+def _log_path(env: Mapping[str, str] | None = None) -> Path:
+    env = env or os.environ
+    p = env.get("MRQART_LOG_PATH", "").strip()
     return Path(p) if p else DEFAULT_LOG_PATH
 
 
@@ -76,6 +83,9 @@ def dbg(msg: str) -> None:
         print(f"[mrqart] {msg}", file=sys.stderr)
 
 
+# -----------------------------
+# Config loading
+# -----------------------------
 def load_email_entries(toml_path: Path) -> List[Dict[str, str]]:
     if not toml_path.exists():
         raise FileNotFoundError(f"Missing TOML: {toml_path}")
@@ -144,6 +154,9 @@ def load_reporting_config(toml_path: Path) -> Dict[str, Any]:
     }
 
 
+# -----------------------------
+# Formatting helpers
+# -----------------------------
 def normalize_for_compare(val: Any) -> str:
     if val is None:
         return ""
@@ -285,6 +298,9 @@ def is_interesting_sequence_with_blacklist(
     return True
 
 
+# -----------------------------
+# Template metadata helpers
+# -----------------------------
 def yyyymmdd_to_iso(s: Any) -> str | None:
     if s is None:
         return None
@@ -340,53 +356,48 @@ def study_has_any_templates(sql: sqlite3.Connection, project: str) -> bool:
     return row is not None
 
 
-def main() -> int:
-    db_path = Path(os.environ.get("MRQART_DB", DEFAULT_DB))
-    sql = sqlite3.connect(str(db_path))
-    sql.row_factory = sqlite3.Row
+@dataclass(frozen=True)
+class ReportDate:
+    report_date: datetime
+    yday_str: str  # YYYYMMDD
+    date_label: str  # YYYY-MM-DD
 
-    rebuild_templates(sql)
 
-    # Reporting config path can be overridden
-    reporting_path = Path(os.environ.get("MRQART_REPORTING_TOML", str(REPORTING_TOML)))
-    try:
-        rpt = load_reporting_config(reporting_path)
-    except Exception as e:
-        print(f"[error] {e}", file=sys.stderr)
-        return 2
+@dataclass
+class Totals:
+    total_seen_today: int = 0
+    total_checked: int = 0
+    total_nonconforming: int = 0
+    total_anydiff: int = 0
+    total_missing_templates: int = 0
+    mia_actionable: int = 0
 
-    deny_substrings: List[str] = rpt.get("deny_substrings", [])
-    interesting_substrings: List[str] = rpt["interesting_substrings"]
-    blacklist_prefixes: List[str] = rpt["blacklist_seqtype_prefixes"]
-    disable_blacklist: bool = rpt["disable_blacklist"]
-    marquee_cols: List[str] = rpt["marquee_cols"]
 
-    if not marquee_cols:
-        print("[error] reporting.toml: compare.marquee_cols is empty", file=sys.stderr)
-        return 2
-
-    try:
-        email_entries = load_email_entries(EMAIL_TOML)
-    except Exception as e:
-        print(f"[error] {e}", file=sys.stderr)
-        return 2
-    if not email_entries:
-        print(f"[error] No usable recipients in {EMAIL_TOML}", file=sys.stderr)
-        return 2
-
-    # Template selection + comparison engine
-    tc = TemplateChecker(db=sql, context="DB")
-
-    override = os.environ.get("MRQART_DATE")
+def get_report_date(env: Mapping[str, str], now: datetime | None = None) -> ReportDate:
+    """
+    Determine reporting date:
+      - MRQART_DATE override supports YYYYMMDD or YYYY-MM-DD
+      - default: yesterday relative to now
+    """
+    now = now or datetime.now()
+    override = env.get("MRQART_DATE")
     if override:
         override = override.strip()
         yday_str = override.replace("-", "") if "-" in override else override
         report_date = datetime.strptime(yday_str, "%Y%m%d")
     else:
-        report_date = datetime.now() - timedelta(days=1)
+        report_date = now - timedelta(days=1)
         yday_str = report_date.strftime("%Y%m%d")
 
-    acq_rows = sql.execute(
+    return ReportDate(
+        report_date=report_date,
+        yday_str=yday_str,
+        date_label=report_date.strftime("%Y-%m-%d"),
+    )
+
+
+def fetch_acquisitions(sql: sqlite3.Connection, yday_str: str) -> List[sqlite3.Row]:
+    return sql.execute(
         """
         SELECT a.rowid AS acq_id,
                a.AcqDate, a.AcqTime, a.Station, a.SubID, a.SeriesNumber,
@@ -399,27 +410,69 @@ def main() -> int:
         (yday_str,),
     ).fetchall()
 
-    date_label = report_date.strftime("%Y-%m-%d")
 
-    if not acq_rows:
-        subject = "[MRQA] ✅ 0/0 (0); 0 MIA"
-        body = (
-            f"MRQART header compliance summary for {date_label}\n\n"
-            "No acquisitions were found in the DB for this date.\n"
-            "— MRQART\n"
-        )
-        any_fail = False
-        for e in email_entries:
-            ok = send_via_local_mail(subject, body, e["to"])
-            if ok:
-                print(f"[ok] mailed {e['to']}")
-            else:
-                any_fail = True
-        log_line(f"run date={date_label} seen=0 checked=0 nonconf=0 mia=0 subject={subject!r}")
-        return 0 if not any_fail else 7
+def select_eligible_rows(
+    acq_rows: Iterable[sqlite3.Row],
+    *,
+    interesting_substrings: List[str],
+    deny_substrings: List[str],
+    blacklist_prefixes: List[str],
+    disable_blacklist: bool,
+) -> Tuple[List[sqlite3.Row], Dict[str, int], Dict[SeqKey, int]]:
+    """
+    Apply:
+      - SeriesNumber <= 200
+      - reporting filter (interesting/deny/blacklist)
+    Also returns counts needed for MIA section.
+    """
+    eligible: List[sqlite3.Row] = []
+    study_counts_today: Dict[str, int] = defaultdict(int)
+    seq_counts_today: Dict[SeqKey, int] = defaultdict(int)
 
-    total_seen_today = len(acq_rows)
+    for row in acq_rows:
+        if series_is_posthoc(row["SeriesNumber"]):
+            continue
 
+        project = row["Project"]
+        subid = row["SubID"]
+        seqname = row["SequenceName"]
+        seqtype = row["SequenceType"]
+
+        if not is_interesting_sequence_with_blacklist(
+            seqname=seqname,
+            seqtype=seqtype,
+            interesting_substrings=interesting_substrings,
+            deny_substrings=deny_substrings,
+            blacklist_seqtype_prefixes=blacklist_prefixes,
+            disable_blacklist=disable_blacklist,
+        ):
+            continue
+
+        eligible.append(row)
+        key: SeqKey = (project, subid, seqname)
+        study_counts_today[project] += 1
+        seq_counts_today[key] += 1
+
+    return eligible, study_counts_today, seq_counts_today
+
+
+def evaluate_rows(
+    eligible_rows: Iterable[sqlite3.Row],
+    *,
+    sql: sqlite3.Connection,
+    tc: TemplateChecker,
+    marquee_cols: List[str],
+    study_counts_today: Mapping[str, int],
+    seq_counts_today: Mapping[SeqKey, int],
+    study_has_templates_fn: Callable[[sqlite3.Connection, str], bool] = study_has_any_templates,
+    first_seen_from_templates_fn: Callable[[sqlite3.Connection, str, str], str | None] = first_seen_from_template_by_count,
+    first_seen_from_acq_fn: Callable[[sqlite3.Connection, str, str], str | None] = first_seen_date_for_seq,
+) -> Tuple[Dict[SeqKey, Dict[str, Any]], Dict[SeqKey, Dict[str, Any]], Totals]:
+    """
+    Core evaluation engine:
+      - runs TemplateChecker.check_header on each eligible row
+      - aggregates seq_summary + missing_templates + totals
+    """
     seq_summary: Dict[SeqKey, Dict[str, Any]] = defaultdict(
         lambda: {
             "total": 0,
@@ -441,39 +494,9 @@ def main() -> int:
         }
     )
 
-    total_checked = 0
-    total_nonconforming = 0
-    total_anydiff = 0
-    total_missing_templates = 0
-
+    totals = Totals()
+    marquee_set = set(marquee_cols)
     templates_in_study_cache: Dict[str, bool] = {}
-    study_counts_today: Dict[str, int] = defaultdict(int)
-    seq_counts_today: Dict[SeqKey, int] = defaultdict(int)
-
-    eligible_rows: List[sqlite3.Row] = []
-    for row in acq_rows:
-        if series_is_posthoc(row["SeriesNumber"]):
-            continue
-
-        project = row["Project"]
-        subid = row["SubID"]
-        seqname = row["SequenceName"]
-        seqtype = row["SequenceType"]
-
-        if not is_interesting_sequence_with_blacklist(
-            seqname=seqname,
-            seqtype=seqtype,
-            interesting_substrings=interesting_substrings,
-            deny_substrings=deny_substrings,
-            blacklist_seqtype_prefixes=blacklist_prefixes,
-            disable_blacklist=disable_blacklist,
-        ):
-            continue
-
-        eligible_rows.append(row)
-        key: SeqKey = (project, subid, seqname)
-        study_counts_today[project] += 1
-        seq_counts_today[key] += 1
 
     for row in eligible_rows:
         project = row["Project"]
@@ -481,27 +504,27 @@ def main() -> int:
         seqname = row["SequenceName"]
         key: SeqKey = (project, subid, seqname)
 
-        total_checked += 1
+        totals.total_checked += 1
         seq_summary[key]["total"] += 1
 
         hdr = dict(row)
         res = tc.check_header(hdr)
 
         # Missing template: TemplateChecker returns template={} when absent
-        if not res["template"]:
-            total_missing_templates += 1
+        if not res.get("template"):
+            totals.total_missing_templates += 1
             missing_templates[key]["count"] += 1
 
             if project not in templates_in_study_cache:
-                templates_in_study_cache[project] = study_has_any_templates(sql, project)
+                templates_in_study_cache[project] = bool(study_has_templates_fn(sql, project))
             missing_templates[key]["study_has_templates"] = bool(templates_in_study_cache[project])
             missing_templates[key]["study_count_today"] = int(study_counts_today.get(project, 0))
             missing_templates[key]["seq_count_today"] = int(seq_counts_today.get(key, 0))
 
             if not missing_templates[key].get("first_seen"):
-                fs = first_seen_from_template_by_count(sql, project, seqname)
+                fs = first_seen_from_templates_fn(sql, project, seqname)
                 if not fs:
-                    fs = first_seen_date_for_seq(sql, project, seqname)
+                    fs = first_seen_from_acq_fn(sql, project, seqname)
                 missing_templates[key]["first_seen"] = fs
 
             if len(missing_templates[key]["examples"]) < 3:
@@ -509,22 +532,21 @@ def main() -> int:
                 missing_templates[key]["examples"].append(f"{project} / {subid} / {seqname}.{s3}")
             continue
 
-        errors_dict: Dict[str, Dict[str, str]] = res["errors"] or {}
+        errors_dict: Dict[str, Dict[str, str]] = res.get("errors") or {}
 
         if errors_dict:
             seq_summary[key]["anydiff"] += 1
-            total_anydiff += 1
+            totals.total_anydiff += 1
             for col, cmp in errors_dict.items():
                 exp = cmp.get("expect")
                 got = cmp.get("have")
                 seq_summary[key]["mismatch_counts"][(col, str(exp), str(got))] += 1
 
-        marquee_set = set(marquee_cols)
         marquee_mismatch = any((col in marquee_set) for col in errors_dict.keys())
 
         if marquee_mismatch:
             seq_summary[key]["nonconforming"] += 1
-            total_nonconforming += 1
+            totals.total_nonconforming += 1
             if len(seq_summary[key]["examples"]) < 3:
                 s3 = format_series_003(row["SeriesNumber"])
                 diff_list = compact_error_keys(errors_dict, marquee_cols, max_items=6)
@@ -534,19 +556,38 @@ def main() -> int:
 
     # actionable MIA = missing template keys where study is onboarded (has any templates)
     mia_actionable = 0
-    for k, info in missing_templates.items():
+    for _k, info in missing_templates.items():
         if info.get("study_has_templates"):
             mia_actionable += 1
+    totals.mia_actionable = mia_actionable
 
-    status_emoji = "✅" if (total_nonconforming == 0 and mia_actionable == 0) else "❌"
-    subject = f"[MRQA] {status_emoji} {total_nonconforming}/{total_checked} ({total_seen_today}); {mia_actionable} MIA"
+    return seq_summary, missing_templates, totals
+
+
+def build_email(
+    *,
+    date_label: str,
+    marquee_cols: List[str],
+    total_seen_today: int,
+    seq_summary: Dict[SeqKey, Dict[str, Any]],
+    missing_templates: Dict[SeqKey, Dict[str, Any]],
+    totals: Totals,
+) -> Tuple[str, str]:
+    """
+    Render subject + body from aggregated results.
+    """
+    status_emoji = "✅" if (totals.total_nonconforming == 0 and totals.mia_actionable == 0) else "❌"
+    subject = (
+        f"[MRQA] {status_emoji} {totals.total_nonconforming}/{totals.total_checked} "
+        f"({total_seen_today}); {totals.mia_actionable} MIA"
+    )
 
     lines: List[str] = []
     lines.append(f"MRQART header compliance summary for {date_label}")
     lines.append("")
 
     # ---- Nonconforming section
-    if total_nonconforming > 0:
+    if totals.total_nonconforming > 0:
         lines.append("❌ Non-Conforming:")
         lines.append("")
         for (project, subid, seqname) in sorted(seq_summary.keys()):
@@ -576,7 +617,7 @@ def main() -> int:
         lines.append("")
 
     # ---- Missing templates section
-    if total_missing_templates > 0:
+    if totals.total_missing_templates > 0:
         mia_with_templates: List[Tuple[SeqKey, Dict[str, Any]]] = []
         mia_no_study_templates: List[Tuple[SeqKey, Dict[str, Any]]] = []
 
@@ -618,32 +659,141 @@ def main() -> int:
     # ---- Summary
     lines.append("ℹ️ Summary:")
     lines.append(f"  {total_seen_today} acquisitions were seen.")
-    lines.append(f"  {total_checked} matched inspection criteria (interesting + series<=200).")
-    lines.append(f"  {total_nonconforming} of those are nonconforming by marquee cols ({', '.join(marquee_cols)}).")
+    lines.append(f"  {totals.total_checked} matched inspection criteria (interesting + series<=200).")
+    lines.append(f"  {totals.total_nonconforming} of those are nonconforming by marquee cols ({', '.join(marquee_cols)}).")
     lines.append("  Note: comparisons are performed by TemplateChecker (strict per its implementation).")
-    lines.append(f"  {total_anydiff} of those differ from template for any reason (across CONSTS).")
-    lines.append(f"  {total_missing_templates} do not have a template.")
+    lines.append(f"  {totals.total_anydiff} of those differ from template for any reason (across CONSTS).")
+    lines.append(f"  {totals.total_missing_templates} do not have a template.")
     lines.append("")
     lines.append("— MRQART")
 
     body = "\n".join(lines)
+    return subject, body
 
+
+def send_all(
+    email_entries: Iterable[Mapping[str, str]],
+    subject: str,
+    body: str,
+    *,
+    send_fn: Callable[[str, str, str], bool] = send_via_local_mail,
+) -> bool:
+    """
+    Send the same subject/body to all recipients.
+    Returns True if any failures occurred.
+    """
     any_fail = False
     for e in email_entries:
-        ok = send_via_local_mail(subject, body, e["to"])
+        ok = send_fn(subject, body, e["to"])
         if ok:
             print(f"[ok] mailed {e['to']}")
         else:
             any_fail = True
+    return any_fail
 
+def main() -> int:
+    env = os.environ
+
+    # paths
+    db_path = Path(env.get("MRQART_DB", str(DEFAULT_DB)))
+    reporting_path = Path(env.get("MRQART_REPORTING_TOML", str(REPORTING_TOML)))
+
+    # db connect
+    sql = sqlite3.connect(str(db_path))
+    sql.row_factory = sqlite3.Row
+
+    # templates
+    rebuild_templates(sql)
+
+    # configs
+    try:
+        rpt = load_reporting_config(reporting_path)
+    except Exception as e:
+        print(f"[error] {e}", file=sys.stderr)
+        return 2
+
+    deny_substrings: List[str] = rpt.get("deny_substrings", [])
+    interesting_substrings: List[str] = rpt["interesting_substrings"]
+    blacklist_prefixes: List[str] = rpt["blacklist_seqtype_prefixes"]
+    disable_blacklist: bool = rpt["disable_blacklist"]
+    marquee_cols: List[str] = rpt["marquee_cols"]
+
+    if not marquee_cols:
+        print("[error] reporting.toml: compare.marquee_cols is empty", file=sys.stderr)
+        return 2
+
+    try:
+        email_entries = load_email_entries(EMAIL_TOML)
+    except Exception as e:
+        print(f"[error] {e}", file=sys.stderr)
+        return 2
+    if not email_entries:
+        print(f"[error] No usable recipients in {EMAIL_TOML}", file=sys.stderr)
+        return 2
+
+    # date
+    rd = get_report_date(env)
+
+    # query
+    acq_rows = fetch_acquisitions(sql, rd.yday_str)
+    total_seen_today = len(acq_rows)
+
+    # no data case
+    if not acq_rows:
+        subject = "[MRQA] ✅ 0/0 (0); 0 MIA"
+        body = (
+            f"MRQART header compliance summary for {rd.date_label}\n\n"
+            "No acquisitions were found in the DB for this date.\n"
+            "— MRQART\n"
+        )
+        any_fail = send_all(email_entries, subject, body)
+        log_line(f"run date={rd.date_label} seen=0 checked=0 nonconf=0 mia=0 subject={subject!r}")
+        return 0 if not any_fail else 7
+
+    # filter
+    eligible_rows, study_counts_today, seq_counts_today = select_eligible_rows(
+        acq_rows,
+        interesting_substrings=interesting_substrings,
+        deny_substrings=deny_substrings,
+        blacklist_prefixes=blacklist_prefixes,
+        disable_blacklist=disable_blacklist,
+    )
+
+    # engine
+    tc = TemplateChecker(db=sql, context="DB")
+    seq_summary, missing_templates, totals = evaluate_rows(
+        eligible_rows,
+        sql=sql,
+        tc=tc,
+        marquee_cols=marquee_cols,
+        study_counts_today=study_counts_today,
+        seq_counts_today=seq_counts_today,
+    )
+    totals.total_seen_today = total_seen_today  # (not strictly needed, but handy)
+
+    # render
+    subject, body = build_email(
+        date_label=rd.date_label,
+        marquee_cols=marquee_cols,
+        total_seen_today=total_seen_today,
+        seq_summary=seq_summary,
+        missing_templates=missing_templates,
+        totals=totals,
+    )
+
+    # send
+    any_fail = send_all(email_entries, subject, body)
+
+    # log
     log_line(
-        f"run date={date_label} seen={total_seen_today} checked={total_checked} "
-        f"nonconf={total_nonconforming} anydiff={total_anydiff} "
-        f"missing={total_missing_templates} mia={mia_actionable} subject={subject!r}"
+        f"run date={rd.date_label} seen={total_seen_today} checked={totals.total_checked} "
+        f"nonconf={totals.total_nonconforming} anydiff={totals.total_anydiff} "
+        f"missing={totals.total_missing_templates} mia={totals.mia_actionable} subject={subject!r}"
     )
     dbg(
-        f"done date={date_label} seen={total_seen_today} checked={total_checked} "
-        f"nonconf={total_nonconforming} anydiff={total_anydiff} missing={total_missing_templates} mia={mia_actionable}"
+        f"done date={rd.date_label} seen={total_seen_today} checked={totals.total_checked} "
+        f"nonconf={totals.total_nonconforming} anydiff={totals.total_anydiff} "
+        f"missing={totals.total_missing_templates} mia={totals.mia_actionable}"
     )
 
     return 0 if not any_fail else 7
@@ -651,3 +801,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
