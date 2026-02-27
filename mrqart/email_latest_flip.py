@@ -8,7 +8,9 @@ Refactor note:
   - get_report_date()
   - fetch_acquisitions()
   - select_eligible_rows()
+  - _evaluate_row()         <-- per-row logic, extracted for testability
   - evaluate_rows()
+  - format_seq_result()     <-- renders a single SeqSummary entry to lines
   - build_email()
   - send_all()
 
@@ -22,10 +24,10 @@ import sys
 import sqlite3
 import subprocess
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple
 
 from .template_checker import TemplateChecker
 
@@ -104,13 +106,14 @@ def load_email_entries(toml_path: Path) -> List[Dict[str, str]]:
 
 
 def send_via_local_mail(subject: str, body: str, recipient: str) -> bool:
+    # check=True raises on non-zero exit, so if we reach the return we succeeded.
     try:
-        proc = subprocess.run(
+        subprocess.run(
             ["mail", "-s", subject, recipient],
             input=body.encode("utf-8"),
             check=True,
         )
-        return proc.returncode == 0
+        return True
     except Exception as e:
         print(f"[warn] local mail send failed to {recipient}: {e}", file=sys.stderr)
         return False
@@ -129,6 +132,11 @@ def load_reporting_config(toml_path: Path) -> Dict[str, Any]:
 
       [compare]
       marquee_cols = [...]
+
+    Note: SequenceType is always added to marquee_set at evaluation time
+    (in evaluate_rows) regardless of what is listed here.
+    BWP and PixelResol are not forced but should be added to reporting.toml
+    if you want them to get their own detail lines in the email.
     """
     if not toml_path.exists():
         raise FileNotFoundError(f"Missing reporting TOML: {toml_path}")
@@ -373,6 +381,83 @@ class Totals:
     mia_actionable: int = 0
 
 
+@dataclass
+class RowResult:
+    """Result of evaluating a single acquisition row against its template."""
+    key: SeqKey
+    missing_template: bool = False
+    has_any_diff: bool = False
+    has_marquee_mismatch: bool = False
+    errors_dict: Dict[str, Dict[str, str]] = field(default_factory=dict)
+    first_seen: Optional[str] = None
+    study_has_templates: bool = False
+
+
+@dataclass
+class SeqSummary:
+    """
+    Aggregated conformance data for a single (project, subid, seqname) key.
+    This is the canonical data structure for a single sequence check —
+    populated by evaluate_rows and rendered by format_seq_result.
+    """
+    key: SeqKey
+    total: int = 0
+    nonconforming: int = 0
+    anydiff: int = 0
+    examples: List[str] = field(default_factory=list)
+    mismatch_counts: Dict[Tuple[str, str, str], int] = field(default_factory=lambda: defaultdict(int))
+
+    @property
+    def project(self) -> str:
+        return self.key[0]
+
+    @property
+    def subid(self) -> str:
+        return self.key[1]
+
+    @property
+    def seqname(self) -> str:
+        return self.key[2]
+
+
+def format_seq_result(
+    summary: SeqSummary,
+    *,
+    marquee_cols: List[str],
+) -> List[str]:
+    """
+    Render a single SeqSummary to a list of lines for inclusion in the email.
+    Each nonconforming acquisition is a flat bullet: subid/seqname.acqnum
+    with diffs indented below. No fraction or ex: line — the bullet IS the example.
+    Can be called independently for testing or iteration.
+    """
+    lines: List[str] = []
+
+    for ex in summary.examples:
+        # ex is stored as "project / subid / seqname.acqnum (diffs: ...)"
+        # strip the project prefix and the trailing diffs annotation for the bullet
+        # e.g. "Brain^CATOV-BRAIN / 118252 / Perfusion_Weighted.042 (diffs: TE, TA)"
+        # becomes "118252/Perfusion_Weighted.042"
+        ex_clean = ex
+        parts = ex.split(" / ", 2)
+        if len(parts) == 3:
+            subid_part = parts[1].strip()
+            seq_part = parts[2].split(" (diffs:")[0].strip()
+            ex_clean = f"{subid_part}/{seq_part}"
+        lines.append(f"  * {ex_clean}")
+
+        top_all = sorted(summary.mismatch_counts.items(), key=lambda kv: kv[1], reverse=True)
+        shown = 0
+        for ((col, exp, got), n) in top_all:
+            if col not in set(marquee_cols) and col != "TA":
+                continue
+            lines.append(f"      {format_expected_got(col, exp, got)}")
+            shown += 1
+            if shown >= 8:
+                break
+
+    return lines
+
 def get_report_date(env: Mapping[str, str], now: datetime | None = None) -> ReportDate:
     """
     Determine reporting date:
@@ -418,16 +503,21 @@ def select_eligible_rows(
     deny_substrings: List[str],
     blacklist_prefixes: List[str],
     disable_blacklist: bool,
-) -> Tuple[List[sqlite3.Row], Dict[str, int], Dict[SeqKey, int]]:
+) -> Tuple[List[sqlite3.Row], Dict[str, int], Dict[SeqKey, int], Dict[str, set]]:
     """
     Apply:
       - SeriesNumber <= 200
       - reporting filter (interesting/deny/blacklist)
-    Also returns counts needed for MIA section.
+    Returns:
+      - eligible rows
+      - study_counts_today: total eligible rows per project
+      - seq_counts_today: total eligible rows per (project, subid, seqname)
+      - study_subids_today: set of unique SubIDs seen per project (for session count)
     """
     eligible: List[sqlite3.Row] = []
     study_counts_today: Dict[str, int] = defaultdict(int)
     seq_counts_today: Dict[SeqKey, int] = defaultdict(int)
+    study_subids_today: Dict[str, set] = defaultdict(set)
 
     for row in acq_rows:
         if series_is_posthoc(row["SeriesNumber"]):
@@ -452,8 +542,64 @@ def select_eligible_rows(
         key: SeqKey = (project, subid, seqname)
         study_counts_today[project] += 1
         seq_counts_today[key] += 1
+        study_subids_today[project].add(subid)
 
-    return eligible, study_counts_today, seq_counts_today
+    return eligible, study_counts_today, seq_counts_today, study_subids_today
+
+
+def _evaluate_row(
+    row: sqlite3.Row,
+    *,
+    tc: TemplateChecker,
+    marquee_set: set,
+    sql: sqlite3.Connection,
+    study_has_templates_fn: Callable[[sqlite3.Connection, str], bool],
+    first_seen_from_templates_fn: Callable[[sqlite3.Connection, str, str], str | None],
+    first_seen_from_acq_fn: Callable[[sqlite3.Connection, str, str], str | None],
+    templates_in_study_cache: Dict[str, bool],
+) -> RowResult:
+    """
+    Evaluate a single acquisition row against its template.
+    Returns a RowResult describing what was found.
+    RowResult wraps what TemplateChecker returns — no logic is duplicated,
+    just structured for aggregation.
+    """
+    project = row["Project"]
+    subid = row["SubID"]
+    seqname = row["SequenceName"]
+    key: SeqKey = (project, subid, seqname)
+
+    hdr = dict(row)
+    res = tc.check_header(hdr)
+
+    # Missing template
+    if not res.get("template"):
+        if project not in templates_in_study_cache:
+            templates_in_study_cache[project] = bool(study_has_templates_fn(sql, project))
+        study_has_tmpl = bool(templates_in_study_cache[project])
+
+        fs = first_seen_from_templates_fn(sql, project, seqname)
+        if not fs:
+            fs = first_seen_from_acq_fn(sql, project, seqname)
+
+        return RowResult(
+            key=key,
+            missing_template=True,
+            study_has_templates=study_has_tmpl,
+            first_seen=fs,
+        )
+
+    errors_dict: Dict[str, Dict[str, str]] = res.get("errors") or {}
+    has_any_diff = bool(errors_dict)
+    has_marquee_mismatch = any(col in marquee_set for col in errors_dict)
+
+    return RowResult(
+        key=key,
+        missing_template=False,
+        has_any_diff=has_any_diff,
+        has_marquee_mismatch=has_marquee_mismatch,
+        errors_dict=errors_dict,
+    )
 
 
 def evaluate_rows(
@@ -467,21 +613,15 @@ def evaluate_rows(
     study_has_templates_fn: Callable[[sqlite3.Connection, str], bool] = study_has_any_templates,
     first_seen_from_templates_fn: Callable[[sqlite3.Connection, str, str], str | None] = first_seen_from_template_by_count,
     first_seen_from_acq_fn: Callable[[sqlite3.Connection, str, str], str | None] = first_seen_date_for_seq,
-) -> Tuple[Dict[SeqKey, Dict[str, Any]], Dict[SeqKey, Dict[str, Any]], Totals]:
+) -> Tuple[Dict[SeqKey, SeqSummary], Dict[SeqKey, Dict[str, Any]], Totals]:
     """
-    Core evaluation engine:
-      - runs TemplateChecker.check_header on each eligible row
-      - aggregates seq_summary + missing_templates + totals
+    Core evaluation engine — calls _evaluate_row for each eligible row
+    and aggregates results into seq_summary, missing_templates, and totals.
+
+    SequenceType is always added to marquee_set here regardless of what is
+    in reporting.toml, so SequenceType changes are always caught as nonconforming.
     """
-    seq_summary: Dict[SeqKey, Dict[str, Any]] = defaultdict(
-        lambda: {
-            "total": 0,
-            "nonconforming": 0,
-            "anydiff": 0,
-            "examples": [],
-            "mismatch_counts": defaultdict(int),
-        }
-    )
+    seq_summary: Dict[SeqKey, SeqSummary] = {}
 
     missing_templates: Dict[SeqKey, Dict[str, Any]] = defaultdict(
         lambda: {
@@ -495,7 +635,11 @@ def evaluate_rows(
     )
 
     totals = Totals()
-    marquee_set = set(marquee_cols)
+
+    # SequenceType is always included in marquee_set regardless of reporting.toml
+    # so that a sequence type change without a name change is never silently ignored.
+    marquee_set = set(marquee_cols) | {"SequenceType"}
+
     templates_in_study_cache: Dict[str, bool] = {}
 
     for row in eligible_rows:
@@ -505,61 +649,57 @@ def evaluate_rows(
         key: SeqKey = (project, subid, seqname)
 
         totals.total_checked += 1
-        seq_summary[key]["total"] += 1
 
-        hdr = dict(row)
-        res = tc.check_header(hdr)
+        if key not in seq_summary:
+            seq_summary[key] = SeqSummary(key=key)
+        seq_summary[key].total += 1
 
-        # Missing template: TemplateChecker returns template={} when absent
-        if not res.get("template"):
+        result = _evaluate_row(
+            row,
+            tc=tc,
+            marquee_set=marquee_set,
+            sql=sql,
+            study_has_templates_fn=study_has_templates_fn,
+            first_seen_from_templates_fn=first_seen_from_templates_fn,
+            first_seen_from_acq_fn=first_seen_from_acq_fn,
+            templates_in_study_cache=templates_in_study_cache,
+        )
+
+        if result.missing_template:
             totals.total_missing_templates += 1
             missing_templates[key]["count"] += 1
-
-            if project not in templates_in_study_cache:
-                templates_in_study_cache[project] = bool(study_has_templates_fn(sql, project))
-            missing_templates[key]["study_has_templates"] = bool(templates_in_study_cache[project])
+            missing_templates[key]["study_has_templates"] = result.study_has_templates
             missing_templates[key]["study_count_today"] = int(study_counts_today.get(project, 0))
             missing_templates[key]["seq_count_today"] = int(seq_counts_today.get(key, 0))
-
             if not missing_templates[key].get("first_seen"):
-                fs = first_seen_from_templates_fn(sql, project, seqname)
-                if not fs:
-                    fs = first_seen_from_acq_fn(sql, project, seqname)
-                missing_templates[key]["first_seen"] = fs
-
+                missing_templates[key]["first_seen"] = result.first_seen
             if len(missing_templates[key]["examples"]) < 3:
                 s3 = format_series_003(row["SeriesNumber"])
                 missing_templates[key]["examples"].append(f"{project} / {subid} / {seqname}.{s3}")
             continue
 
-        errors_dict: Dict[str, Dict[str, str]] = res.get("errors") or {}
-
-        if errors_dict:
-            seq_summary[key]["anydiff"] += 1
+        if result.has_any_diff:
+            seq_summary[key].anydiff += 1
             totals.total_anydiff += 1
-            for col, cmp in errors_dict.items():
+            for col, cmp in result.errors_dict.items():
                 exp = cmp.get("expect")
                 got = cmp.get("have")
-                seq_summary[key]["mismatch_counts"][(col, str(exp), str(got))] += 1
+                seq_summary[key].mismatch_counts[(col, str(exp), str(got))] += 1
 
-        marquee_mismatch = any((col in marquee_set) for col in errors_dict.keys())
-
-        if marquee_mismatch:
-            seq_summary[key]["nonconforming"] += 1
+        if result.has_marquee_mismatch:
+            seq_summary[key].nonconforming += 1
             totals.total_nonconforming += 1
-            if len(seq_summary[key]["examples"]) < 3:
+            if len(seq_summary[key].examples) < 3:
                 s3 = format_series_003(row["SeriesNumber"])
-                diff_list = compact_error_keys(errors_dict, marquee_cols, max_items=6)
-                seq_summary[key]["examples"].append(
+                diff_list = compact_error_keys(result.errors_dict, marquee_cols, max_items=6)
+                seq_summary[key].examples.append(
                     f"{project} / {subid} / {seqname}.{s3} (diffs: {diff_list})"
                 )
 
     # actionable MIA = missing template keys where study is onboarded (has any templates)
-    mia_actionable = 0
-    for _k, info in missing_templates.items():
-        if info.get("study_has_templates"):
-            mia_actionable += 1
-    totals.mia_actionable = mia_actionable
+    totals.mia_actionable = sum(
+        1 for info in missing_templates.values() if info.get("study_has_templates")
+    )
 
     return seq_summary, missing_templates, totals
 
@@ -569,12 +709,15 @@ def build_email(
     date_label: str,
     marquee_cols: List[str],
     total_seen_today: int,
-    seq_summary: Dict[SeqKey, Dict[str, Any]],
+    seq_summary: Dict[SeqKey, SeqSummary],
     missing_templates: Dict[SeqKey, Dict[str, Any]],
     totals: Totals,
+    study_subids_today: Mapping[str, set],
 ) -> Tuple[str, str]:
     """
     Render subject + body from aggregated results.
+    Nonconforming sequences are grouped by project; each acquisition is a
+    flat bullet with diffs below. Project header shows session count today.
     """
     status_emoji = "✅" if (totals.total_nonconforming == 0 and totals.mia_actionable == 0) else "❌"
     subject = (
@@ -590,26 +733,27 @@ def build_email(
     if totals.total_nonconforming > 0:
         lines.append("❌ Non-Conforming:")
         lines.append("")
-        for (project, subid, seqname) in sorted(seq_summary.keys()):
-            info = seq_summary[(project, subid, seqname)]
-            if info["nonconforming"] == 0:
-                continue
 
-            lines.append(f"* {project}/{subid}/{seqname} ({info['nonconforming']}/{info['total']})")
+        # Group nonconforming sequences by project
+        by_project: Dict[str, List[SeqKey]] = defaultdict(list)
+        for key in sorted(seq_summary.keys()):
+            if seq_summary[key].nonconforming > 0:
+                by_project[key[0]].append(key)
 
-            top_all = sorted(info["mismatch_counts"].items(), key=lambda kv: kv[1], reverse=True)
-            shown = 0
-            for ((col, exp, got), n) in top_all:
-                # keep the email focused; include marquee cols + TA if present
-                if col not in set(marquee_cols) and col != "TA":
-                    continue
-                lines.append(f"   {format_expected_got(col, exp, got)} ({n})")
-                shown += 1
-                if shown >= 8:
-                    break
+        for project in sorted(by_project.keys()):
+            keys = by_project[project]
+            n_seq = len(keys)
+            n_sessions = len(study_subids_today.get(project, set()))
+            session_word = "session" if n_sessions == 1 else "sessions"
+            seq_word = "sequence" if n_seq == 1 else "sequences"
+            lines.append(
+                f"{project} ({n_seq} nonconforming {seq_word}; {n_sessions} {session_word} today):"
+            )
 
-            for ex in info["examples"]:
-                lines.append(f"   - ex: {ex}")
+            for key in keys:
+                summary = seq_summary[key]
+                lines.extend(format_seq_result(summary, marquee_cols=marquee_cols))
+
             lines.append("")
     else:
         lines.append("✅ Non-Conforming:")
@@ -662,7 +806,7 @@ def build_email(
     lines.append(f"  {totals.total_checked} matched inspection criteria (interesting + series<=200).")
     lines.append(f"  {totals.total_nonconforming} of those are nonconforming by marquee cols ({', '.join(marquee_cols)}).")
     lines.append("  Note: comparisons are performed by TemplateChecker (strict per its implementation).")
-    lines.append(f"  {totals.total_anydiff} of those differ from template for any reason (across CONSTS).")
+    lines.append(f"  {totals.total_anydiff} of those differ from template on at least one column (marquee or otherwise).")
     lines.append(f"  {totals.total_missing_templates} do not have a template.")
     lines.append("")
     lines.append("— MRQART")
@@ -691,12 +835,14 @@ def send_all(
             any_fail = True
     return any_fail
 
-def main() -> int:
+
+def main(*, dry_run: bool = False) -> int:
     env = os.environ
 
-    # paths
+    # paths — all overridable via environment variables set by __main__.py
     db_path = Path(env.get("MRQART_DB", str(DEFAULT_DB)))
     reporting_path = Path(env.get("MRQART_REPORTING_TOML", str(REPORTING_TOML)))
+    email_toml_path = Path(env.get("MRQART_EMAIL_TOML", str(EMAIL_TOML)))
 
     # db connect
     sql = sqlite3.connect(str(db_path))
@@ -722,14 +868,17 @@ def main() -> int:
         print("[error] reporting.toml: compare.marquee_cols is empty", file=sys.stderr)
         return 2
 
-    try:
-        email_entries = load_email_entries(EMAIL_TOML)
-    except Exception as e:
-        print(f"[error] {e}", file=sys.stderr)
-        return 2
-    if not email_entries:
-        print(f"[error] No usable recipients in {EMAIL_TOML}", file=sys.stderr)
-        return 2
+    if not dry_run:
+        try:
+            email_entries = load_email_entries(email_toml_path)
+        except Exception as e:
+            print(f"[error] {e}", file=sys.stderr)
+            return 2
+        if not email_entries:
+            print(f"[error] No usable recipients in {email_toml_path}", file=sys.stderr)
+            return 2
+    else:
+        email_entries = []
 
     # date
     rd = get_report_date(env)
@@ -746,12 +895,16 @@ def main() -> int:
             "No acquisitions were found in the DB for this date.\n"
             "— MRQART\n"
         )
+        if dry_run:
+            print(f"Subject: {subject}\n")
+            print(body)
+            return 0
         any_fail = send_all(email_entries, subject, body)
         log_line(f"run date={rd.date_label} seen=0 checked=0 nonconf=0 mia=0 subject={subject!r}")
         return 0 if not any_fail else 7
 
     # filter
-    eligible_rows, study_counts_today, seq_counts_today = select_eligible_rows(
+    eligible_rows, study_counts_today, seq_counts_today, study_subids_today = select_eligible_rows(
         acq_rows,
         interesting_substrings=interesting_substrings,
         deny_substrings=deny_substrings,
@@ -769,7 +922,7 @@ def main() -> int:
         study_counts_today=study_counts_today,
         seq_counts_today=seq_counts_today,
     )
-    totals.total_seen_today = total_seen_today  # (not strictly needed, but handy)
+    totals.total_seen_today = total_seen_today
 
     # render
     subject, body = build_email(
@@ -779,7 +932,18 @@ def main() -> int:
         seq_summary=seq_summary,
         missing_templates=missing_templates,
         totals=totals,
+        study_subids_today=study_subids_today,
     )
+
+    # dry run: print instead of send
+    if dry_run:
+        print(f"Subject: {subject}\n")
+        print(body)
+        log_line(
+            f"dry-run date={rd.date_label} seen={total_seen_today} checked={totals.total_checked} "
+            f"nonconf={totals.total_nonconforming} subject={subject!r}"
+        )
+        return 0
 
     # send
     any_fail = send_all(email_entries, subject, body)
@@ -801,4 +965,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
