@@ -18,7 +18,8 @@ templates.tsv
 *.sw[op]
 creds/
 log/
-config/
+*.toml
+!config/reporting.toml
 *.html
 *.jsonl
 dist/
@@ -27,3 +28,4 @@ uv.lock
 .pytest_cache/
 .python-version
 *.202*-*/ # backup files
+.*idea*

@@ -13,24 +13,17 @@ from datetime import datetime
 
 import pytest
 
-from mrqart.email_latest_flip import (
-    Totals,
-    build_email,
-    compact_error_keys,
-    evaluate_rows,
-    fetch_acquisitions,
-    first_seen_date_for_seq,
-    first_seen_from_template_by_count,
-    format_expected_got,
-    format_series_003,
-    get_report_date,
-    is_interesting_sequence_with_blacklist,
-    parse_ta_seconds,
-    select_eligible_rows,
-    series_is_posthoc,
-    study_has_any_templates,
-    SeqSummary,
-)
+from mrqart.email_latest_flip import (SeqSummary, Totals, build_email,
+                                      compact_error_keys, evaluate_rows,
+                                      fetch_acquisitions,
+                                      first_seen_date_for_seq,
+                                      first_seen_from_template_by_count,
+                                      format_expected_got, format_series_003,
+                                      get_report_date,
+                                      is_interesting_sequence_with_blacklist,
+                                      parse_ta_seconds, select_eligible_rows,
+                                      series_is_posthoc,
+                                      study_has_any_templates)
 
 
 # -----------------------------
@@ -104,10 +97,13 @@ def test_is_interesting_sequence_with_blacklist_deny_wins():
     ok = is_interesting_sequence_with_blacklist(
         "my_localizer_scout",
         "anat_scout",
-        {"interesting_substrings":["mprage"],
-         "deny_substrings":["localizer"],
-         "blacklist_seqtype_prefixes":["anat"],
-         "disable_blacklist":False})
+        {
+            "interesting_substrings": ["mprage"],
+            "deny_substrings": ["localizer"],
+            "blacklist_seqtype_prefixes": ["anat"],
+            "disable_blacklist": False,
+        },
+    )
     assert ok is False
 
 
@@ -115,10 +111,12 @@ def test_is_interesting_sequence_with_blacklist_interesting_wins():
     ok = is_interesting_sequence_with_blacklist(
         "3DT1_mprage",
         "anat_scout",
-        {"interesting_substrings":["mprage"],
-        "deny_substrings":[],
-        "blacklist_seqtype_prefixes":["anat"],
-        "disable_blacklist":False,}
+        {
+            "interesting_substrings": ["mprage"],
+            "deny_substrings": [],
+            "blacklist_seqtype_prefixes": ["anat"],
+            "disable_blacklist": False,
+        },
     )
     assert ok is True
 
@@ -127,10 +125,12 @@ def test_is_interesting_sequence_with_blacklist_disable_includes():
     ok = is_interesting_sequence_with_blacklist(
         "whatever",
         "anat_scout",
-        {"interesting_substrings":[],
-        "deny_substrings":[],
-        "blacklist_seqtype_prefixes":["anat"],
-        "disable_blacklist":True}
+        {
+            "interesting_substrings": [],
+            "deny_substrings": [],
+            "blacklist_seqtype_prefixes": ["anat"],
+            "disable_blacklist": True,
+        },
     )
     assert ok is True
 
@@ -139,10 +139,12 @@ def test_is_interesting_sequence_with_blacklist_prefix_excludes():
     ok = is_interesting_sequence_with_blacklist(
         seqname="whatever",
         seqtype="anat_scout_extra",
-        settings={"interesting_substrings":[],
-         "deny_substrings":[],
-         "blacklist_seqtype_prefixes":["anat"],
-         "disable_blacklist":False},
+        settings={
+            "interesting_substrings": [],
+            "deny_substrings": [],
+            "blacklist_seqtype_prefixes": ["anat"],
+            "disable_blacklist": False,
+        },
     )
     assert ok is False
 
@@ -174,7 +176,7 @@ def test_select_eligible_rows_counts_and_filters():
             "SeriesNumber": "11",  # denied -> excluded
         },
         {
-            "Project": "7TBP^X", # ingore regexp
+            "Project": "7TBP^X",  # ingore regexp
             "SubID": "S1SKIPME",
             "SequenceName": "localizer_foo",
             "SequenceType": "anat_scout",
@@ -184,11 +186,13 @@ def test_select_eligible_rows_counts_and_filters():
 
     eligible, study_counts, seq_counts, study_subids_today = select_eligible_rows(
         rows,
-        {"interesting_substrings":["rest"],
-         "deny_substrings": ["localizer"],
-         "blacklist_study_regex": ["^7T"],
-         "blacklist_prefixes":["anat"],
-         "disable_blacklist":False},
+        {
+            "interesting_substrings": ["rest"],
+            "deny_substrings": ["localizer"],
+            "blacklist_study_regex": ["^7T"],
+            "blacklist_prefixes": ["anat"],
+            "disable_blacklist": False,
+        },
     )
 
     assert len(eligible) == 1
@@ -223,10 +227,30 @@ def test_evaluate_rows_counts_nonconforming_anydiff_and_mia_actionable():
     marquee_cols = ["TR", "TE", "FA"]
 
     eligible = [
-        {"Project": "Brain^A", "SubID": "S1", "SequenceName": "Seq1", "SeriesNumber": "12"},
-        {"Project": "Brain^A", "SubID": "S1", "SequenceName": "Seq1", "SeriesNumber": "14"},
-        {"Project": "Brain^A", "SubID": "S1", "SequenceName": "Seq1", "SeriesNumber": "15"},
-        {"Project": "Brain^B", "SubID": "S2", "SequenceName": "Seq2", "SeriesNumber": "7"},
+        {
+            "Project": "Brain^A",
+            "SubID": "S1",
+            "SequenceName": "Seq1",
+            "SeriesNumber": "12",
+        },
+        {
+            "Project": "Brain^A",
+            "SubID": "S1",
+            "SequenceName": "Seq1",
+            "SeriesNumber": "14",
+        },
+        {
+            "Project": "Brain^A",
+            "SubID": "S1",
+            "SequenceName": "Seq1",
+            "SeriesNumber": "15",
+        },
+        {
+            "Project": "Brain^B",
+            "SubID": "S2",
+            "SequenceName": "Seq2",
+            "SeriesNumber": "7",
+        },
     ]
 
     mapping = {
@@ -310,21 +334,22 @@ def test_build_email_structure_and_subject_flags():
     )
     marquee_cols = ["TR", "TE", "FA"]
 
-    seq_summary = {("Brain^A", "S1", "Seq1"):
-                   SeqSummary(key=("Brain^A", "S1", "Seq1"),
-                              total=3,
-                              nonconforming=2,
-                              anydiff=3,
-                              examples=[
-                                  "Brain^A / S1 / Seq1.012 (diffs: TE)",
-                                  "Brain^A / S1 / Seq1.014 (diffs: TE)",
-                                  ],
-                              mismatch_counts={
-                                  ("TE", "5", "12"): 2,
-                                  ("PixelResol", "1.0", "1.1"): 1,
-                                  },
-                              ),
-                   }
+    seq_summary = {
+        ("Brain^A", "S1", "Seq1"): SeqSummary(
+            key=("Brain^A", "S1", "Seq1"),
+            total=3,
+            nonconforming=2,
+            anydiff=3,
+            examples=[
+                "Brain^A / S1 / Seq1.012 (diffs: TE)",
+                "Brain^A / S1 / Seq1.014 (diffs: TE)",
+            ],
+            mismatch_counts={
+                ("TE", "5", "12"): 2,
+                ("PixelResol", "1.0", "1.1"): 1,
+            },
+        ),
+    }
 
     missing_templates = {
         ("Brain^B", "S2", "Seq2"): {
@@ -344,7 +369,7 @@ def test_build_email_structure_and_subject_flags():
         seq_summary=seq_summary,
         missing_templates=missing_templates,
         totals=totals,
-        study_subids_today={}
+        study_subids_today={},
     )
 
     assert subject.startswith("[MRQA]")
@@ -500,4 +525,3 @@ def test_first_seen_date_for_seq(mem_sql):
 
     # MIN(AcqDate) should become ISO
     assert first_seen_date_for_seq(mem_sql, "Brain^X", "Seq") == "2026-01-15"
-
