@@ -107,8 +107,13 @@ def load_email_entries(toml_path: Path) -> List[Dict[str, str]]:
 
 
 def send_via_local_mail(subject: str, body: str, recipient: str) -> bool:
-    # check=True raises on non-zero exit, so if we reach the return we succeeded.
+    # 20260306WF - externally set DRYRUN=1 to see message without emailing
+    #              alternative to changing config
+    if os.environ.get("DRYRUN"):
+        print(f"DRYRUN - not sending {recipient} mail '{subject}'\n{body}")
+        return True
     try:
+        # check=True raises on non-zero exit, so if we reach the return we succeeded.
         subprocess.run(
             ["mail", "-s", subject, recipient],
             input=body.encode("utf-8"),
@@ -522,6 +527,7 @@ def select_eligible_rows( acq_rows: Iterable[sqlite3.Row], settings: FilterSetti
     study_counts_today: Dict[str, int] = defaultdict(int)
     seq_counts_today: Dict[SeqKey, int] = defaultdict(int)
     study_subids_today: Dict[str, set] = defaultdict(set)
+
 
     for row in acq_rows:
         if series_is_posthoc(row["SeriesNumber"]):

@@ -29,6 +29,7 @@ from mrqart.email_latest_flip import (
     select_eligible_rows,
     series_is_posthoc,
     study_has_any_templates,
+    SeqSummary,
 )
 
 
@@ -285,15 +286,17 @@ def test_evaluate_rows_counts_nonconforming_anydiff_and_mia_actionable():
     assert totals.mia_actionable == 1
 
     key_a = ("Brain^A", "S1", "Seq1")
-    assert seq_summary[key_a]["total"] == 3
-    assert seq_summary[key_a]["anydiff"] == 3
-    assert seq_summary[key_a]["nonconforming"] == 2
-    assert len(seq_summary[key_a]["examples"]) > 0  # examples added for nonconforming
+    smry_a = seq_summary[key_a]
+    assert smry_a.total == 3
+    assert smry_a.anydiff == 3
+    assert smry_a.nonconforming == 2
+    assert len(smry_a.examples) > 0  # examples added for nonconforming
 
     key_b = ("Brain^B", "S2", "Seq2")
-    assert missing_templates[key_b]["count"] == 1
-    assert missing_templates[key_b]["study_has_templates"] is True
-    assert missing_templates[key_b]["first_seen"] == "2025-01-01"
+    smry_b = missing_templates[key_b]
+    assert smry_b["count"] == 1
+    assert smry_b["study_has_templates"] is True
+    assert smry_b["first_seen"] == "2025-01-01"
 
 
 def test_build_email_structure_and_subject_flags():
@@ -307,21 +310,21 @@ def test_build_email_structure_and_subject_flags():
     )
     marquee_cols = ["TR", "TE", "FA"]
 
-    seq_summary = {
-        ("Brain^A", "S1", "Seq1"): {
-            "total": 3,
-            "nonconforming": 2,
-            "anydiff": 3,
-            "examples": [
-                "Brain^A / S1 / Seq1.012 (diffs: TE)",
-                "Brain^A / S1 / Seq1.014 (diffs: TE)",
-            ],
-            "mismatch_counts": {
-                ("TE", "5", "12"): 2,
-                ("PixelResol", "1.0", "1.1"): 1,
-            },
-        },
-    }
+    seq_summary = {("Brain^A", "S1", "Seq1"):
+                   SeqSummary(key=("Brain^A", "S1", "Seq1"),
+                              total=3,
+                              nonconforming=2,
+                              anydiff=3,
+                              examples=[
+                                  "Brain^A / S1 / Seq1.012 (diffs: TE)",
+                                  "Brain^A / S1 / Seq1.014 (diffs: TE)",
+                                  ],
+                              mismatch_counts={
+                                  ("TE", "5", "12"): 2,
+                                  ("PixelResol", "1.0", "1.1"): 1,
+                                  },
+                              ),
+                   }
 
     missing_templates = {
         ("Brain^B", "S2", "Seq2"): {
@@ -341,6 +344,7 @@ def test_build_email_structure_and_subject_flags():
         seq_summary=seq_summary,
         missing_templates=missing_templates,
         totals=totals,
+        study_subids_today={}
     )
 
     assert subject.startswith("[MRQA]")
@@ -370,6 +374,7 @@ def test_build_email_green_when_no_nonconforming_and_no_mia():
         total_seen_today=2,
         seq_summary={},
         missing_templates={},
+        study_subids_today={},
         totals=totals,
     )
     assert "✅" in subject
