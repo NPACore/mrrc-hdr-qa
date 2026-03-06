@@ -101,36 +101,35 @@ def test_compact_error_keys_prefers_marquee_then_ta():
 
 def test_is_interesting_sequence_with_blacklist_deny_wins():
     ok = is_interesting_sequence_with_blacklist(
-        seqname="my_localizer_scout",
-        seqtype="anat_scout",
-        interesting_substrings=["mprage"],
-        deny_substrings=["localizer"],
-        blacklist_seqtype_prefixes=["anat"],
-        disable_blacklist=False,
-    )
+        "my_localizer_scout",
+        "anat_scout",
+        {"interesting_substrings":["mprage"],
+         "deny_substrings":["localizer"],
+         "blacklist_seqtype_prefixes":["anat"],
+         "disable_blacklist":False})
     assert ok is False
 
 
 def test_is_interesting_sequence_with_blacklist_interesting_wins():
     ok = is_interesting_sequence_with_blacklist(
-        seqname="3DT1_mprage",
-        seqtype="anat_scout",
-        interesting_substrings=["mprage"],
-        deny_substrings=[],
-        blacklist_seqtype_prefixes=["anat"],
-        disable_blacklist=False,
+        "3DT1_mprage",
+        "anat_scout",
+        {"interesting_substrings":["mprage"],
+        "deny_substrings":[],
+        "blacklist_seqtype_prefixes":["anat"],
+        "disable_blacklist":False,}
     )
     assert ok is True
 
 
 def test_is_interesting_sequence_with_blacklist_disable_includes():
     ok = is_interesting_sequence_with_blacklist(
-        seqname="whatever",
-        seqtype="anat_scout",
-        interesting_substrings=[],
-        deny_substrings=[],
-        blacklist_seqtype_prefixes=["anat"],
-        disable_blacklist=True,
+        "whatever",
+        "anat_scout",
+        {"interesting_substrings":[],
+        "deny_substrings":[],
+        "blacklist_seqtype_prefixes":["anat"],
+        "disable_blacklist":True}
     )
     assert ok is True
 
@@ -139,10 +138,10 @@ def test_is_interesting_sequence_with_blacklist_prefix_excludes():
     ok = is_interesting_sequence_with_blacklist(
         seqname="whatever",
         seqtype="anat_scout_extra",
-        interesting_substrings=[],
-        deny_substrings=[],
-        blacklist_seqtype_prefixes=["anat"],
-        disable_blacklist=False,
+        settings={"interesting_substrings":[],
+         "deny_substrings":[],
+         "blacklist_seqtype_prefixes":["anat"],
+         "disable_blacklist":False},
     )
     assert ok is False
 
@@ -173,14 +172,22 @@ def test_select_eligible_rows_counts_and_filters():
             "SequenceType": "anat_scout",
             "SeriesNumber": "11",  # denied -> excluded
         },
+        {
+            "Project": "7TBP^X", # ingore regexp
+            "SubID": "S1SKIPME",
+            "SequenceName": "localizer_foo",
+            "SequenceType": "anat_scout",
+            "SeriesNumber": "11",
+        },
     ]
 
-    eligible, study_counts, seq_counts = select_eligible_rows(
+    eligible, study_counts, seq_counts, study_subids_today = select_eligible_rows(
         rows,
-        interesting_substrings=["rest"],
-        deny_substrings=["localizer"],
-        blacklist_prefixes=["anat"],
-        disable_blacklist=False,
+        {"interesting_substrings":["rest"],
+         "deny_substrings": ["localizer"],
+         "blacklist_study_regex": ["^7T"],
+         "blacklist_prefixes":["anat"],
+         "disable_blacklist":False},
     )
 
     assert len(eligible) == 1

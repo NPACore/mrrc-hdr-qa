@@ -13,6 +13,9 @@ interesting_substrings = [
   "fieldmap", "b0", "gre_b0", "topup", "magnitude", "phase"
 ]
 
+# Study names that can be ignored
+blacklist_study_regex = ["^Body", "^7TB"]
+
 # Exclude if SequenceName contains any of these (case-insensitive).
 # This overrides "interesting_substrings" and also applies when disable_blacklist=true.
 deny_substrings = [

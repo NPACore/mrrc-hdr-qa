@@ -23,6 +23,7 @@ import os
 import sys
 import sqlite3
 import subprocess
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -119,7 +120,8 @@ def send_via_local_mail(subject: str, body: str, recipient: str) -> bool:
         return False
 
 
-def load_reporting_config(toml_path: Path) -> Dict[str, Any]:
+FilterSettings = Dict[str, Any]
+def load_reporting_config(toml_path: Path) -> FilterSettings:
     """
     Load reporting settings from config/reporting.toml.
 
@@ -129,6 +131,7 @@ def load_reporting_config(toml_path: Path) -> Dict[str, Any]:
       deny_substrings = [...]
       blacklist_seqtype_prefixes = [...]
       disable_blacklist = bool
+      blacklist_study_regex = ["^Body", "^7TB"]
 
       [compare]
       marquee_cols = [...]
@@ -146,21 +149,23 @@ def load_reporting_config(toml_path: Path) -> Dict[str, Any]:
     filt = cfg.get("filter", {}) or {}
     comp = cfg.get("compare", {}) or {}
 
-    interesting = list(filt.get("interesting_substrings", []) or [])
-    deny = list(filt.get("deny_substrings", []) or [])
-    blacklist = list(filt.get("blacklist_seqtype_prefixes", []) or [])
-    disable_blacklist = bool(filt.get("disable_blacklist", False))
+    default_filter = {
+        "interesting_substrings": [],
+        "deny_substrings": [],
+        "blacklist_seqtype_prefixes": [],
+        "blacklist_study_regex": [],
+        "disable_blacklist": False,
+        "marquee_cols":["PED_major", "iPAT", "TR", "TE", "TA", "Matrix", "FA", "FoV", "BWP", "PixelResol"]}
 
-    marquee = list(comp.get("marquee_cols", []) or [])
+    settings = dict()
+    # populate from 'filter' section. use defaults if missing or blank
+    for k,v in default_filter.items():
+        settings[k] = filt.get(k, v) or v
 
-    return {
-        "interesting_substrings": interesting,
-        "deny_substrings": deny,
-        "blacklist_seqtype_prefixes": blacklist,
-        "disable_blacklist": disable_blacklist,
-        "marquee_cols": marquee,
-    }
+    # marquee comes from 'compare' wich also includes fault tolerance settings
+    settings['marquee_cols'] = list(comp.get("marquee_cols", default_filter['marquee_cols']))
 
+    return settings
 
 # -----------------------------
 # Formatting helpers
@@ -273,10 +278,7 @@ def series_is_posthoc(series: Any) -> bool:
 def is_interesting_sequence_with_blacklist(
     seqname: str,
     seqtype: str | None,
-    interesting_substrings: List[str],
-    deny_substrings: List[str],
-    blacklist_seqtype_prefixes: List[str],
-    disable_blacklist: bool,
+    settings: FilterSettings
 ) -> bool:
     """
     Rules:
@@ -285,6 +287,12 @@ def is_interesting_sequence_with_blacklist(
       3) Else if SequenceType prefix is in blacklist, exclude.
       4) Else include.
     """
+
+    interesting_substrings=settings.get("interesting_substrings")
+    deny_substrings = settings.get("deny_substrings")
+    blacklist_seqtype_prefixes = settings.get("blacklist_seqtype_prefixes")
+    disable_blacklist = settings.get("disable_blacklist")
+
     sname = (seqname or "").lower()
 
     if deny_substrings and any(d.lower() in sname for d in deny_substrings):
@@ -496,15 +504,11 @@ def fetch_acquisitions(sql: sqlite3.Connection, yday_str: str) -> List[sqlite3.R
     ).fetchall()
 
 
-def select_eligible_rows(
-    acq_rows: Iterable[sqlite3.Row],
-    *,
-    interesting_substrings: List[str],
-    deny_substrings: List[str],
-    blacklist_prefixes: List[str],
-    disable_blacklist: bool,
-) -> Tuple[List[sqlite3.Row], Dict[str, int], Dict[SeqKey, int], Dict[str, set]]:
+def select_eligible_rows( acq_rows: Iterable[sqlite3.Row], settings: FilterSettings) -> Tuple[List[sqlite3.Row], Dict[str, int], Dict[SeqKey, int], Dict[str, set]]:
     """
+    @param acq_rows  sql quiery results - acquisitions to check
+    @param settings  configuration from load_reporting_config
+                     passed to is_interesting_sequence_with_blacklist
     Apply:
       - SeriesNumber <= 200
       - reporting filter (interesting/deny/blacklist)
@@ -528,14 +532,15 @@ def select_eligible_rows(
         seqname = row["SequenceName"]
         seqtype = row["SequenceType"]
 
-        if not is_interesting_sequence_with_blacklist(
-            seqname=seqname,
-            seqtype=seqtype,
-            interesting_substrings=interesting_substrings,
-            deny_substrings=deny_substrings,
-            blacklist_seqtype_prefixes=blacklist_prefixes,
-            disable_blacklist=disable_blacklist,
-        ):
+
+        # skip blacklisted projects by regular expression
+        for ignore_study_regex in settings.get("blacklist_study_regex", []):
+            if re.search(ignore_study_regex, project):
+                if os.environ.get("VERBOSE"):
+                    print("SKIPPING study {project}; matches {ignore_study_regex}")
+                continue
+
+        if not is_interesting_sequence_with_blacklist(seqname, seqtype, settings):
             continue
 
         eligible.append(row)
@@ -848,23 +853,18 @@ def main(*, dry_run: bool = False) -> int:
     sql = sqlite3.connect(str(db_path))
     sql.row_factory = sqlite3.Row
 
-    # templates
-    rebuild_templates(sql)
+    # templates. modifies DB. use SKIP_REBUILD to avoid
+    if not os.environ.get("SKIP_REBUILD"):
+        rebuild_templates(sql)
 
     # configs
     try:
-        rpt = load_reporting_config(reporting_path)
+        settings = load_reporting_config(reporting_path)
     except Exception as e:
         print(f"[error] {e}", file=sys.stderr)
         return 2
 
-    deny_substrings: List[str] = rpt.get("deny_substrings", [])
-    interesting_substrings: List[str] = rpt["interesting_substrings"]
-    blacklist_prefixes: List[str] = rpt["blacklist_seqtype_prefixes"]
-    disable_blacklist: bool = rpt["disable_blacklist"]
-    marquee_cols: List[str] = rpt["marquee_cols"]
-
-    if not marquee_cols:
+    if not settings.get("marquee_cols"):
         print("[error] reporting.toml: compare.marquee_cols is empty", file=sys.stderr)
         return 2
 
@@ -905,12 +905,7 @@ def main(*, dry_run: bool = False) -> int:
 
     # filter
     eligible_rows, study_counts_today, seq_counts_today, study_subids_today = select_eligible_rows(
-        acq_rows,
-        interesting_substrings=interesting_substrings,
-        deny_substrings=deny_substrings,
-        blacklist_prefixes=blacklist_prefixes,
-        disable_blacklist=disable_blacklist,
-    )
+        acq_rows, settings)
 
     # engine
     tc = TemplateChecker(db=sql, context="DB")
@@ -918,7 +913,7 @@ def main(*, dry_run: bool = False) -> int:
         eligible_rows,
         sql=sql,
         tc=tc,
-        marquee_cols=marquee_cols,
+        marquee_cols=settings['marquee_cols'],
         study_counts_today=study_counts_today,
         seq_counts_today=seq_counts_today,
     )
@@ -927,7 +922,7 @@ def main(*, dry_run: bool = False) -> int:
     # render
     subject, body = build_email(
         date_label=rd.date_label,
-        marquee_cols=marquee_cols,
+        marquee_cols=settings['marquee_cols'],
         total_seen_today=total_seen_today,
         seq_summary=seq_summary,
         missing_templates=missing_templates,
