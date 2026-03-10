@@ -29,3 +29,4 @@ uv.lock
 .python-version
 *.202*-*/ # backup files
 .*idea*
+studies.xlsx
