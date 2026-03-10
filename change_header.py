@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from itertools import chain
 from pathlib import Path
 from typing import List, Optional
+import re
 
 import pydicom
 
@@ -69,6 +70,7 @@ def change_tags(
             print(
                 "# warning: output matches '.dcm' and only one input. assuming you're saving to a file"
             )
+
             new_file = out_dir
         else:
             new_file = os.path.join(out_dir, os.path.basename(ex_dcm_file))
@@ -211,6 +213,7 @@ def main_make_mods():
     #    + gen_ids("mod2")
     #    + gen_acqdates()
     #    + gen_anon()
+
     # )
 
     # change_tags(
