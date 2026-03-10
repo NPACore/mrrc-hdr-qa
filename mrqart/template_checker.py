@@ -139,7 +139,7 @@ class TemplateChecker:
             template = {}
             errors = {}
 
-        if self.context == "RT":
+        # if self.context == "RT":
             errors = clean_rt(errors)
 
         return {
