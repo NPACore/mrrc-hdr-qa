@@ -169,7 +169,7 @@ def session_from_fname(dcm_fname: os.PathLike) -> Sequence:
       001_000017_000066.dcm
     """
     session = os.path.basename(dcm_fname)
-    (proj, sequence, number) = session.split("_")
+    proj, sequence, number = session.split("_")
     return sequence
 
 

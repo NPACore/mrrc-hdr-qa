@@ -2,6 +2,7 @@
 """
 Convert ``db.txt`` into a sqlite database.
 """
+
 import logging
 import os
 import re

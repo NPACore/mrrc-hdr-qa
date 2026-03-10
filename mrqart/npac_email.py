@@ -8,7 +8,7 @@ def decrypt_creds():
         ident = x25519.Identity.from_str(key)
     with open("creds/email.age", "rb") as f:
         msg = decrypt(f.read(), [ident]).decode()
-        (addr, pswd) = msg.split("\t")
+        addr, pswd = msg.split("\t")
 
     print(f"email:'{addr}' pass:'{pswd}'")
     return (addr, pswd)

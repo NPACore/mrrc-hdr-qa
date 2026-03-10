@@ -33,12 +33,10 @@ def db():
     with open("schema.sql") as f:
         _ = [mem_db.sql.execute(c) for c in f.read().split(";")]
     # create template table. also see ../make_template_by_count.sql
-    mem_db.sql.execute(
-        """
+    mem_db.sql.execute("""
       create table template_by_count (
           n int, Project text, SequenceName text,
-          param_id int, first text, last text)"""
-    )
+          param_id int, first text, last text)""")
     vals = [x for x in MOCK_TEMPLATE.values()]
     cols = ",".join(MOCK_TEMPLATE.keys())
     qs = ",".join(["?" for x in vals])

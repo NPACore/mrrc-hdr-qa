@@ -41,7 +41,7 @@ d <- d |>
                gsub(patt='Moon.2019./',repl='') |>
                # remove parentheticals
                gsub(patt='\\(.*\\)|set up',repl='') |>
-               # consistant separator. comma for email later
+               # consistent separator. comma for email later
                gsub(patt='/',repl=',') |>
                gsub(patt=' ',repl=''),
            phys_mail = Vectorize(to_emails)(contact) |> unname(),

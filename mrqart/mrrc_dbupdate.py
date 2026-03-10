@@ -3,6 +3,7 @@
 Find MRRC organized study acquisitions directories newer than what's in the DB
 and update them.
 """
+
 import logging
 import os
 import re

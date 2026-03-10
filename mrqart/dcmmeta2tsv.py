@@ -8,6 +8,7 @@
 """
 Give a tab separated metadata value line per dicom file.
 """
+
 import logging
 import os
 import re
