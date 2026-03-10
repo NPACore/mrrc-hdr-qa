@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# initial big db run on cerebro2 
+# initial big db run on cerebro2
 # 20241026 -init
 
 # paper over centOS7+guix config issues
 export SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt LC_ALL=C LOGLEVEL=WARN
 # system dependencies:
 #   guix install parallel python sqlite3
-# use in cron:
-#   0 0 * * * /path/to/00_build_mrrc_db.bash
+#
+# this builds the initial database. see 02_update_db.sh for appending new (faster)
+# 02_update_db.sh in cron
 
 cd "$(dirname "$0")"
 make db.sqlite
