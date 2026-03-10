@@ -470,6 +470,7 @@ def format_seq_result(
     Render a single SeqSummary to a list of lines for inclusion in the email.
     Each nonconforming acquisition is a flat bullet: subid/seqname.acqnum
     with diffs indented below. No fraction or ex: line — the bullet IS the example.
+    Bullets with no displayable diffs (e.g. only SequenceType) are silently skipped.
     Can be called independently for testing or iteration.
     """
     lines: List[str] = []
@@ -485,22 +486,25 @@ def format_seq_result(
             subid_part = parts[1].strip()
             seq_part = parts[2].split(" (diffs:")[0].strip()
             ex_clean = f"{subid_part}/{seq_part}"
-        lines.append(f"  * {ex_clean}")
 
         top_all = sorted(
             summary.mismatch_counts.items(), key=lambda kv: kv[1], reverse=True
         )
+        diff_lines: List[str] = []
         shown = 0
         for (col, exp, got), n in top_all:
-            if col not in set(marquee_cols) and col != "TA":
+            if col not in set(marquee_cols):
                 continue
-            lines.append(f"      {format_expected_got(col, exp, got)}")
+            diff_lines.append(f"      {format_expected_got(col, exp, got)}")
             shown += 1
             if shown >= 8:
                 break
 
-    return lines
+        if diff_lines:
+            lines.append(f"  * {ex_clean}")
+            lines.extend(diff_lines)
 
+    return lines
 
 def get_report_date(env: Mapping[str, str], now: datetime | None = None) -> ReportDate:
     """
@@ -571,11 +575,13 @@ def select_eligible_rows(
         seqtype = row["SequenceType"]
 
         # skip blacklisted projects by regular expression
+        skip = False
         for ignore_study_regex in settings.get("blacklist_study_regex", []):
             if re.search(ignore_study_regex, project):
-                if os.environ.get("VERBOSE"):
-                    print("SKIPPING study {project}; matches {ignore_study_regex}")
-                continue
+                skip = True
+                break
+        if skip:
+            continue
 
         if not is_interesting_sequence_with_blacklist(seqname, seqtype, settings):
             continue
@@ -587,7 +593,6 @@ def select_eligible_rows(
         study_subids_today[project].add(subid)
 
     return eligible, study_counts_today, seq_counts_today, study_subids_today
-
 
 def _evaluate_row(
     row: sqlite3.Row,
@@ -804,18 +809,22 @@ def build_email(
 
         for project in sorted(by_project.keys()):
             keys = by_project[project]
-            n_seq = len(keys)
+            project_lines: List[str] = []
+            for key in keys:
+                summary = seq_summary[key]
+                project_lines.extend(format_seq_result(summary, marquee_cols=marquee_cols))
+
+            if not project_lines:
+                continue
+
+            n_seq = len([l for l in project_lines if l.startswith("  *")])
             n_sessions = len(study_subids_today.get(project, set()))
             session_word = "session" if n_sessions == 1 else "sessions"
             seq_word = "sequence" if n_seq == 1 else "sequences"
             lines.append(
                 f"{project} ({n_seq} nonconforming {seq_word}; {n_sessions} {session_word} today):"
             )
-
-            for key in keys:
-                summary = seq_summary[key]
-                lines.extend(format_seq_result(summary, marquee_cols=marquee_cols))
-
+            lines.extend(project_lines)
             lines.append("")
     else:
         lines.append("✅ Non-Conforming:")
@@ -891,7 +900,6 @@ def build_email(
 
     body = "\n".join(lines)
     return subject, body
-
 
 def send_all(
     email_entries: Iterable[Mapping[str, str]],
@@ -1031,6 +1039,7 @@ def main(*, dry_run: bool = False) -> int:
         f"missing={totals.total_missing_templates} mia={totals.mia_actionable}"
     )
 
+    sql.close()
     return 0 if not any_fail else 7
 
 

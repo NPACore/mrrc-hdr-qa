@@ -1,7 +1,7 @@
 """
 check a header against best template
 """
-
+import re
 from typing import TypedDict
 
 from .acq2sqlite import DBQuery
@@ -36,6 +36,16 @@ CheckResult = TypedDict(
 )
 
 
+def _norm_str(x) -> str:
+    """
+    Normalize strings for tolerant comparisons:
+    - collapse whitespace runs to a single space
+    - trim leading/trailing whitespace
+    - case-insensitive via casefold (locale-robust)
+    """
+    return re.sub(r"\s+", " ", str(x)).strip().casefold()
+
+
 def find_errors(
     template: TagValues, current_hdr: TagValues, allow_null: list[TagKey] = []
 ) -> ErrorDict:
@@ -50,31 +60,34 @@ def find_errors(
 
     >>> find_errors({"TR": "1300"}, {"TR": "1300"})
     {}
-
     >>> find_errors({"TR": "1300"}, {"TR": "2000"})
     {'TR': {'expect': '1300', 'have': '2000'}}
+    >>> find_errors({"Project": "Brain^WPC-8620"}, {"Project": "Brain^wpc-8620"})
+    {}
     """
     errors = {}
     for k in DBQuery.CONSTS:
         t_k = template.get(k, "null")
         h_k = current_hdr.get(k, "null")
 
-        # ["FoV", "TA"] null in ICE expoted dicom. okay to skip
+        # ["FoV", "TA", "BWPPE"] can be null in realtime (ICE) headers
         if k in allow_null and h_k == "null":
             continue
 
-        # TODO: more checks for specific headers
-        #: TR is in milliseconds. no need to keep decimals precision
+        # Specific checks:
         if k == "TR":
+            # TR is in ms; compare ints of floats to ignore decimal precision
             if t_k == "null":
                 t_k = 0
             if h_k == "null":
                 h_k = 0
             check = int(float(t_k)) == int(float(h_k))
         elif k == "iPAT":
-            check = t_k == h_k
-        else:
+            # Keep strict for compact tokens like 'p2'
             check = str(t_k) == str(h_k)
+        else:
+            # Default tolerant compare for string-like fields
+            check = _norm_str(t_k) == _norm_str(h_k)
 
         if check:
             continue
@@ -103,29 +116,22 @@ class TemplateChecker:
 
     def check_file(self, dcm_path) -> CheckResult:
         """
-        File disbatch for :py:func:`TemplateChecker.check_header`
-
-        :param dcm_path: path to dicom file with header/parameters to read.
-        :returns: output of check_header
+        File dispatcher for :py:func:`TemplateChecker.check_header`
         """
         hdr = self.reader.read_dicom_tags(dcm_path)
         return self.check_header(hdr)
 
     def check_header(self, hdr) -> CheckResult:
         """
-        Check acquisition parameters against it's template.
-
-        :param hdr: DB row or file dictionary desc. acq. to check against template
-        :returns: Conforming status, errors, and comparison information
+        Check acquisition parameters against its template.
         """
         template = self.db.get_template(hdr["Project"], hdr["SequenceName"])
 
         allow_null = []
         if self.context == "RT":
-            #: FoV and TA are not included in dicom headers pushed by scanner
+            # FoV and TA (and sometimes BWPPE) are often missing in scanner-pushed RT dicoms
             allow_null = ["FoV", "TA", "BWPPE"]
 
-        # no template, no errors
         if template:
             template = dict(template)
             errors = find_errors(template, hdr, allow_null)
@@ -156,12 +162,9 @@ def arraystr_to_float(val: str) -> list[float]:
     """
     Parse array values from different dicom types
 
-    :param val: array of floats stored as string
-    :returns: converted to python list
-
-    >>> arraystr_to_float("[1.0, 2.0]") # saved dicomes
+    >>> arraystr_to_float("[1.0, 2.0]")
     [1.0, 2.0]
-    >>> arraystr_to_float("1.0,2.0") # realtime dicoms
+    >>> arraystr_to_float("1.0,2.0")
     [1.0, 2.0]
     """
     no_square = str(val).replace("[", "").replace("]", "").replace(" ", "")
@@ -173,10 +176,6 @@ def fuzzy_arr_check(have, expect) -> bool:
     """
     Compare only 3 decimals of a float or array of floats.
     Used by :py:func:`clean_rt` when comparing realtime dicom headers to DB
-
-    :param have: string of floats on one side
-    :param expect: string of floats on another
-    :returns: true if they are roughly the same
 
     >>> fuzzy_arr_check('2.00001', '2')
     True
@@ -198,13 +197,11 @@ def clean_rt(errors: ErrorDict) -> ErrorDict:
     Clean up errors that are not actually errors in "realtime" dicom headers.
 
     Currently (2025-02-26) only checks ``PixelResol`` using :py:func:`fuzzy_arr_check`
-    :param errors: have/expect dict of errors
-    :returns: errors with close ones removed
     """
-
     if "PixelResol" in errors.keys():
         errcmp = errors["PixelResol"]
         if fuzzy_arr_check(errcmp["have"], errcmp["expect"]):
             del errors["PixelResol"]
 
     return errors
+

@@ -14,7 +14,7 @@ interesting_substrings = [
 ]
 
 # Study names that can be ignored
-blacklist_study_regex = ["^Body", "^7TB"]
+blacklist_study_regex = ["^Body", "^7T"]
 
 # Exclude if SequenceName contains any of these (case-insensitive).
 # This overrides "interesting_substrings" and also applies when disable_blacklist=true.

@@ -303,12 +303,14 @@ class DBQuery:
         logging.debug("found template: %s", res)
         return res
 
-    def find_acquisitions_since(self, since_date: Optional[str] = None):
+    def find_acquisitions_since(self, since_date: Optional[str] = None) -> list[sqlite3.Row]:
         """
         Retrieve all acquisitions with AcqDate greater than the specified date.
 
         :param since_date: Date string in 'YYYY-MM-DD' format; defaults to yesterday if None.
         :return: List of acquisition rows with AcqDate > since_date.
+
+        TODO: add join with params? Sort
         """
 
         # Default to yesterday if since_date is None
@@ -401,6 +403,8 @@ class DBQuery:
         Find a projects most recent scan in the database
         :param project: project name. default to all via wildcard ``%``
         :return: timestamp string of most recent seen scan
+
+        Used by :func:`mrqart.mrrc_dbupdate` to set per project `find -newermt`
         """
         query = """
         select max(AcqDate || ' '|| AcqTime) as timestamp
