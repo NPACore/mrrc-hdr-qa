@@ -921,6 +921,70 @@ def build_email(
     body = "\n".join(lines)
     return subject, body
 
+def build_jsonl_entries(
+    *,
+    date_label: str,
+    seq_summary: Dict[SeqKey, SeqSummary],
+    missing_templates: Dict[SeqKey, Dict[str, Any]],
+    marquee_cols: List[str],
+) -> List[Dict[str, Any]]:
+    """
+    Build a list of JSONL entries for the web dashboard.
+    One entry per nonconforming sequence or missing template.
+    Conforming sequences are skipped to keep the log lean.
+    """
+    script_ts = _now_iso()
+    entries: List[Dict[str, Any]] = []
+
+    for key, summary in seq_summary.items():
+        if summary.nonconforming == 0:
+            continue
+        project, subid, seqname = key
+        top_errors = sorted(
+            summary.mismatch_counts.items(), key=lambda kv: kv[1], reverse=True
+        )
+        errors = [
+            format_expected_got(col, exp, got)
+            for (col, exp, got), _ in top_errors
+            if col in set(marquee_cols)
+        ]
+        if not errors:
+            continue # SequenceType-only mismatch - not displayable, skip
+        entries.append({
+            "script_ts": script_ts,
+            "project": project,
+            "sequence": seqname,
+            "subid": subid,
+            "series": summary.examples[0].split(".")[-1].split(" ")[0] if summary.examples else "",
+            "station": "",
+            "acq_ts": date_label,
+            "acq_ts_sort": date_label,
+            "conforms": False,
+            "error_count": len(errors),
+            "errors": errors,
+            "status": "NONCONFORM",
+        })
+
+    for (project, subid, seqname), info in missing_templates.items():
+        if not info.get("study_has_templates"):
+            continue
+        entries.append({
+            "script_ts": script_ts,
+            "project": project,
+            "sequence": seqname,
+            "subid": subid,
+            "series": "",
+            "station": "",
+            "acq_ts": date_label,
+            "acq_ts_sort": date_label,
+            "conforms": False,
+            "error_count": 0,
+            "errors": ["missing template"],
+            "status": "NO_TEMPLATE",
+        })
+
+    return entries
+
 def send_all(
     email_entries: Iterable[Mapping[str, str]],
     subject: str,
@@ -1039,6 +1103,22 @@ def main(*, dry_run: bool = False) -> int:
         study_subids_today=study_subids_today,
         physicist_by_project=physicist_by_project,
     )
+
+    # web dashboard
+    web_log = Path(env.get("MRQART_WEB_LOG", ""))
+    web_html = Path(env.get("MRQART_WEB_HTML", ""))
+    if web_log and web_log.name:
+        from .web_report import append_entries, render_html
+        entries = build_jsonl_entries(
+            date_label=rd.date_label,
+            seq_summary=seq_summary,
+            missing_templates=missing_templates,
+            marquee_cols=settings["marquee_cols"],
+        )
+        append_entries(entries, web_log)
+        if web_html and web_html.name:
+            render_html(web_log, web_html,
+                title=env.get("MRQART_WEB_TITLE", "MRQART QA — Feed"))
 
     # dry run: print instead of send
     if dry_run:
