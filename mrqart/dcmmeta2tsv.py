@@ -249,10 +249,10 @@ class DicomTagReader:
         all_tags : list[TagValues] = []  # not needed. Maybe useful later to walk backwwards
         tag = {}  # what to return
         for i, dcm in enumerate(dcm_paths):
-            all_tags[i] = self.read_dicom_tags(dcm)
+            all_tags.append(self.read_dicom_tags(dcm))
             # nothing to compare on first iteration. use as template
             if i == 0:
-                tag = all_tags[i]
+                tag = all_tags[0]
                 continue
 
             same_as_prev = True
