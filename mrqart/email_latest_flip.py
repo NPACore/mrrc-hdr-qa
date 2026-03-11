@@ -400,6 +400,24 @@ def study_has_any_templates(sql: sqlite3.Connection, project: str) -> bool:
     ).fetchone()
     return row is not None
 
+def get_physicist_for_project(sql: sqlite3.Connection, project: str) -> Optional[str]:
+    """
+    Look up the assigned physicist for a project by matching the suffix
+    after '^' in the acq_param Project name against the project table.
+    Case-insensitive. Returns None if no match or no physicist assigned.
+    """
+    row = sql.execute(
+        """
+        SELECT Physicist
+        FROM project
+        WHERE UPPER(Project) = UPPER(SUBSTR(?, INSTR(?, '^') + 1))
+        LIMIT 1
+        """,
+        (project, project),
+    ).fetchone()
+    if not row or not row[0] or not str(row[0]).strip():
+        return None
+    return str(row[0]).strip()
 
 @dataclass(frozen=True)
 class ReportDate:
@@ -766,7 +784,6 @@ def evaluate_rows(
 
     return seq_summary, missing_templates, totals
 
-
 def build_email(
     *,
     date_label: str,
@@ -776,6 +793,7 @@ def build_email(
     missing_templates: Dict[SeqKey, Dict[str, Any]],
     totals: Totals,
     study_subids_today: Mapping[str, set],
+    physicist_by_project: Mapping[str, Optional[str]],
 ) -> Tuple[str, str]:
     """
     Render subject + body from aggregated results.
@@ -821,8 +839,10 @@ def build_email(
             n_sessions = len(study_subids_today.get(project, set()))
             session_word = "session" if n_sessions == 1 else "sessions"
             seq_word = "sequence" if n_seq == 1 else "sequences"
+            physicist = physicist_by_project.get(project)
+            physicist_str = f"; physicist: {physicist}" if physicist else ""
             lines.append(
-                f"{project} ({n_seq} nonconforming {seq_word}; {n_sessions} {session_word} today):"
+                f"{project} ({n_seq} nonconforming {seq_word}; {n_sessions} {session_word} today{physicist_str}):"
             )
             lines.extend(project_lines)
             lines.append("")
@@ -1002,6 +1022,11 @@ def main(*, dry_run: bool = False) -> int:
         seq_counts_today=seq_counts_today,
     )
     totals.total_seen_today = total_seen_today
+    
+    physicist_by_project = {
+        key[0]: get_physicist_for_project(sql, key[0])
+        for key in seq_summary
+    }
 
     # render
     subject, body = build_email(
@@ -1012,6 +1037,7 @@ def main(*, dry_run: bool = False) -> int:
         missing_templates=missing_templates,
         totals=totals,
         study_subids_today=study_subids_today,
+        physicist_by_project=physicist_by_project,
     )
 
     # dry run: print instead of send
