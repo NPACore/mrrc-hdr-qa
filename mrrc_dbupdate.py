@@ -10,8 +10,8 @@ import subprocess
 from datetime import timedelta
 from glob import glob
 
-import acq2sqlite
-import dcmmeta2tsv
+from mrqart.acq2sqlite import DBQuery
+from mrqart.dcmmeta2tsv import DicomTagReader
 
 
 def is_project(pdir: str) -> bool:
@@ -38,12 +38,12 @@ def is_project(pdir: str) -> bool:
 PathLike = str
 
 
-def find_first_dicoms(session_root: PathLike) -> list[PathLike]:
+def find_first_dicoms(session_root: PathLike) -> list[list[PathLike]]:
     """
     Find a representative dicom for each acquisition in ``session_root``.
 
     :param session_root: path to session root directory. likely like ``.../ProjectName/yyyy.mm.dd-hh.mm.ss``
-    :return: list of first dicoms like ``sessroot/subjid/acquisitonname/MR*``
+    :return: list of lists first dicoms like ``sessroot/subjid/acquisitonname/MR*``
     """
     first_dicoms = []
     if not os.path.isdir(session_root):
@@ -51,11 +51,15 @@ def find_first_dicoms(session_root: PathLike) -> list[PathLike]:
     for seqdir in glob(os.path.join(session_root, "*/*/")):
         if not os.path.isdir(seqdir) or re.search("PhysioLog|PhoenixZIPReport", seqdir):
             continue
-        findcmd = f"find '{seqdir}' -maxdepth 1 -type f \( -iname '*.dcm' -or -iname 'MR.*' -or -iname '*.IMA' \) -print -quit"
-        dcm = subprocess.check_output(findcmd, shell=True).decode("utf-8").strip()
-        if dcm:
-            logging.debug("found first dcm '%s'", dcm)
-            first_dicoms.append(dcm)
+        # original method. fast. but not always firt-in-time dicom
+        #findcmd = f"find '{seqdir}' -maxdepth 1 -type f \( -iname '*.dcm' -or -iname 'MR.*' -or -iname '*.IMA' \) -print -quit"
+        findcmd = f"find '{seqdir}' -maxdepth 1 -type f \( -iname '*.dcm' -or -iname 'MR.*' -or -iname '*.IMA' \) -print0 | sort -zn") # | sed -z 1q"
+        
+        dcms = subprocess.check_output(findcmd, shell=True).decode("utf-8").split("\0")
+
+        if dcms:
+            logging.debug("found first dcm '%s'", dcms[0])
+            first_dicoms.append(dcms)
         else:
             logging.warning("no dicoms found in %s", seqdir)
     return first_dicoms
@@ -71,8 +75,8 @@ def update_mrrc_db(project_dir_list: list[PathLike] = None):
     if not project_dir_list:
         project_dir_list = glob("/disk/mace2/scan_data/*")
 
-    db = acq2sqlite.DBQuery()
-    dtr = dcmmeta2tsv.DicomTagReader()
+    db = DBQuery()
+    dtr = DicomTagReader()
     VERYRECENT = db.most_recent()
     for pdir in project_dir_list:
         if not is_project(pdir):
@@ -101,12 +105,12 @@ def update_mrrc_db(project_dir_list: list[PathLike] = None):
         for ses in newsessions:
             acq_dicoms = find_first_dicoms(ses)
             logging.info("ses '%s' has %d dicoms found", ses, len(acq_dicoms))
-            for acq in acq_dicoms:
-                logging.debug("processing first dcm from newer acq '%s'", acq)
-                if not acq or not os.path.isfile(acq):
-                    logging.warning("%s bad acq file '%s'", ses, acq)
+            for acqs in acq_dicoms:
+                if not acqs or not os.path.isfile(acqs[0]):
+                    logging.warning("%s bad acq file '%s'", ses, acqs)
                     continue
-                all_tags = dtr.read_dicom_tags(acq)
+                logging.debug("processing dcms from newer acq '%s'", acqs[0])
+                all_tags = dtr.read_many_dicom_tags(acqs)
                 if os.environ.get("DRYRUN"):
                     logging.info(all_tags)
                 else:
