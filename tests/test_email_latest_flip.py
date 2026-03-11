@@ -370,6 +370,7 @@ def test_build_email_structure_and_subject_flags():
         missing_templates=missing_templates,
         totals=totals,
         study_subids_today={},
+        physicist_by_project={},
     )
 
     assert subject.startswith("[MRQA]")
@@ -401,6 +402,7 @@ def test_build_email_green_when_no_nonconforming_and_no_mia():
         missing_templates={},
         study_subids_today={},
         totals=totals,
+        physicist_by_project={}
     )
     assert "✅" in subject
     assert "Non-Conforming" in body

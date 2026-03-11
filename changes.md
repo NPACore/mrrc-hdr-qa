@@ -116,4 +116,56 @@ findcmd = f"find '{seqdir}' -maxdepth 1 -type f \( ... \) -print0 | sort -zn")
 # after
 findcmd = f"find '{seqdir}' -maxdepth 1 -type f \\( ... \\) -print0 | sort -zn"
 ```
+# MRQART Changes — 2026-03-11 (multiecho TE support)
+
+## Features
+
+### Multiecho TE handling in `TemplateChecker`
+**File:** `mrqart/template_checker.py`
+
+Added a specific TE comparison case in `find_errors` to handle multiecho acquisitions
+where the current header may contain comma-separated TE values (e.g. `"4.8,7.4,10.0"`).
+A sequence is considered conforming if the template TE matches any of the values in
+the comma-separated list.
+
+```python
+elif k == "TE":
+    # multiecho: current header may have comma-separated TEs e.g. "4.8,7.4"
+    # pass if template TE matches any of the values in the list
+    t_norm = _norm_str(t_k)
+    h_values = [_norm_str(v.strip()) for v in str(h_k).split(",")]
+    check = t_norm in h_values
+```
+
+Behavior:
+- Single TE `"38.76"` vs template `"38.76"` → pass (existing behavior preserved)
+- Multiecho `"4.8,38.76"` vs template `"38.76"` → pass
+- Multiecho `"4.8,7.4"` vs template `"38.76"` → fail (template TE not present)
+- Wrong single TE `"14.6"` vs template `"38.76"` → fail (existing behavior preserved)
+
+---
+
+## Tests
+
+### New tests in `tests/test_template.py`
+
+Four new tests covering the TE comparison cases:
+
+- `test_find_errors_te_single` — single TE matches template exactly
+- `test_find_errors_te_multiecho_match` — template TE is one of the multiecho values
+- `test_find_errors_te_multiecho_no_match` — template TE is not in the multiecho list
+- `test_find_errors_te_wrong` — wrong single TE still fails
+
+### Fixed tests in `tests/test_email_latest_flip.py`
+
+Two `build_email` tests were failing because `physicist_by_project` is now a required
+parameter. Added `physicist_by_project={}` to both calls:
+- `test_build_email_structure_and_subject_flags`
+- `test_build_email_green_when_no_nonconforming_and_no_mia`
+
+### Fixed test in `tests/test_seq_report.py`
+
+`test_seq_report_te_mismatch_sorted_values` was asserting `"saw 5, 12"` but the correct
+behavior is `"saw 12"` — `_summarize_mismatches` correctly excludes values that match
+the expected value from the `values_seen` list. Updated assertion to match correct behavior.
 

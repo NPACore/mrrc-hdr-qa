@@ -82,6 +82,12 @@ def find_errors(
             if h_k == "null":
                 h_k = 0
             check = int(float(t_k)) == int(float(h_k))
+        elif k == "TE":
+            # multiecho: current header may have comma-seperated TEs e.g. "4.8,7.4"
+            # pass if tempalte te matches any of the values in the list
+            t_norm = _norm_str(t_k)
+            h_values = [_norm_str(v.strip()) for v in str(h_k).split(",")]
+            check = t_norm in h_values
         elif k == "iPAT":
             # Keep strict for compact tokens like 'p2'
             check = str(t_k) == str(h_k)

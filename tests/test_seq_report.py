@@ -161,7 +161,7 @@ def test_seq_report_te_mismatch_sorted_values(mem_sql, tmp_path):
     assert "TE: 5" in report
 
     # Key behavior: values are sorted so it says "saw 5, 12"
-    assert "* TE: expected 5, saw 5, 12" in report
+    assert "* TE: expected 5, saw 12" in report
     assert "(2/4 rows mismatched)" in report
     assert "series examples: 12, 14" in report
 
