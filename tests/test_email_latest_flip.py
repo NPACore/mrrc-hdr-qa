@@ -13,24 +13,17 @@ from datetime import datetime
 
 import pytest
 
-from mrqart.email_latest_flip import (
-    SeqSummary,
-    Totals,
-    build_email,
-    compact_error_keys,
-    evaluate_rows,
-    fetch_acquisitions,
-    first_seen_date_for_seq,
-    first_seen_from_template_by_count,
-    format_expected_got,
-    format_series_003,
-    get_report_date,
-    is_interesting_sequence_with_blacklist,
-    parse_ta_seconds,
-    select_eligible_rows,
-    series_is_posthoc,
-    study_has_any_templates,
-)
+from mrqart.email_latest_flip import (SeqSummary, Totals, build_email,
+                                      compact_error_keys, evaluate_rows,
+                                      fetch_acquisitions,
+                                      first_seen_date_for_seq,
+                                      first_seen_from_template_by_count,
+                                      format_expected_got, format_series_003,
+                                      get_report_date,
+                                      is_interesting_sequence_with_blacklist,
+                                      parse_ta_seconds, select_eligible_rows,
+                                      series_is_posthoc,
+                                      study_has_any_templates)
 
 
 # -----------------------------

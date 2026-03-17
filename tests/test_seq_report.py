@@ -6,7 +6,6 @@ import pytest
 
 from mrqart.seq_report import render_seq_report
 
-
 PROJECT = "Brain^WPC-8409"
 SUBID = "20260206Sarpal1"
 SEQ = "BoleroSlc15Fov216_thk3mm_tra"

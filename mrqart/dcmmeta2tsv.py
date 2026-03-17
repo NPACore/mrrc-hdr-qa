@@ -249,7 +249,7 @@ class DicomTagReader:
         """
         all_tags: list[TagValues] = (
             []
-        )  # not needed. Maybe useful later to walk backwwards
+        )  # not needed. Maybe useful later to walk backwards
         tag = {}  # what to return
         for i, dcm in enumerate(dcm_paths):
             all_tags.append(self.read_dicom_tags(dcm))

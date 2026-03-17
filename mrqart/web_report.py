@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import json, html, os
-from pathlib import Path
-from typing import Iterable, Dict, Any, List, Optional
+
+import html
+import json
+import os
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional
 
 try:
-    from jinja2 import Environment, FileSystemLoader, select_autoescape, Template
+    from jinja2 import (Environment, FileSystemLoader, Template,
+                        select_autoescape)
 
     _HAS_JINJA = True
 except Exception:
