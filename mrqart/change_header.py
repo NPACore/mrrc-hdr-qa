@@ -32,7 +32,8 @@ def change_tags(
 
     >>> new_data = [pydicom.DataElement(value="newpname", VR="LO", tag=(0x0018, 0x1030))]
     >>> ex_path = Path('example_dicoms/')
-    >>> ex = change_tags(ex_path, new_data)
+    >>> ex = change_tags(ex_path, new_data) # doctest: +ELLIPSIS
+    example_dicoms/...
     >>> ex.ProtocolName
     'newpname'
     """
