@@ -34,7 +34,7 @@ disable_blacklist = true
 
 
 [compare]
-# 20260306 - removed "TA" (Time of total Acqusition). Too many false positives
+# 20260306 - removed "TA" (Time of total Acquisition). Too many false positives
 marquee_cols = ["PED_major", "iPAT", "TR", "TE", "Matrix", "FA", "FoV", "BWP", "PixelResol"]
 
 float_tolerance_default = 1e-3

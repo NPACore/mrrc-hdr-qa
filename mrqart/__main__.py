@@ -30,7 +30,9 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd")
 
     # ---- daily-email
-    sp_daily = sub.add_parser("daily-email", help="Run the daily header-compliance email (default)")
+    sp_daily = sub.add_parser(
+        "daily-email", help="Run the daily header-compliance email (default)"
+    )
     sp_daily.add_argument(
         "--db",
         default=str(repo / "db.sqlite"),
@@ -59,7 +61,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
 
     # ---- seq-report
-    sp = sub.add_parser("seq-report", help="Quick summary for a specific Project/SubID/SequenceName")
+    sp = sub.add_parser(
+        "seq-report", help="Quick summary for a specific Project/SubID/SequenceName"
+    )
     sp.add_argument(
         "--path",
         default=None,

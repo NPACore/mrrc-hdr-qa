@@ -53,8 +53,8 @@ def find_first_dicoms(session_root: PathLike) -> list[list[PathLike]]:
         if not os.path.isdir(seqdir) or re.search("PhysioLog|PhoenixZIPReport", seqdir):
             continue
         # original method. fast. but not always firt-in-time dicom
-        #findcmd = f"find '{seqdir}' -maxdepth 1 -type f \( -iname '*.dcm' -or -iname 'MR.*' -or -iname '*.IMA' \) -print -quit"
-        findcmd = f"find '{seqdir}' -maxdepth 1 -type f \\( -iname '*.dcm' -or -iname 'MR.*' -or -iname '*.IMA' \\) -print0 | sort -zn" # | sed -z 1q
+        # findcmd = f"find '{seqdir}' -maxdepth 1 -type f \( -iname '*.dcm' -or -iname 'MR.*' -or -iname '*.IMA' \) -print -quit"
+        findcmd = f"find '{seqdir}' -maxdepth 1 -type f \\( -iname '*.dcm' -or -iname 'MR.*' -or -iname '*.IMA' \\) -print0 | sort -zn"  # | sed -z 1q
         dcms = subprocess.check_output(findcmd, shell=True).decode("utf-8").split("\0")
 
         if dcms:

@@ -53,7 +53,7 @@ class SeqMismatch:
     n_mismatch: int
     n_total: int
     values_seen: List[str]  # only values that differ from expected (nulls excluded)
-    n_null: int             # number of mismatching rows that were null/blank
+    n_null: int  # number of mismatching rows that were null/blank
     series_examples: List[str]
 
 
@@ -83,7 +83,9 @@ def _fetch_rows(
     ).fetchall()
 
 
-def _fetch_template(sql: sqlite3.Connection, *, project: str, seqname: str) -> sqlite3.Row | None:
+def _fetch_template(
+    sql: sqlite3.Connection, *, project: str, seqname: str
+) -> sqlite3.Row | None:
     return sql.execute(
         """
         SELECT tp.*
@@ -145,7 +147,11 @@ def _summarize_mismatches(
         # values_seen: only show values that are non-null and differ from expected.
         # This prevents the expected value from appearing in the "saw" list
         # just because some mismatching rows happened to be null.
-        bad_vals = [have_vals[i] for i in idx if _norm(have_vals[i]) != exp and _norm(have_vals[i]) != ""]
+        bad_vals = [
+            have_vals[i]
+            for i in idx
+            if _norm(have_vals[i]) != exp and _norm(have_vals[i]) != ""
+        ]
         n_null = sum(1 for i in idx if _norm(have_vals[i]) == "")
         values_seen = _sorted_values_seen(bad_vals)
 
@@ -195,13 +201,27 @@ def render_seq_report(
     marquee_cols: List[str] | None = None,
     examples: int = 0,
 ) -> str:
-    marquee_cols = marquee_cols or ["TR", "TE", "FA", "TA", "FoV", "Matrix", "PixelResol", "BWP", "BWPPE", "SequenceType", "Comments"]
+    marquee_cols = marquee_cols or [
+        "TR",
+        "TE",
+        "FA",
+        "TA",
+        "FoV",
+        "Matrix",
+        "PixelResol",
+        "BWP",
+        "BWPPE",
+        "SequenceType",
+        "Comments",
+    ]
 
     sql = sqlite3.connect(str(db_path))
     sql.row_factory = sqlite3.Row
 
     try:
-        rows = _fetch_rows(sql, project=project, subid=subid, seqname=seqname, max_series=max_series)
+        rows = _fetch_rows(
+            sql, project=project, subid=subid, seqname=seqname, max_series=max_series
+        )
 
         out: List[str] = []
         out.append("MRQART per-sequence summary")
@@ -212,7 +232,11 @@ def render_seq_report(
         out.append(f"  Rows matched: {len(rows)}")
 
         if rows:
-            dates = [str(_col_value(r, "AcqDate")) for r in rows if _norm(_col_value(r, "AcqDate")) != ""]
+            dates = [
+                str(_col_value(r, "AcqDate"))
+                for r in rows
+                if _norm(_col_value(r, "AcqDate")) != ""
+            ]
             series = [_series_int(_col_value(r, "SeriesNumber")) for r in rows]
             series = [s for s in series if s is not None]
 
@@ -224,19 +248,37 @@ def render_seq_report(
 
         tmpl = _fetch_template(sql, project=project, seqname=seqname)
         if tmpl is None:
-            out.append("🕳️ No template found in template_by_count for this Project/SequenceName.")
+            out.append(
+                "🕳️ No template found in template_by_count for this Project/SequenceName."
+            )
             out.append("— seq-report")
             return "\n".join(out)
 
         # Print template fields (only those we care about)
         out.append("Template (from template_by_count):")
-        for col in ["SequenceType", "TR", "TE", "FA", "TA", "FoV", "Matrix", "PixelResol", "BWP", "BWPPE", "Phase", "PED_major", "Comments"]:
+        for col in [
+            "SequenceType",
+            "TR",
+            "TE",
+            "FA",
+            "TA",
+            "FoV",
+            "Matrix",
+            "PixelResol",
+            "BWP",
+            "BWPPE",
+            "Phase",
+            "PED_major",
+            "Comments",
+        ]:
             v = _col_value(tmpl, col)
             if _norm(v) != "":
                 out.append(f"  {col}: {v}")
         out.append("")
 
-        mism = _summarize_mismatches(rows=rows, template=tmpl, marquee_cols=marquee_cols)
+        mism = _summarize_mismatches(
+            rows=rows, template=tmpl, marquee_cols=marquee_cols
+        )
         if mism:
             out.append("❌ Mismatches vs template (marquee cols):")
             for m in mism:
@@ -274,7 +316,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Per-sequence compliance report against template_by_count."
     )
-    parser.add_argument("--db", default="db.sqlite", help="Path to db.sqlite (default: db.sqlite)")
+    parser.add_argument(
+        "--db", default="db.sqlite", help="Path to db.sqlite (default: db.sqlite)"
+    )
 
     # Path-based input (canonical)
     parser.add_argument(
@@ -286,11 +330,25 @@ if __name__ == "__main__":
     # Individual field args — backwards compat, hidden from --help
     parser.add_argument("--project", default=None, help=argparse.SUPPRESS)
     parser.add_argument("--subid", default=None, help=argparse.SUPPRESS)
-    parser.add_argument("--sequence", dest="seqname", default=None, help=argparse.SUPPRESS)
-    parser.add_argument("--seqname", dest="seqname", default=None, help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--sequence", dest="seqname", default=None, help=argparse.SUPPRESS
+    )
+    parser.add_argument(
+        "--seqname", dest="seqname", default=None, help=argparse.SUPPRESS
+    )
 
-    parser.add_argument("--max-series", type=int, default=200, help="Max series number to include (default: 200)")
-    parser.add_argument("--examples", type=int, default=0, help="Number of example rows to print (default: 0)")
+    parser.add_argument(
+        "--max-series",
+        type=int,
+        default=200,
+        help="Max series number to include (default: 200)",
+    )
+    parser.add_argument(
+        "--examples",
+        type=int,
+        default=0,
+        help="Number of example rows to print (default: 0)",
+    )
     parser.add_argument(
         "--cols",
         nargs="+",

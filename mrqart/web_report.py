@@ -7,12 +7,15 @@ from datetime import datetime
 
 try:
     from jinja2 import Environment, FileSystemLoader, select_autoescape, Template
+
     _HAS_JINJA = True
 except Exception:
     _HAS_JINJA = False
 
+
 def _ensure_parent(p: Path) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
+
 
 def append_entries(entries: Iterable[Dict[str, Any]], log_path: Path) -> None:
     """Append entries as JSONL to log_path."""
@@ -20,6 +23,7 @@ def append_entries(entries: Iterable[Dict[str, Any]], log_path: Path) -> None:
     with log_path.open("a", encoding="utf-8") as f:
         for e in entries:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")
+
 
 def _read_jsonl(path: Path) -> List[Dict[str, Any]]:
     if not path.exists():
@@ -37,9 +41,13 @@ def _read_jsonl(path: Path) -> List[Dict[str, Any]]:
                 pass
     return rows
 
+
 def _sort_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    rows.sort(key=lambda r: r.get("acq_ts_sort") or r.get("script_ts") or "", reverse=True)
+    rows.sort(
+        key=lambda r: r.get("acq_ts_sort") or r.get("script_ts") or "", reverse=True
+    )
     return rows
+
 
 # -------------------------
 # Fallback (no Jinja) HTML
@@ -150,19 +158,31 @@ _FALLBACK_BODY = """<!DOCTYPE html>
 </html>
 """
 
+
 def _badge_bool(b) -> str:
-    if b is True:  return '<span class="chip ok">True</span>'
-    if b is False: return '<span class="chip bad">False</span>'
+    if b is True:
+        return '<span class="chip ok">True</span>'
+    if b is False:
+        return '<span class="chip bad">False</span>'
     return '<span class="chip na">N/A</span>'
 
+
 def _status_badge(s: str) -> str:
-    color = {"OK":"#10b981","NONCONFORM":"#ef4444","NO_TEMPLATE":"#f59e0b"}.get(s, "#6b7280")
-    return f'<span class="badge" style="background:{color};">{html.escape(s or "")}</span>'
+    color = {"OK": "#10b981", "NONCONFORM": "#ef4444", "NO_TEMPLATE": "#f59e0b"}.get(
+        s, "#6b7280"
+    )
+    return (
+        f'<span class="badge" style="background:{color};">{html.escape(s or "")}</span>'
+    )
+
 
 def _fmt_errs(errs) -> str:
-    if not errs: return ""
-    if isinstance(errs, str): return html.escape(errs)
+    if not errs:
+        return ""
+    if isinstance(errs, str):
+        return html.escape(errs)
     return "<ul>" + "".join(f"<li>{html.escape(str(e))}</li>" for e in errs) + "</ul>"
+
 
 def _render_fallback(rows: List[Dict[str, Any]], html_out: Path, title: str) -> None:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -193,6 +213,7 @@ def _render_fallback(rows: List[Dict[str, Any]], html_out: Path, title: str) -> 
     _ensure_parent(html_out)
     html_out.write_text(out, encoding="utf-8")
 
+
 # -------------------------
 # Public: render_html
 # -------------------------
@@ -221,12 +242,18 @@ def render_html(
             tpl_file = Path(template_path)
         if not tpl_file:
             # Default location: <repo>/static/mrqart_report.html.j2
-            tpl_file = Path(__file__).resolve().parent.parent / "static" / "mrqart_report.html.j2"
+            tpl_file = (
+                Path(__file__).resolve().parent.parent
+                / "static"
+                / "mrqart_report.html.j2"
+            )
 
         if tpl_file.exists():
             # Jinja environment pointing at template directory
             loader = FileSystemLoader(str(tpl_file.parent))
-            env = Environment(loader=loader, autoescape=select_autoescape(["html", "xml"]))
+            env = Environment(
+                loader=loader, autoescape=select_autoescape(["html", "xml"])
+            )
             tmpl: Template = env.get_template(tpl_file.name)
 
             ctx = {
@@ -242,4 +269,3 @@ def render_html(
 
     # Fallback path: no Jinja or template not found
     _render_fallback(rows, html_out, title)
-

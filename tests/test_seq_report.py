@@ -55,7 +55,16 @@ def _insert_acq_param(sql: sqlite3.Connection, **cols) -> int:
     return int(sql.execute("SELECT last_insert_rowid()").fetchone()[0])
 
 
-def _insert_acq(sql: sqlite3.Connection, *, param_id: int, acqdate: str, acqtime: str, station: str, subid: str, series: int):
+def _insert_acq(
+    sql: sqlite3.Connection,
+    *,
+    param_id: int,
+    acqdate: str,
+    acqtime: str,
+    station: str,
+    subid: str,
+    series: int,
+):
     sql.execute(
         """
         INSERT INTO acq (param_id, AcqDate, AcqTime, Station, SubID, SeriesNumber)
@@ -131,10 +140,42 @@ def test_seq_report_te_mismatch_sorted_values(mem_sql, tmp_path):
         Comments="null",
     )
 
-    _insert_acq(sql, param_id=param_te5,  acqdate="20260206", acqtime="164031.950000", station="AWP18914 pTX", subid=SUBID, series=13)
-    _insert_acq(sql, param_id=param_te12, acqdate="20260206", acqtime="164032.177500", station="AWP18914 pTX", subid=SUBID, series=12)
-    _insert_acq(sql, param_id=param_te5,  acqdate="20260206", acqtime="164328.112500", station="AWP18914 pTX", subid=SUBID, series=15)
-    _insert_acq(sql, param_id=param_te12, acqdate="20260206", acqtime="164328.340000", station="AWP18914 pTX", subid=SUBID, series=14)
+    _insert_acq(
+        sql,
+        param_id=param_te5,
+        acqdate="20260206",
+        acqtime="164031.950000",
+        station="AWP18914 pTX",
+        subid=SUBID,
+        series=13,
+    )
+    _insert_acq(
+        sql,
+        param_id=param_te12,
+        acqdate="20260206",
+        acqtime="164032.177500",
+        station="AWP18914 pTX",
+        subid=SUBID,
+        series=12,
+    )
+    _insert_acq(
+        sql,
+        param_id=param_te5,
+        acqdate="20260206",
+        acqtime="164328.112500",
+        station="AWP18914 pTX",
+        subid=SUBID,
+        series=15,
+    )
+    _insert_acq(
+        sql,
+        param_id=param_te12,
+        acqdate="20260206",
+        acqtime="164328.340000",
+        station="AWP18914 pTX",
+        subid=SUBID,
+        series=14,
+    )
 
     sql.commit()
 
@@ -189,8 +230,18 @@ def test_seq_report_examples_flag(mem_sql, tmp_path):
     )
 
     # One row is enough for this behavior test
-    param_id = _insert_acq_param(sql, Project=PROJECT, SequenceName=SEQ, SequenceType="fm2d3", TR="220", TE="5")
-    _insert_acq(sql, param_id=param_id, acqdate="20260206", acqtime="164031.950000", station="AWP18914 pTX", subid=SUBID, series=13)
+    param_id = _insert_acq_param(
+        sql, Project=PROJECT, SequenceName=SEQ, SequenceType="fm2d3", TR="220", TE="5"
+    )
+    _insert_acq(
+        sql,
+        param_id=param_id,
+        acqdate="20260206",
+        acqtime="164031.950000",
+        station="AWP18914 pTX",
+        subid=SUBID,
+        series=13,
+    )
     sql.commit()
 
     db_path = tmp_path / "db.sqlite"
@@ -210,4 +261,3 @@ def test_seq_report_examples_flag(mem_sql, tmp_path):
     assert "Examples (first 1 rows):" in report
     assert "AWP18914 pTX" in report
     assert "Series=13" in report
-

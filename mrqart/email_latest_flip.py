@@ -28,8 +28,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import (Any, Callable, Dict, Iterable, List, Mapping, Optional,
-                    Tuple)
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple
 
 from .template_checker import TemplateChecker
 
@@ -182,7 +181,7 @@ def load_reporting_config(toml_path: Path) -> FilterSettings:
     for k, v in default_filter.items():
         settings[k] = filt.get(k, v) or v
 
-    # marquee comes from 'compare' wich also includes fault tolerance settings
+    # marquee comes from 'compare' which also includes fault tolerance settings
     settings["marquee_cols"] = list(
         comp.get("marquee_cols", default_filter["marquee_cols"])
     )
@@ -400,6 +399,7 @@ def study_has_any_templates(sql: sqlite3.Connection, project: str) -> bool:
     ).fetchone()
     return row is not None
 
+
 def get_physicist_for_project(sql: sqlite3.Connection, project: str) -> Optional[str]:
     """
     Look up the assigned physicist for a project by matching the suffix
@@ -418,6 +418,7 @@ def get_physicist_for_project(sql: sqlite3.Connection, project: str) -> Optional
     if not row or not row[0] or not str(row[0]).strip():
         return None
     return str(row[0]).strip()
+
 
 @dataclass(frozen=True)
 class ReportDate:
@@ -524,6 +525,7 @@ def format_seq_result(
 
     return lines
 
+
 def get_report_date(env: Mapping[str, str], now: datetime | None = None) -> ReportDate:
     """
     Determine reporting date:
@@ -566,7 +568,7 @@ def select_eligible_rows(
     acq_rows: Iterable[sqlite3.Row], settings: FilterSettings
 ) -> Tuple[List[sqlite3.Row], Dict[str, int], Dict[SeqKey, int], Dict[str, set]]:
     """
-    @param acq_rows  sql quiery results - acquisitions to check
+    @param acq_rows  sql query results - acquisitions to check
     @param settings  configuration from load_reporting_config
                      passed to is_interesting_sequence_with_blacklist
     Apply:
@@ -611,6 +613,7 @@ def select_eligible_rows(
         study_subids_today[project].add(subid)
 
     return eligible, study_counts_today, seq_counts_today, study_subids_today
+
 
 def _evaluate_row(
     row: sqlite3.Row,
@@ -784,6 +787,7 @@ def evaluate_rows(
 
     return seq_summary, missing_templates, totals
 
+
 def build_email(
     *,
     date_label: str,
@@ -830,7 +834,9 @@ def build_email(
             project_lines: List[str] = []
             for key in keys:
                 summary = seq_summary[key]
-                project_lines.extend(format_seq_result(summary, marquee_cols=marquee_cols))
+                project_lines.extend(
+                    format_seq_result(summary, marquee_cols=marquee_cols)
+                )
 
             if not project_lines:
                 continue
@@ -921,6 +927,7 @@ def build_email(
     body = "\n".join(lines)
     return subject, body
 
+
 def build_jsonl_entries(
     *,
     date_label: str,
@@ -949,41 +956,50 @@ def build_jsonl_entries(
             if col in set(marquee_cols)
         ]
         if not errors:
-            continue # SequenceType-only mismatch - not displayable, skip
-        entries.append({
-            "script_ts": script_ts,
-            "project": project,
-            "sequence": seqname,
-            "subid": subid,
-            "series": summary.examples[0].split(".")[-1].split(" ")[0] if summary.examples else "",
-            "station": "",
-            "acq_ts": date_label,
-            "acq_ts_sort": date_label,
-            "conforms": False,
-            "error_count": len(errors),
-            "errors": errors,
-            "status": "NONCONFORM",
-        })
+            continue  # SequenceType-only mismatch - not displayable, skip
+        entries.append(
+            {
+                "script_ts": script_ts,
+                "project": project,
+                "sequence": seqname,
+                "subid": subid,
+                "series": (
+                    summary.examples[0].split(".")[-1].split(" ")[0]
+                    if summary.examples
+                    else ""
+                ),
+                "station": "",
+                "acq_ts": date_label,
+                "acq_ts_sort": date_label,
+                "conforms": False,
+                "error_count": len(errors),
+                "errors": errors,
+                "status": "NONCONFORM",
+            }
+        )
 
     for (project, subid, seqname), info in missing_templates.items():
         if not info.get("study_has_templates"):
             continue
-        entries.append({
-            "script_ts": script_ts,
-            "project": project,
-            "sequence": seqname,
-            "subid": subid,
-            "series": "",
-            "station": "",
-            "acq_ts": date_label,
-            "acq_ts_sort": date_label,
-            "conforms": False,
-            "error_count": 0,
-            "errors": ["missing template"],
-            "status": "NO_TEMPLATE",
-        })
+        entries.append(
+            {
+                "script_ts": script_ts,
+                "project": project,
+                "sequence": seqname,
+                "subid": subid,
+                "series": "",
+                "station": "",
+                "acq_ts": date_label,
+                "acq_ts_sort": date_label,
+                "conforms": False,
+                "error_count": 0,
+                "errors": ["missing template"],
+                "status": "NO_TEMPLATE",
+            }
+        )
 
     return entries
+
 
 def send_all(
     email_entries: Iterable[Mapping[str, str]],
@@ -1086,10 +1102,9 @@ def main(*, dry_run: bool = False) -> int:
         seq_counts_today=seq_counts_today,
     )
     totals.total_seen_today = total_seen_today
-    
+
     physicist_by_project = {
-        key[0]: get_physicist_for_project(sql, key[0])
-        for key in seq_summary
+        key[0]: get_physicist_for_project(sql, key[0]) for key in seq_summary
     }
 
     # render
@@ -1109,6 +1124,7 @@ def main(*, dry_run: bool = False) -> int:
     web_html = Path(env.get("MRQART_WEB_HTML", ""))
     if web_log and web_log.name:
         from .web_report import append_entries, render_html
+
         entries = build_jsonl_entries(
             date_label=rd.date_label,
             seq_summary=seq_summary,
@@ -1117,8 +1133,9 @@ def main(*, dry_run: bool = False) -> int:
         )
         append_entries(entries, web_log)
         if web_html and web_html.name:
-            render_html(web_log, web_html,
-                title=env.get("MRQART_WEB_TITLE", "MRQART QA — Feed"))
+            render_html(
+                web_log, web_html, title=env.get("MRQART_WEB_TITLE", "MRQART QA — Feed")
+            )
 
     # dry run: print instead of send
     if dry_run:

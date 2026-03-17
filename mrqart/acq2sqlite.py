@@ -304,7 +304,9 @@ class DBQuery:
         logging.debug("found template: %s", res)
         return res
 
-    def find_acquisitions_since(self, since_date: Optional[str] = None) -> list[sqlite3.Row]:
+    def find_acquisitions_since(
+        self, since_date: Optional[str] = None
+    ) -> list[sqlite3.Row]:
         """
         Retrieve all acquisitions with AcqDate greater than the specified date.
 
@@ -349,7 +351,9 @@ class DBQuery:
         """
         logging.info(
             "Finding acquisitions since %s (Project like %s, Seq like %s)",
-            since_date, project_like, seq_like
+            since_date,
+            project_like,
+            seq_like,
         )
         cur = self.sql.execute(query, (since_date, project_like, seq_like))
         return cur.fetchall()
@@ -392,9 +396,14 @@ class DBQuery:
         """
         logging.info(
             "Finding up to %d recent per (Project,Seq) since %s (Project like %s, Seq like %s)",
-            per_pair_limit, since_date, project_like, seq_like
+            per_pair_limit,
+            since_date,
+            project_like,
+            seq_like,
         )
-        cur = self.sql.execute(query, (since_date, project_like, seq_like, per_pair_limit))
+        cur = self.sql.execute(
+            query, (since_date, project_like, seq_like, per_pair_limit)
+        )
         return cur.fetchall()
 
     # ---------------------------------------------------------------------
@@ -436,4 +445,3 @@ if __name__ == "__main__":
             db.dict_to_db_row(d)
 
     db.sql.commit()
-

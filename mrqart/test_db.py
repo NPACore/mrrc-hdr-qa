@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 test_db = sqlite3.connect(":memory:")
 
 # Create tables based off of the original schema
-test_db.execute("""
+test_db.execute(
+    """
                 CREATE TABLE acq (
                     param_id INTEGER,
                     AcqTime TEXT,
@@ -14,9 +15,11 @@ test_db.execute("""
                     SubID TEXT,
                     Operator TEXT
                 );
-                """)
+                """
+)
 
-test_db.execute("""
+test_db.execute(
+    """
                 CREATE TABLE acq_param (
                     is_ideal TIMESTAMP,
                     Project TEXT,
@@ -36,7 +39,8 @@ test_db.execute("""
                     TA TEXT,
                     FoV TEXT
                 );
-                """)
+                """
+)
 
 # Sample dates for testing
 today = datetime.now().strftime("%Y-%m-%d")
