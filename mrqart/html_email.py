@@ -15,17 +15,24 @@ from email.header import Header
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
-from .email_latest_flip import (
-    SeqKey,
-    SeqSummary,
-    Totals,
-    format_expected_got,
-)
+from .email_latest_flip import SeqKey, SeqSummary, Totals, format_expected_got
 
 try:
     import tomllib as toml
 except Exception:
     import toml  # type: ignore
+
+
+def _fmt_val(col: str, val: Any) -> str:
+    """Format a value for display in the HTML email table."""
+    if col == "PixelResol":
+        try:
+            no_sq = str(val).replace("[", "").replace("]", "").replace(" ", "")
+            parts = [f"{float(x):.3f}" for x in no_sq.split(",")]
+            return "[" + ", ".join(parts) + "]"
+        except Exception:
+            return str(val)
+    return str(val)
 
 
 def load_html_email_entries(toml_path: Path) -> List[Dict[str, str]]:
@@ -81,32 +88,43 @@ def build_html_body(
             top_errors = sorted(
                 summary.mismatch_counts.items(), key=lambda kv: kv[1], reverse=True
             )
-            error_lines = [
-                format_expected_got(col, exp, got)
+            error_tuples = [
+                (col, exp, got)
                 for (col, exp, got), _ in top_errors
                 if col in set(marquee_cols)
             ]
-            if not error_lines:
+            if not error_tuples:
                 continue
-            errors_html = "".join(f"<li>{e}</li>" for e in error_lines)
             path_str = ""
             if summary.examples:
                 parts = summary.examples[0].split(" / ", 2)
                 if len(parts) == 3:
                     seq_part = parts[2].split(" (diffs:")[0].strip()
                     path_str = seq_part
-            project_rows += f"""
+            for i, (col, exp, got) in enumerate(error_tuples):
+                if i == 0:
+                    rowspan = len(error_tuples)
+                    project_rows += f"""
         <tr>
-            <td style="padding:8px 12px;color:#94a3b8;">{subid}</td>
-            <td style="padding:8px 12px;">{seqname}
+            <td rowspan="{rowspan}" style="padding:8px 12px;color:#94a3b8;vertical-align:top;border-top:1px solid #1f2937;">{subid}</td>
+            <td rowspan="{rowspan}" style="padding:8px 12px;vertical-align:top;border-top:1px solid #1f2937;">{seqname}
                 {"<br><code style='font-size:10px;color:#64748b;user-select:all;'>" + path_str + "</code>" if path_str else ""}
             </td>
-            <td style="padding:8px 12px;"><ul style="margin:0;padding-left:16px;">{errors_html}</ul></td>
+            <td style="padding:4px 12px;color:#94a3b8;border-top:1px solid #1f2937;">{col}</td>
+            <td style="padding:4px 12px;border-top:1px solid #1f2937;">{_fmt_val(col, exp)}</td>
+            <td style="padding:4px 12px;color:#ef4444;border-top:1px solid #1f2937;">{_fmt_val(col, got)}</td>
+        </tr>"""
+                else:
+                    project_rows += f"""
+        <tr>
+            <td style="padding:4px 12px;color:#94a3b8;">{col}</td>
+            <td style="padding:4px 12px;">{_fmt_val(col, exp)}</td>
+            <td style="padding:4px 12px;color:#ef4444;">{_fmt_val(col, got)}</td>
         </tr>"""
         if not project_rows:
             continue
         rows_html += f"""
-        <tr><td colspan="3" style="background:#1e293b;padding:8px 12px;font-weight:600;color:#60a5fa;">
+        <tr><td colspan="5" style="background:#1e293b;padding:8px 12px;font-weight:600;color:#60a5fa;">
             {project}{physicist_str}
         </td></tr>"""
         rows_html += project_rows
@@ -131,7 +149,9 @@ def build_html_body(
         <tr style="background:#0d1326;color:#94a3b8;font-size:12px;">
             <th style="padding:8px 12px;text-align:left;">Subject</th>
             <th style="padding:8px 12px;text-align:left;">Sequence</th>
-            <th style="padding:8px 12px;text-align:left;">Errors</th>
+            <th style="padding:8px 12px;text-align:left;">Parameter</th>
+            <th style="padding:8px 12px;text-align:left;">Expected</th>
+            <th style="padding:8px 12px;text-align:left;color:#ef4444;">Got</th>
         </tr>
     </thead>
     <tbody>
