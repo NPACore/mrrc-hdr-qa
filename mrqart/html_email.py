@@ -89,10 +89,18 @@ def build_html_body(
             if not error_lines:
                 continue
             errors_html = "".join(f"<li>{e}</li>" for e in error_lines)
+            path_str = ""
+            if summary.examples:
+                parts = summary.examples[0].split(" / ", 2)
+                if len(parts) == 3:
+                    seq_part = parts[2].split(" (diffs:")[0].strip()
+                    path_str = seq_part
             project_rows += f"""
         <tr>
             <td style="padding:8px 12px;color:#94a3b8;">{subid}</td>
-            <td style="padding:8px 12px;">{seqname}</td>
+            <td style="padding:8px 12px;">{seqname}
+                {"<br><code style='font-size:10px;color:#64748b;user-select:all;'>" + path_str + "</code>" if path_str else ""}
+            </td>
             <td style="padding:8px 12px;"><ul style="margin:0;padding-left:16px;">{errors_html}</ul></td>
         </tr>"""
         if not project_rows:
