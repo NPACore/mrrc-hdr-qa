@@ -28,8 +28,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import (Any, Callable, Dict, Iterable, List, Mapping, Optional,
-                    Tuple)
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple
 
 from .template_checker import TemplateChecker
 
