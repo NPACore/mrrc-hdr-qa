@@ -927,13 +927,13 @@ def build_email(
     body = "\n".join(lines)
     return subject, body
 
-
 def build_jsonl_entries(
     *,
     date_label: str,
     seq_summary: Dict[SeqKey, SeqSummary],
     missing_templates: Dict[SeqKey, Dict[str, Any]],
     marquee_cols: List[str],
+    physicist_by_project: Mapping[str, Optional[str]] = {},
 ) -> List[Dict[str, Any]]:
     """
     Build a list of JSONL entries for the web dashboard.
@@ -975,6 +975,7 @@ def build_jsonl_entries(
                 "error_count": len(errors),
                 "errors": errors,
                 "status": "NONCONFORM",
+                "physicist": physicist_by_project.get(project) or "",
             }
         )
 
@@ -995,6 +996,7 @@ def build_jsonl_entries(
                 "error_count": 0,
                 "errors": ["missing template"],
                 "status": "NO_TEMPLATE",
+                "physicist": physicist_by_project.get(project) or "",
             }
         )
 
@@ -1130,6 +1132,7 @@ def main(*, dry_run: bool = False) -> int:
             seq_summary=seq_summary,
             missing_templates=missing_templates,
             marquee_cols=settings["marquee_cols"],
+            physicist_by_project=physicist_by_project,
         )
         append_entries(entries, web_log)
         if web_html and web_html.name:

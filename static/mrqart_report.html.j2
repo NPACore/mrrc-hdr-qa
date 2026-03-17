@@ -70,7 +70,8 @@
           <th>Sequence</th>
           <th>Subject</th>
           <th>Series</th>
-          <th>Station</th>
+	  <th>Station</th>
+	  <th>Physicist</th>
           <th>Conforms</th>
           <th>Errors</th>
           <th>Error Detail</th>
@@ -87,6 +88,7 @@
           <td>{{ (r.subid or '')|e }}</td>
           <td class="num">{{ (r.series or '')|e }}</td>
           <td>{{ (r.station or '')|e }}</td>
+	  <td>{{ (r.physicist or '')|e }}</td>
           <td class="center">
             {% if r.conforms is sameas true %}<span class="chip ok">True</span>
             {% elif r.conforms is sameas false %}<span class="chip bad">False</span>
