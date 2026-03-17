@@ -100,7 +100,10 @@ def build_html_body(
                 parts = summary.examples[0].split(" / ", 2)
                 if len(parts) == 3:
                     seq_part = parts[2].split(" (diffs:")[0].strip()
-                    path_str = seq_part
+                    proj_short = (
+                        project.split("^", 1)[-1] if "^" in project else project
+                    )
+                    path_str = f"{proj_short}/{subid}/{seq_part}"
             for i, (col, exp, got) in enumerate(error_tuples):
                 if i == 0:
                     rowspan = len(error_tuples)
