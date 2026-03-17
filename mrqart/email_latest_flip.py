@@ -927,6 +927,7 @@ def build_email(
     body = "\n".join(lines)
     return subject, body
 
+
 def build_jsonl_entries(
     *,
     date_label: str,
