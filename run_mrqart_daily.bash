@@ -28,5 +28,4 @@ export MRQART_WEB_HTML="$REPO/static/mrqart_report.html"
 export MRQART_WEB_TITLE="MRRC Header QA — Feed"
 
 cd "$REPO"
-"$VENV" -m mrqart.email_latest_flip >>"$LOGDIR/mrqart_daily.log" 2>&1
-
+"$VENV" -m mrqart >>"$LOGDIR/mrqart_daily.log" 2>&1
