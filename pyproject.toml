@@ -28,3 +28,6 @@ packages = ["mrqart"]
 [tool.hatch.build]
 include = ["mrqart/**", "README.md"]
 
+
+[tool.black]
+target-version = ["py311"]
