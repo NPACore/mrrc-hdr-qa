@@ -1,0 +1,41 @@
+# config/reporting.toml
+
+[filter]
+# Include if SequenceName contains any of these (case-insensitive).
+interesting_substrings = [
+  # Structurals
+  "mprage", "mp2rage", "t1w", "t2w", "flair", "spc",
+
+  # vNav related
+  "vnav", "nav_setter", "setter",
+
+  # Fieldmaps (GRE + SE/topup style)
+  "fieldmap", "b0", "gre_b0", "topup", "magnitude", "phase"
+]
+
+# Study names that can be ignored
+blacklist_study_regex = ["^Body", "^7T"]
+
+# Exclude if SequenceName contains any of these (case-insensitive).
+# This overrides "interesting_substrings" and also applies when disable_blacklist=true.
+deny_substrings = [
+  "localizer", "scout", "3 plane", "3-plane", "survey"
+]
+
+# If empty, no blacklist filtering.
+# Applied only when SequenceName did NOT match interesting_substrings.
+blacklist_seqtype_prefixes = [
+  "wip"
+]
+
+# If true, ignore blacklist checks (useful while widening scope),
+# BUT deny_substrings still applies.
+disable_blacklist = true
+
+
+[compare]
+# 20260306 - removed "TA" (Time of total Acqusition). Too many false positives
+marquee_cols = ["PED_major", "iPAT", "TR", "TE", "Matrix", "FA", "FoV", "BWP", "PixelResol"]
+
+float_tolerance_default = 1e-3
+float_tolerance_by_col = { TE = 0.05, TR = 1.0 }

@@ -37,8 +37,8 @@ docs/_static/mrqart/main.css: static/main.css
 	$(source_venv) && black . > .lint && isort --skip-gitignore . >> .lint && codespell -w >> .lint
 
 test: .test.doctest .test.pytest
-.test.doctest: change_header.py acq2sqlite.py dcmmeta2tsv.py | venv-program venv-dev  #$(wildcard *py)
-	$(source_venv) && LOGLEVEL=CRITICAL python3 -m doctest $^ 2>&1 | tee $@
+.test.doctest: mrqart/change_header.py mrqart/acq2sqlite.py mrqart/dcmmeta2tsv.py | venv-program venv-dev  #$(wildcard *py)
+	$(source_venv) && LOGLEVEL=CRITICAL python3 -m pytest --doctest-modules $^ 2>&1 | tee $@
 .test.pytest: $(wildcard tests/*py) $(wildcard *py) | venv-program venv-dev  #$(wildcard *py)
 	$(source_venv) && python3 -m pytest tests/ 2>&1 | tee $@
 

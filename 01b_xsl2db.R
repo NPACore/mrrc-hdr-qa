@@ -41,7 +41,7 @@ d <- d |>
                gsub(patt='Moon.2019./',repl='') |>
                # remove parentheticals
                gsub(patt='\\(.*\\)|set up',repl='') |>
-               # consistent separator. comma for email later
+               # consistant separator. comma for email later
                gsub(patt='/',repl=',') |>
                gsub(patt=' ',repl=''),
            phys_mail = Vectorize(to_emails)(contact) |> unname(),
@@ -80,5 +80,5 @@ projects_update <- projects |>
 # tbl(con,"project") |> collect() |> anti_join(projects_update, by="Project") |> rbind(projects_update)
 
 # create table
-copy_to(con, projects_update, name="project", overwrite=T)
+copy_to(con, projects_update, name="project", overwrite=T, temporary=F)
 DBI::dbDisconnect(con)

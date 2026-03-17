@@ -30,3 +30,4 @@ uv.lock
 *.202*-*/ # backup files
 .*idea*
 studies.xlsx
+mrqart/._*

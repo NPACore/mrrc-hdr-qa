@@ -240,6 +240,35 @@ class DicomTagReader:
     def __init__(self):
         self.tags = read_known_tags()
 
+    def read_many_dicom_tags(self, dcm_paths: list[os.PathLike]) -> TagValues:
+        """
+        Read tags for multiple dicoms, likley from the same acquisition.
+        Combined TE when changing within protocol.
+        :param dcm_paths: a list of files likely sorted by AcqTime
+        :return: acquisition summary. multiple TE's seperated by commas
+        """
+        all_tags : list[TagValues] = []  # not needed. Maybe useful later to walk backwwards
+        tag = {}  # what to return
+        for i, dcm in enumerate(dcm_paths):
+            all_tags.append(self.read_dicom_tags(dcm))
+            # nothing to compare on first iteration. use as template
+            if i == 0:
+                tag = all_tags[0]
+                continue
+
+            same_as_prev = True
+            if all_tags[i].get('TE') not in tag.get('TE', '').split(','):
+                tag['TE'] = tag['TE'] + ',' + all_tags[i]['TE']
+                same_as_prev = False
+            # TODO: May want to combine/check other tags?
+
+            # next dicom same as prevoius. dont need to check the remaining dcm_paths
+            if same_as_prev:
+                return tag
+
+        # only here if len(dcm_paths) == 1 or never have repeated TE
+        return tag
+
     def read_dicom_tags(self, dcm_path: os.PathLike) -> TagValues:
         """return values of dicom header priority fields
         ordered as defined in ``taglist.txt``
