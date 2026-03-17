@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install dependencies
-        run: make .venv/
+        run: make .venv/ && make venv-dev
       - name: Check formatting
         run: . .venv/bin/activate && black --check . && isort --check --skip-gitignore .
       - name: Spellcheck
