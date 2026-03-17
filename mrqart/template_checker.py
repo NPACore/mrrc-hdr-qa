@@ -148,7 +148,7 @@ class TemplateChecker:
             errors = {}
 
             # if self.context == "RT":
-            #errors = clean_rt(errors)
+            # errors = clean_rt(errors)
 
         return {
             "conforms": not errors,
