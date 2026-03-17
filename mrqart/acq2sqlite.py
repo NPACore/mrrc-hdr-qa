@@ -301,6 +301,11 @@ class DBQuery:
         )
         res = cur.fetchone()
         res = none_to_null(res)
+        if res is not None:
+            res = dict(res)
+            multiecho_tes = res.get("multiecho_tes", "")
+            if multiecho_tes and "," in str(multiecho_tes):
+                res["TE"] = multiecho_tes
         logging.debug("found template: %s", res)
         return res
 

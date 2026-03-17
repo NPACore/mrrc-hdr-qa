@@ -84,11 +84,11 @@ def find_errors(
                 h_k = 0
             check = int(float(t_k)) == int(float(h_k))
         elif k == "TE":
-            # multiecho: current header may have comma-seperated TEs e.g. "4.8,7.4"
-            # pass if template te matches any of the values in the list
-            t_norm = _norm_str(t_k)
-            h_values = [_norm_str(v.strip()) for v in str(h_k).split(",")]
-            check = t_norm in h_values
+            # multiecho: either header or template may have comma-separated TEs
+            # pass if there is any overlap between the two sets
+            t_values = {_norm_str(v.strip()) for v in str(t_k).split(",")}
+            h_values = {_norm_str(v.strip()) for v in str(h_k).split(",")}
+            check = bool(t_values & h_values)
         elif k == "iPAT":
             # Keep strict for compact tokens like 'p2'
             check = str(t_k) == str(h_k)
