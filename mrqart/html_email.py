@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import os
 import subprocess
-from pathlib import Path
 from email.header import Header
+from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from .email_latest_flip import (
@@ -58,7 +58,11 @@ def build_html_body(
     """Build a condensed HTML email body."""
     from collections import defaultdict
 
-    status_emoji = "✅" if (totals.total_nonconforming == 0 and totals.mia_actionable == 0) else "❌"
+    status_emoji = (
+        "✅"
+        if (totals.total_nonconforming == 0 and totals.mia_actionable == 0)
+        else "❌"
+    )
 
     # group nonconforming by project
     by_project: Dict[str, List[SeqKey]] = defaultdict(list)
@@ -135,6 +139,7 @@ def build_html_body(
 </html>"""
     return html
 
+
 def send_html_email(
     *,
     subject: str,
@@ -151,7 +156,14 @@ def send_html_email(
         return True
     try:
         subprocess.run(
-            ["mail", "-s", subject.encode("ascii", "ignore").decode(), "-a", "Content-Type: text/html", to_addr],
+            [
+                "mail",
+                "-s",
+                subject.encode("ascii", "ignore").decode(),
+                "-a",
+                "Content-Type: text/html",
+                to_addr,
+            ],
             input=html_body.encode("utf-8"),
             check=True,
         )

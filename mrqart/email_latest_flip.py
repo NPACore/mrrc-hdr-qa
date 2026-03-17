@@ -1140,29 +1140,39 @@ def main(*, dry_run: bool = False) -> int:
             render_html(
                 web_log, web_html, title=env.get("MRQART_WEB_TITLE", "MRQART QA — Feed")
             )
-    
+
     # HTML email
     html_email_toml = Path(env.get("MRQART_HTML_EMAIL_TOML", ""))
     if html_email_toml and html_email_toml.name:
-        from .html_email import build_html_body, load_html_email_entries, send_html_email
+        from .html_email import (
+            build_html_body,
+            load_html_email_entries,
+            send_html_email,
+        )
+
         try:
             html_entries = load_html_email_entries(html_email_toml)
             html_body = build_html_body(
-                    date_label=rd.date_label,
-                    seq_summary=seq_summary,
-                    missing_templates=missing_templates,
-                    totals=totals,
-                    physicist_by_project=physicist_by_project,
-                    marquee_cols=settings["marquee_cols"],
+                date_label=rd.date_label,
+                seq_summary=seq_summary,
+                missing_templates=missing_templates,
+                totals=totals,
+                physicist_by_project=physicist_by_project,
+                marquee_cols=settings["marquee_cols"],
             )
-            smtp_host = html_entries[0].get("host", "localhost") if html_entries else "localhost"
+            smtp_host = (
+                html_entries[0].get("host", "localhost")
+                if html_entries
+                else "localhost"
+            )
             for e in html_entries:
                 send_html_email(
-                        subject=subject,html_body=html_body,
-                        attachment_path=web_html if web_html and web_html.name else None,
-                        from_addr=e["from"],
-                        to_addr=e["to"],
-                        smtp_host=smtp_host,
+                    subject=subject,
+                    html_body=html_body,
+                    attachment_path=web_html if web_html and web_html.name else None,
+                    from_addr=e["from"],
+                    to_addr=e["to"],
+                    smtp_host=smtp_host,
                 )
         except Exception as e:
             print(f"[warn] HTML email failed: {e}", file=sys.stderr)
