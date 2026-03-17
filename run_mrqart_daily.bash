@@ -26,6 +26,7 @@ export MRQART_FORCE_EMAIL=1
 export MRQART_WEB_LOG="$REPO/static/mrqart_log.jsonl"
 export MRQART_WEB_HTML="$REPO/static/mrqart_report.html"
 export MRQART_WEB_TITLE="MRRC Header QA — Feed"
+export MRQART_HTML_EMAIL_TOML="$REPO/config/html_email_settings.toml"
 
 cd "$REPO"
 "$VENV" -m mrqart >>"$LOGDIR/mrqart_daily.log" 2>&1
