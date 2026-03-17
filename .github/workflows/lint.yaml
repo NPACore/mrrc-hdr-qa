@@ -22,7 +22,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Lint
-        run: make .lint
-      - name: Commit
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Install dependencies
+        run: make .venv/
+      - name: Check formatting
+        run: . .venv/bin/activate && black --check . && isort --check --skip-gitignore .
+      - name: Spellcheck
+        run: . .venv/bin/activate && codespell
