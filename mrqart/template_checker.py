@@ -142,12 +142,13 @@ class TemplateChecker:
         if template:
             template = dict(template)
             errors = find_errors(template, hdr, allow_null)
+            errors = clean_rt(errors)
         else:
             template = {}
             errors = {}
 
             # if self.context == "RT":
-            errors = clean_rt(errors)
+            #errors = clean_rt(errors)
 
         return {
             "conforms": not errors,

@@ -253,6 +253,16 @@ def format_expected_got(col: str, exp: Any, got: Any) -> str:
             return f"TA: expected {exp}, got {got} ({s}{d}s)"
         return f"TA: expected {exp}, got {got}"
 
+    if col == "PixelResol":
+        def _round_pixelresol(val: Any) -> str:
+            try:
+                no_sq = str(val).replace("[", "").replace("]", "").replace(" ", "")
+                parts = [f"{float(x):.3f}" for x in no_sq.split(",")]
+                return "[" + ", ".join(parts) + "]"
+            except Exception:
+                return str(val)
+        return f"PixelResol: expected {_round_pixelresol(exp)}, got {_round_pixelresol(got)}"
+
     return f"{col}: expected {exp}, got {got}"
 
 
