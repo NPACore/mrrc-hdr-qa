@@ -31,3 +31,6 @@ include = ["mrqart/**", "README.md"]
 
 [tool.black]
 target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
