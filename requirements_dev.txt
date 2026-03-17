@@ -1,4 +1,4 @@
-black
+black==25.9.0
 codespell
 isort
 sphinx
