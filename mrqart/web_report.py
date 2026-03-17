@@ -9,8 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 try:
-    from jinja2 import (Environment, FileSystemLoader, Template,
-                        select_autoescape)
+    from jinja2 import Environment, FileSystemLoader, Template, select_autoescape
 
     _HAS_JINJA = True
 except Exception:
