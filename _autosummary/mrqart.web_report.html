@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>mrqart.web_report &#8212; mrrc-hdr-qa  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mrrc_dbupdate" href="mrrc_dbupdate.html" />
+    <link rel="prev" title="mrqart.test_db" href="mrqart.test_db.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-mrqart.web_report">
+<span id="mrqart-web-report"></span><h1>mrqart.web_report<a class="headerlink" href="#module-mrqart.web_report" title="Link to this heading">¶</a></h1>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.web_report.append_entries" title="mrqart.web_report.append_entries"><code class="xref py py-obj docutils literal notranslate"><span class="pre">append_entries</span></code></a>(entries, log_path)</p></td>
+<td><p>Append entries as JSONL to log_path.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.web_report.render_html" title="mrqart.web_report.render_html"><code class="xref py py-obj docutils literal notranslate"><span class="pre">render_html</span></code></a>(log_path, html_out[, title, ...])</p></td>
+<td><p>Render a static HTML from JSONL log.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.web_report.append_entries">
+<span class="sig-prename descclassname"><span class="pre">mrqart.web_report.</span></span><span class="sig-name descname"><span class="pre">append_entries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entries</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_path</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/web_report.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.web_report.append_entries" title="Link to this definition">¶</a></dt>
+<dd><p>Append entries as JSONL to log_path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entries</strong> (<em>Iterable</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>log_path</strong> (<em>Path</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.web_report.render_html">
+<span class="sig-prename descclassname"><span class="pre">mrqart.web_report.</span></span><span class="sig-name descname"><span class="pre">render_html</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">html_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'MRQART</span> <span class="pre">QA</span> <span class="pre">—</span> <span class="pre">Feed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">template_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/web_report.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.web_report.render_html" title="Link to this definition">¶</a></dt>
+<dd><p>Render a static HTML from JSONL log.
+If Jinja2 is available and a template is found, render with Jinja.
+Otherwise fall back to the built-in renderer (same look as before).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>log_path</strong> (<em>Path</em>)</p></li>
+<li><p><strong>html_out</strong> (<em>Path</em>)</p></li>
+<li><p><strong>title</strong> (<em>str</em>)</p></li>
+<li><p><strong>max_rows</strong> (<em>int</em>)</p></li>
+<li><p><strong>template_path</strong> (<em>Path</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">mrrc-hdr-qa</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mrqart.html">mrqart</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mrqart.acq2sqlite.html">mrqart.acq2sqlite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.change_header.html">mrqart.change_header</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.compliance_check_html.html">mrqart.compliance_check_html</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.dcmmeta2tsv.html">mrqart.dcmmeta2tsv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.email_latest_flip.html">mrqart.email_latest_flip</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.html_email.html">mrqart.html_email</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.mrqart.html">mrqart.mrqart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.npac_email.html">mrqart.npac_email</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.seq_report.html">mrqart.seq_report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.template_checker.html">mrqart.template_checker</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.test_db.html">mrqart.test_db</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mrqart.web_report</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.web_report.append_entries"><code class="docutils literal notranslate"><span class="pre">append_entries()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.web_report.render_html"><code class="docutils literal notranslate"><span class="pre">render_html()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mrrc_dbupdate.html">mrrc_dbupdate</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="mrqart.html">mrqart</a><ul>
+      <li>Previous: <a href="mrqart.test_db.html" title="previous chapter">mrqart.test_db</a></li>
+      <li>Next: <a href="mrrc_dbupdate.html" title="next chapter">mrrc_dbupdate</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, EH, WF.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/_autosummary/mrqart.web_report.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

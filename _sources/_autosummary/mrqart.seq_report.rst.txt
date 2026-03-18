@@ -1,0 +1,19 @@
+mrqart.seq\_report
+==================
+
+.. automodule:: mrqart.seq_report
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      parse_seq_path
+      render_seq_report
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      SeqMismatch
+   

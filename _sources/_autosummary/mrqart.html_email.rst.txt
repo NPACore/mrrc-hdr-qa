@@ -1,0 +1,14 @@
+mrqart.html\_email
+==================
+
+.. automodule:: mrqart.html_email
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build_html_body
+      load_html_email_entries
+      send_html_email
+   

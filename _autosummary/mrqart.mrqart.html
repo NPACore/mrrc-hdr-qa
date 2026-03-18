@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>mrqart.mrqart &#8212; mrrc-hdr-qa  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mrqart.npac_email" href="mrqart.npac_email.html" />
+    <link rel="prev" title="mrqart.html_email" href="mrqart.html_email.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-mrqart.mrqart">
+<span id="mrqart-mrqart"></span><h1>mrqart.mrqart<a class="headerlink" href="#module-mrqart.mrqart" title="Link to this heading">¶</a></h1>
+<p>Broadcast filesystem updates (via inotify) over websockets.
+Serve javascript over HTTP for receiving websocket messages in a browser.</p>
+<p class="rubric">Module Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.mrqart.WS_PORT" title="mrqart.mrqart.WS_PORT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WS_PORT</span></code></a></p></td>
+<td><p>Websocket port used to send updates to browser</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.mrqart.HTTP_PORT" title="mrqart.mrqart.HTTP_PORT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HTTP_PORT</span></code></a></p></td>
+<td><p>HTTP port used to serve static/index.html</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.mrqart.WS_CONNECTIONS" title="mrqart.mrqart.WS_CONNECTIONS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WS_CONNECTIONS</span></code></a></p></td>
+<td><p>list of all web socket connections to broadcast to TODO: will eventually need to track station id when serving multiple scanners</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.mrqart.STATE" title="mrqart.mrqart.STATE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">STATE</span></code></a></p></td>
+<td><p>track the current state of each scanner based on filename we can skip parsing a dicoms (and spamming the browser) if we've already seen the session</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.mrqart.http_run" title="mrqart.mrqart.http_run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">http_run</span></code></a>()</p></td>
+<td><p>Actually run web server, listening on <a class="reference internal" href="#mrqart.mrqart.HTTP_PORT" title="mrqart.mrqart.HTTP_PORT"><code class="xref py py-data docutils literal notranslate"><span class="pre">HTTP_PORT</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.mrqart.main" title="mrqart.mrqart.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>(paths)</p></td>
+<td><p>Run all services on different threads.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.mrqart.monitor_dirs" title="mrqart.mrqart.monitor_dirs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">monitor_dirs</span></code></a>(watcher, dcm_checker)</p></td>
+<td><p>Perpetually wait for new dicom files.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.mrqart.session_from_fname" title="mrqart.mrqart.session_from_fname"><code class="xref py py-obj docutils literal notranslate"><span class="pre">session_from_fname</span></code></a>(dcm_fname)</p></td>
+<td><p>We can use the file name to see if session name has changed. Don't need to read the dicom header -- if we know the station name. Can extract from <code class="docutils literal notranslate"><span class="pre">001_sequencenum_seriesnum</span></code>::.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.mrqart.track_ws" title="mrqart.mrqart.track_ws"><code class="xref py py-obj docutils literal notranslate"><span class="pre">track_ws</span></code></a>(websocket)</p></td>
+<td><p>Track connecting and disconnecting websocket connections.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.mrqart.CurSeqStation" title="mrqart.mrqart.CurSeqStation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CurSeqStation</span></code></a>(station)</p></td>
+<td><p>Current Sequence settings at a MR Scanner station</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.mrqart.GetState" title="mrqart.mrqart.GetState"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GetState</span></code></a>(application, request, **kwargs)</p></td>
+<td><p>Return the current state as JSON</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.mrqart.HttpIndex" title="mrqart.mrqart.HttpIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HttpIndex</span></code></a>(application, request, **kwargs)</p></td>
+<td><p>Handle index page request</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.mrqart.WebServer" title="mrqart.mrqart.WebServer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WebServer</span></code></a>()</p></td>
+<td><p>HTTP server (tornado request handler) Currently (20241102), this is just a fancy way to serve a static page.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="mrqart.mrqart.CurSeqStation">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">CurSeqStation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">station</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.CurSeqStation" title="Link to this definition">¶</a></dt>
+<dd><p>Current Sequence settings at a MR Scanner station</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>station</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mrqart.mrqart.CurSeqStation.hdr_check">
+<span class="sig-name descname"><span class="pre">hdr_check</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="mrqart.template_checker.html#mrqart.template_checker.CheckResult" title="mrqart.template_checker.CheckResult"><span class="pre">CheckResult</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.CurSeqStation.hdr_check" title="Link to this definition">¶</a></dt>
+<dd><p>set using dcm_checker.check_header</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mrqart.mrqart.CurSeqStation.update_isnew">
+<span class="sig-name descname"><span class="pre">update_isnew</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seqname</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.CurSeqStation.update_isnew" title="Link to this definition">¶</a></dt>
+<dd><p>Maintain count of repeats seen
+:return:  True if is new</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>seqname</strong> (<em>str</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mrqart.mrqart.GetState">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">GetState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">application</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.GetState" title="Link to this definition">¶</a></dt>
+<dd><p>Return the current state as JSON</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>application</strong> (<em>Application</em>)</p></li>
+<li><p><strong>request</strong> (<em>HTTPServerRequest</em>)</p></li>
+<li><p><strong>kwargs</strong> (<em>Any</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="mrqart.mrqart.GetState.get">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.GetState.get" title="Link to this definition">¶</a></dt>
+<dd><p>GET <code class="docutils literal notranslate"><span class="pre">/state</span></code> returns JSON similar to data sent over websocket
+via <code class="docutils literal notranslate"><span class="pre">broadcast(WS_CONNECTIONS,</span> <span class="pre">json.dumps(...))</span></code></p>
+<p>data here missing ‘msg’ but otherwise matches. it looks like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;station&#39;</span><span class="p">:</span> <span class="s1">&#39;AWP167046&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;content&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;conforms&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span> <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="p">{},</span>
+             <span class="s2">&quot;template&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;iPAT&quot;</span><span class="p">:</span> <span class="s2">&quot;p2&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span>
+             <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;iPAT&quot;</span><span class="p">:</span><span class="s2">&quot;p2&quot;</span><span class="p">,</span> <span class="o">....</span> <span class="p">}}}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="mrqart.mrqart.HTTP_PORT">
+<span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">HTTP_PORT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8080</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.HTTP_PORT" title="Link to this definition">¶</a></dt>
+<dd><p>HTTP port used to serve static/index.html</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mrqart.mrqart.HttpIndex">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">HttpIndex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">application</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.HttpIndex" title="Link to this definition">¶</a></dt>
+<dd><p>Handle index page request</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>application</strong> (<em>Application</em>)</p></li>
+<li><p><strong>request</strong> (<em>HTTPServerRequest</em>)</p></li>
+<li><p><strong>kwargs</strong> (<em>Any</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="mrqart.mrqart.HttpIndex.get">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.HttpIndex.get" title="Link to this definition">¶</a></dt>
+<dd><p>Default is just the index page</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="mrqart.mrqart.STATE">
+<span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">STATE</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#mrqart.mrqart.CurSeqStation" title="mrqart.mrqart.CurSeqStation"><span class="pre">CurSeqStation</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.STATE" title="Link to this definition">¶</a></dt>
+<dd><p>track the current state of each scanner based on filename
+we can skip parsing a dicoms (and spamming the browser) if we’ve already seen the session</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="mrqart.mrqart.WS_CONNECTIONS">
+<span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">WS_CONNECTIONS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.WS_CONNECTIONS" title="Link to this definition">¶</a></dt>
+<dd><p>list of all web socket connections to broadcast to
+TODO: will eventually need to track station id when serving multiple scanners</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="mrqart.mrqart.WS_PORT">
+<span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">WS_PORT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5000</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.WS_PORT" title="Link to this definition">¶</a></dt>
+<dd><p>Websocket port used to send updates to browser</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mrqart.mrqart.WebServer">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">WebServer</span></span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.WebServer" title="Link to this definition">¶</a></dt>
+<dd><p>HTTP server (tornado request handler)
+Currently (20241102), this is just a fancy way to serve a static page.  Eventually</p>
+<ul class="simple">
+<li><p>will match <code class="docutils literal notranslate"><span class="pre">/scanner-id</span></code> URL to <code class="docutils literal notranslate"><span class="pre">station</span> <span class="pre">id</span></code> dicom header for scanner specific page</p></li>
+<li><p>could give more insite into or  modify DB.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.mrqart.http_run">
+<span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">http_run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.http_run" title="Link to this definition">¶</a></dt>
+<dd><p>Actually run web server, listening on <a class="reference internal" href="#mrqart.mrqart.HTTP_PORT" title="mrqart.mrqart.HTTP_PORT"><code class="xref py py-data docutils literal notranslate"><span class="pre">HTTP_PORT</span></code></a>. <a class="reference internal" href="#mrqart.mrqart.WebServer" title="mrqart.mrqart.WebServer"><code class="xref py py-class docutils literal notranslate"><span class="pre">WebServer</span></code></a> defines what is actually served (and dispatches to <a class="reference internal" href="#mrqart.mrqart.HttpIndex" title="mrqart.mrqart.HttpIndex"><code class="xref py py-class docutils literal notranslate"><span class="pre">HttpIndex</span></code></a>)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.mrqart.main">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.main" title="Link to this definition">¶</a></dt>
+<dd><p>Run all services on different threads.
+HTTP and inotify are forked. Websocket holds the main thread.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.mrqart.monitor_dirs">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">monitor_dirs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">watcher</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dcm_checker</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.monitor_dirs" title="Link to this definition">¶</a></dt>
+<dd><p>Perpetually wait for new dicom files.
+Broadcast new files to the browser over websockets.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.mrqart.session_from_fname">
+<span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">session_from_fname</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dcm_fname</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.session_from_fname" title="Link to this definition">¶</a></dt>
+<dd><p>We can use the file name to see if session name has changed.
+Don’t need to read the dicom header – if we know the station name.
+Can extract from <code class="docutils literal notranslate"><span class="pre">001_sequencenum_seriesnum</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ls</span> <span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">dicomstream</span><span class="o">/</span><span class="mf">20241016.</span><span class="n">MRQART_test</span><span class="mf">.24.10.16_16_50_16</span><span class="n">_DST_1</span><span class="mf">.3.12.2.1107.5.2.43.67078</span><span class="o">/|</span><span class="n">head</span>
+<span class="mf">001_000001_000001.</span><span class="n">dcm</span>
+<span class="o">...</span>
+<span class="mf">001_000017_000066.</span><span class="n">dcm</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dcm_fname</strong> (<em>PathLike</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.mrqart.track_ws">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">mrqart.mrqart.</span></span><span class="sig-name descname"><span class="pre">track_ws</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">websocket</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/mrqart.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.mrqart.track_ws" title="Link to this definition">¶</a></dt>
+<dd><p>Track connecting and disconnecting websocket connections.</p>
+<p>Stored in <a class="reference internal" href="#mrqart.mrqart.WS_CONNECTIONS" title="mrqart.mrqart.WS_CONNECTIONS"><code class="xref py py-data docutils literal notranslate"><span class="pre">WS_CONNECTIONS</span></code></a>.
+Might eventually need a dict to broadcast only to dicom specified station id.</p>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">mrrc-hdr-qa</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mrqart.html">mrqart</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mrqart.acq2sqlite.html">mrqart.acq2sqlite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.change_header.html">mrqart.change_header</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.compliance_check_html.html">mrqart.compliance_check_html</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.dcmmeta2tsv.html">mrqart.dcmmeta2tsv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.email_latest_flip.html">mrqart.email_latest_flip</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.html_email.html">mrqart.html_email</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mrqart.mrqart</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.CurSeqStation"><code class="docutils literal notranslate"><span class="pre">CurSeqStation</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mrqart.mrqart.CurSeqStation.hdr_check"><code class="docutils literal notranslate"><span class="pre">CurSeqStation.hdr_check</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mrqart.mrqart.CurSeqStation.update_isnew"><code class="docutils literal notranslate"><span class="pre">CurSeqStation.update_isnew()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.GetState"><code class="docutils literal notranslate"><span class="pre">GetState</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mrqart.mrqart.GetState.get"><code class="docutils literal notranslate"><span class="pre">GetState.get()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.HTTP_PORT"><code class="docutils literal notranslate"><span class="pre">HTTP_PORT</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.HttpIndex"><code class="docutils literal notranslate"><span class="pre">HttpIndex</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mrqart.mrqart.HttpIndex.get"><code class="docutils literal notranslate"><span class="pre">HttpIndex.get()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.STATE"><code class="docutils literal notranslate"><span class="pre">STATE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.WS_CONNECTIONS"><code class="docutils literal notranslate"><span class="pre">WS_CONNECTIONS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.WS_PORT"><code class="docutils literal notranslate"><span class="pre">WS_PORT</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.WebServer"><code class="docutils literal notranslate"><span class="pre">WebServer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.http_run"><code class="docutils literal notranslate"><span class="pre">http_run()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.monitor_dirs"><code class="docutils literal notranslate"><span class="pre">monitor_dirs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.session_from_fname"><code class="docutils literal notranslate"><span class="pre">session_from_fname()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.mrqart.track_ws"><code class="docutils literal notranslate"><span class="pre">track_ws()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.npac_email.html">mrqart.npac_email</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.seq_report.html">mrqart.seq_report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.template_checker.html">mrqart.template_checker</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.test_db.html">mrqart.test_db</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.web_report.html">mrqart.web_report</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mrrc_dbupdate.html">mrrc_dbupdate</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="mrqart.html">mrqart</a><ul>
+      <li>Previous: <a href="mrqart.html_email.html" title="previous chapter">mrqart.html_email</a></li>
+      <li>Next: <a href="mrqart.npac_email.html" title="next chapter">mrqart.npac_email</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, EH, WF.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/_autosummary/mrqart.mrqart.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

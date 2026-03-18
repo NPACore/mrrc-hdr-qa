@@ -1,0 +1,33 @@
+﻿mrqart
+======
+
+.. automodule:: mrqart
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      main
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   acq2sqlite
+   attempt
+   change_header
+   check_template
+   compliance_check_html
+   dcmmeta2tsv
+   email_latest_flip
+   example
+   html_email
+   mrqart
+   npac_email
+   seq_report
+   template_checker
+   test_db
+   web_report

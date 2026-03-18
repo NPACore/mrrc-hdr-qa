@@ -1,0 +1,13 @@
+mrqart.compliance\_check\_html
+==============================
+
+.. automodule:: mrqart.compliance_check_html
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      generate_html_report
+      load_template
+   

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>mrqart.email_latest_flip &#8212; mrrc-hdr-qa  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mrqart.html_email" href="mrqart.html_email.html" />
+    <link rel="prev" title="mrqart.dcmmeta2tsv" href="mrqart.dcmmeta2tsv.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-mrqart.email_latest_flip">
+<span id="mrqart-email-latest-flip"></span><h1>mrqart.email_latest_flip<a class="headerlink" href="#module-mrqart.email_latest_flip" title="Link to this heading">¶</a></h1>
+<p>Daily header-compliance summary email based on db.sqlite.</p>
+<p>Refactor note:
+- main() is now a thin orchestration layer.
+- Core logic is split into testable helpers:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>get_report_date()</p></li>
+<li><p>fetch_acquisitions()</p></li>
+<li><p>select_eligible_rows()</p></li>
+<li><p>_evaluate_row()         &lt;– per-row logic, extracted for testability</p></li>
+<li><p>evaluate_rows()</p></li>
+<li><p>format_seq_result()     &lt;– renders a single SeqSummary entry to lines</p></li>
+<li><p>build_email()</p></li>
+<li><p>send_all()</p></li>
+</ul>
+</div></blockquote>
+<p>Behavior should be identical to the previous version.</p>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.build_email" title="mrqart.email_latest_flip.build_email"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_email</span></code></a>(*, date_label, marquee_cols, ...)</p></td>
+<td><p>Render subject + body from aggregated results.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.build_jsonl_entries" title="mrqart.email_latest_flip.build_jsonl_entries"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_jsonl_entries</span></code></a>(*, date_label, ...[, ...])</p></td>
+<td><p>Build a list of JSONL entries for the web dashboard.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.compact_error_keys" title="mrqart.email_latest_flip.compact_error_keys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compact_error_keys</span></code></a>(errors, prefer_cols[, ...])</p></td>
+<td><p>errors is dict keyed by col name.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dbg</span></code>(msg)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.evaluate_rows" title="mrqart.email_latest_flip.evaluate_rows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evaluate_rows</span></code></a>(eligible_rows, *, sql, tc, ...)</p></td>
+<td><p>Core evaluation engine — calls _evaluate_row for each eligible row and aggregates results into seq_summary, missing_templates, and totals.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">fetch_acquisitions</span></code>(sql, yday_str)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_seen_date_for_seq</span></code>(sql, project, seqname)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_seen_from_template_by_count</span></code>(sql, ...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_expected_got</span></code>(col, exp, got)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.format_seq_result" title="mrqart.email_latest_flip.format_seq_result"><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_seq_result</span></code></a>(summary, *, marquee_cols)</p></td>
+<td><p>Render a single SeqSummary to a list of lines for inclusion in the email.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_series_003</span></code>(series)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.get_physicist_for_project" title="mrqart.email_latest_flip.get_physicist_for_project"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_physicist_for_project</span></code></a>(sql, project)</p></td>
+<td><p>Look up the assigned physicist for a project by matching the suffix after '^' in the acq_param Project name against the project table.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.get_report_date" title="mrqart.email_latest_flip.get_report_date"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_report_date</span></code></a>(env[, now])</p></td>
+<td><p>Determine reporting date:</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.is_interesting_sequence_with_blacklist" title="mrqart.email_latest_flip.is_interesting_sequence_with_blacklist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_interesting_sequence_with_blacklist</span></code></a>(...)</p></td>
+<td><p>Rules:</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_email_entries</span></code>(toml_path)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.load_reporting_config" title="mrqart.email_latest_flip.load_reporting_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_reporting_config</span></code></a>(toml_path)</p></td>
+<td><p>Load reporting settings from config/reporting.toml.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_line</span></code>(msg)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code>(*[, dry_run])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize_for_compare</span></code>(val)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_ta_seconds</span></code>(val)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">rebuild_templates</span></code>(sql)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.select_eligible_rows" title="mrqart.email_latest_flip.select_eligible_rows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">select_eligible_rows</span></code></a>(acq_rows, settings)</p></td>
+<td><p>&#64;param acq_rows  sql query results - acquisitions to check &#64;param settings  configuration from load_reporting_config                  passed to is_interesting_sequence_with_blacklist Apply:   - SeriesNumber &lt;= 200   - reporting filter (interesting/deny/blacklist) Returns:   - eligible rows   - study_counts_today: total eligible rows per project   - seq_counts_today: total eligible rows per (project, subid, seqname)   - study_subids_today: set of unique SubIDs seen per project (for session count)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.send_all" title="mrqart.email_latest_flip.send_all"><code class="xref py py-obj docutils literal notranslate"><span class="pre">send_all</span></code></a>(email_entries, subject, body, *[, ...])</p></td>
+<td><p>Send the same subject/body to all recipients.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">send_via_local_mail</span></code>(subject, body, recipient)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">series_int</span></code>(series)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">series_is_posthoc</span></code>(series)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">study_has_any_templates</span></code>(sql, project)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">yyyymmdd_to_iso</span></code>(s)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.ReportDate" title="mrqart.email_latest_flip.ReportDate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReportDate</span></code></a>(report_date, yday_str, date_label)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.RowResult" title="mrqart.email_latest_flip.RowResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RowResult</span></code></a>(key[, missing_template, ...])</p></td>
+<td><p>Result of evaluating a single acquisition row against its template.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.SeqSummary" title="mrqart.email_latest_flip.SeqSummary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SeqSummary</span></code></a>(key[, total, nonconforming, ...])</p></td>
+<td><p>Aggregated conformance data for a single (project, subid, seqname) key.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mrqart.email_latest_flip.Totals" title="mrqart.email_latest_flip.Totals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Totals</span></code></a>([total_seen_today, total_checked, ...])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.ReportDate">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">ReportDate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'datetime'</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yday_str</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'str'</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'str'</span></span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.ReportDate" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>report_date</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>yday_str</strong> (<em>str</em>)</p></li>
+<li><p><strong>date_label</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.RowResult">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">RowResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">missing_template</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_any_diff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_marquee_mismatch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errors_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_seen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">study_has_templates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.RowResult" title="Link to this definition">¶</a></dt>
+<dd><p>Result of evaluating a single acquisition row against its template.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>Tuple</em><em>[</em><em>str</em><em>, </em><em>str</em><em>, </em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>missing_template</strong> (<em>bool</em>)</p></li>
+<li><p><strong>has_any_diff</strong> (<em>bool</em>)</p></li>
+<li><p><strong>has_marquee_mismatch</strong> (<em>bool</em>)</p></li>
+<li><p><strong>errors_dict</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>first_seen</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>study_has_templates</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.SeqSummary">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">SeqSummary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nonconforming</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anydiff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">examples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_counts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.SeqSummary" title="Link to this definition">¶</a></dt>
+<dd><p>Aggregated conformance data for a single (project, subid, seqname) key.
+This is the canonical data structure for a single sequence check —
+populated by evaluate_rows and rendered by format_seq_result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>Tuple</em><em>[</em><em>str</em><em>, </em><em>str</em><em>, </em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>total</strong> (<em>int</em>)</p></li>
+<li><p><strong>nonconforming</strong> (<em>int</em>)</p></li>
+<li><p><strong>anydiff</strong> (<em>int</em>)</p></li>
+<li><p><strong>examples</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>mismatch_counts</strong> (<em>Dict</em><em>[</em><em>Tuple</em><em>[</em><em>str</em><em>, </em><em>str</em><em>, </em><em>str</em><em>]</em><em>, </em><em>int</em><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.Totals">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">Totals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_seen_today</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'int'</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_checked</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'int'</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_nonconforming</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'int'</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_anydiff</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'int'</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_missing_templates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'int'</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mia_actionable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'int'</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.Totals" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>total_seen_today</strong> (<em>int</em>)</p></li>
+<li><p><strong>total_checked</strong> (<em>int</em>)</p></li>
+<li><p><strong>total_nonconforming</strong> (<em>int</em>)</p></li>
+<li><p><strong>total_anydiff</strong> (<em>int</em>)</p></li>
+<li><p><strong>total_missing_templates</strong> (<em>int</em>)</p></li>
+<li><p><strong>mia_actionable</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.build_email">
+<span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">build_email</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">marquee_cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_seen_today</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_summary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">missing_templates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">totals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">study_subids_today</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">physicist_by_project</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.build_email" title="Link to this definition">¶</a></dt>
+<dd><p>Render subject + body from aggregated results.
+Nonconforming sequences are grouped by project; each acquisition is a
+flat bullet with diffs below. Project header shows session count today.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>date_label</strong> (<em>str</em>)</p></li>
+<li><p><strong>marquee_cols</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>total_seen_today</strong> (<em>int</em>)</p></li>
+<li><p><strong>seq_summary</strong> (<em>Dict</em><em>[</em><em>Tuple</em><em>[</em><em>str</em><em>, </em><em>str</em><em>, </em><em>str</em><em>]</em><em>, </em><a class="reference internal" href="#mrqart.email_latest_flip.SeqSummary" title="mrqart.email_latest_flip.SeqSummary"><em>SeqSummary</em></a><em>]</em>)</p></li>
+<li><p><strong>missing_templates</strong> (<em>Dict</em><em>[</em><em>Tuple</em><em>[</em><em>str</em><em>, </em><em>str</em><em>, </em><em>str</em><em>]</em><em>, </em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>totals</strong> (<a class="reference internal" href="#mrqart.email_latest_flip.Totals" title="mrqart.email_latest_flip.Totals"><em>Totals</em></a>)</p></li>
+<li><p><strong>study_subids_today</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>set</em><em>]</em>)</p></li>
+<li><p><strong>physicist_by_project</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>str</em><em> | </em><em>None</em><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Tuple</em>[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.build_jsonl_entries">
+<span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">build_jsonl_entries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_summary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">missing_templates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">marquee_cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">physicist_by_project</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.build_jsonl_entries" title="Link to this definition">¶</a></dt>
+<dd><p>Build a list of JSONL entries for the web dashboard.
+One entry per nonconforming sequence or missing template.
+Conforming sequences are skipped to keep the log lean.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>date_label</strong> (<em>str</em>)</p></li>
+<li><p><strong>seq_summary</strong> (<em>Dict</em><em>[</em><em>Tuple</em><em>[</em><em>str</em><em>, </em><em>str</em><em>, </em><em>str</em><em>]</em><em>, </em><a class="reference internal" href="#mrqart.email_latest_flip.SeqSummary" title="mrqart.email_latest_flip.SeqSummary"><em>SeqSummary</em></a><em>]</em>)</p></li>
+<li><p><strong>missing_templates</strong> (<em>Dict</em><em>[</em><em>Tuple</em><em>[</em><em>str</em><em>, </em><em>str</em><em>, </em><em>str</em><em>]</em><em>, </em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>marquee_cols</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>physicist_by_project</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>str</em><em> | </em><em>None</em><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>List</em>[<em>Dict</em>[str, <em>Any</em>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.compact_error_keys">
+<span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">compact_error_keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">errors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefer_cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_items</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.compact_error_keys" title="Link to this definition">¶</a></dt>
+<dd><p>errors is dict keyed by col name. prefer marquee cols + TA first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>errors</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p></li>
+<li><p><strong>prefer_cols</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>max_items</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.evaluate_rows">
+<span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">evaluate_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eligible_rows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sql</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">marquee_cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">study_counts_today</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_counts_today</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">study_has_templates_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">study_has_any_templates&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_seen_from_templates_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">first_seen_from_template_by_count&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_seen_from_acq_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">first_seen_date_for_seq&gt;</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.evaluate_rows" title="Link to this definition">¶</a></dt>
+<dd><p>Core evaluation engine — calls _evaluate_row for each eligible row
+and aggregates results into seq_summary, missing_templates, and totals.</p>
+<p>SequenceType is always added to marquee_set here regardless of what is
+in reporting.toml, so SequenceType changes are always caught as nonconforming.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eligible_rows</strong> (<em>Iterable</em><em>[</em><em>Row</em><em>]</em>)</p></li>
+<li><p><strong>sql</strong> (<em>Connection</em>)</p></li>
+<li><p><strong>tc</strong> (<a class="reference internal" href="mrqart.template_checker.html#mrqart.template_checker.TemplateChecker" title="mrqart.template_checker.TemplateChecker"><em>TemplateChecker</em></a>)</p></li>
+<li><p><strong>marquee_cols</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>study_counts_today</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em>)</p></li>
+<li><p><strong>seq_counts_today</strong> (<em>Mapping</em><em>[</em><em>Tuple</em><em>[</em><em>str</em><em>, </em><em>str</em><em>, </em><em>str</em><em>]</em><em>, </em><em>int</em><em>]</em>)</p></li>
+<li><p><strong>study_has_templates_fn</strong> (<em>Callable</em><em>[</em><em>[</em><em>Connection</em><em>, </em><em>str</em><em>]</em><em>, </em><em>bool</em><em>]</em>)</p></li>
+<li><p><strong>first_seen_from_templates_fn</strong> (<em>Callable</em><em>[</em><em>[</em><em>Connection</em><em>, </em><em>str</em><em>, </em><em>str</em><em>]</em><em>, </em><em>str</em><em> | </em><em>None</em><em>]</em>)</p></li>
+<li><p><strong>first_seen_from_acq_fn</strong> (<em>Callable</em><em>[</em><em>[</em><em>Connection</em><em>, </em><em>str</em><em>, </em><em>str</em><em>]</em><em>, </em><em>str</em><em> | </em><em>None</em><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Tuple</em>[<em>Dict</em>[<em>Tuple</em>[str, str, str], <a class="reference internal" href="#mrqart.email_latest_flip.SeqSummary" title="mrqart.email_latest_flip.SeqSummary"><em>SeqSummary</em></a>], <em>Dict</em>[<em>Tuple</em>[str, str, str], <em>Dict</em>[str, <em>Any</em>]], <a class="reference internal" href="#mrqart.email_latest_flip.Totals" title="mrqart.email_latest_flip.Totals"><em>Totals</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.format_seq_result">
+<span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">format_seq_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">summary</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">marquee_cols</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.format_seq_result" title="Link to this definition">¶</a></dt>
+<dd><p>Render a single SeqSummary to a list of lines for inclusion in the email.
+Each nonconforming acquisition is a flat bullet: subid/seqname.acqnum
+with diffs indented below. No fraction or ex: line — the bullet IS the example.
+Bullets with no displayable diffs (e.g. only SequenceType) are silently skipped.
+Can be called independently for testing or iteration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>summary</strong> (<a class="reference internal" href="#mrqart.email_latest_flip.SeqSummary" title="mrqart.email_latest_flip.SeqSummary"><em>SeqSummary</em></a>)</p></li>
+<li><p><strong>marquee_cols</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>List</em>[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.get_physicist_for_project">
+<span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">get_physicist_for_project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sql</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.get_physicist_for_project" title="Link to this definition">¶</a></dt>
+<dd><p>Look up the assigned physicist for a project by matching the suffix
+after ‘^’ in the acq_param Project name against the project table.
+Case-insensitive. Returns None if no match or no physicist assigned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sql</strong> (<em>Connection</em>)</p></li>
+<li><p><strong>project</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.get_report_date">
+<span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">get_report_date</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">now</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.get_report_date" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Determine reporting date:</dt><dd><ul class="simple">
+<li><p>MRQART_DATE override supports YYYYMMDD or YYYY-MM-DD</p></li>
+<li><p>default: yesterday relative to now</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>now</strong> (<em>datetime</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#mrqart.email_latest_flip.ReportDate" title="mrqart.email_latest_flip.ReportDate"><em>ReportDate</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.is_interesting_sequence_with_blacklist">
+<span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">is_interesting_sequence_with_blacklist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seqname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seqtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.is_interesting_sequence_with_blacklist" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Rules:</dt><dd><ol class="arabic simple">
+<li><p>If SequenceName contains any interesting substring, include.</p></li>
+<li><p>Else if disable_blacklist is True, include.</p></li>
+<li><p>Else if SequenceType prefix is in blacklist, exclude.</p></li>
+<li><p>Else include.</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seqname</strong> (<em>str</em>)</p></li>
+<li><p><strong>seqtype</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>settings</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.load_reporting_config">
+<span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">load_reporting_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">toml_path</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.load_reporting_config" title="Link to this definition">¶</a></dt>
+<dd><p>Load reporting settings from config/reporting.toml.</p>
+<dl>
+<dt>Expected structure:</dt><dd><p>[filter]
+interesting_substrings = […]
+deny_substrings = […]
+blacklist_seqtype_prefixes = […]
+disable_blacklist = bool
+blacklist_study_regex = [“^Body”, “^7TB”]</p>
+<p>[compare]
+marquee_cols = […]</p>
+</dd>
+</dl>
+<p>Note: SequenceType is always added to marquee_set at evaluation time
+(in evaluate_rows) regardless of what is listed here.
+BWP and PixelResol are not forced but should be added to reporting.toml
+if you want them to get their own detail lines in the email.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>toml_path</strong> (<em>Path</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Dict</em>[str, <em>Any</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.select_eligible_rows">
+<span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">select_eligible_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">acq_rows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.select_eligible_rows" title="Link to this definition">¶</a></dt>
+<dd><p>&#64;param acq_rows  sql query results - acquisitions to check
+&#64;param settings  configuration from load_reporting_config</p>
+<blockquote>
+<div><p>passed to is_interesting_sequence_with_blacklist</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Apply:</dt><dd><ul class="simple">
+<li><p>SeriesNumber &lt;= 200</p></li>
+<li><p>reporting filter (interesting/deny/blacklist)</p></li>
+</ul>
+</dd>
+<dt>Returns:</dt><dd><ul class="simple">
+<li><p>eligible rows</p></li>
+<li><p>study_counts_today: total eligible rows per project</p></li>
+<li><p>seq_counts_today: total eligible rows per (project, subid, seqname)</p></li>
+<li><p>study_subids_today: set of unique SubIDs seen per project (for session count)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>acq_rows</strong> (<em>Iterable</em><em>[</em><em>Row</em><em>]</em>)</p></li>
+<li><p><strong>settings</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Tuple</em>[<em>List</em>[<em>Row</em>], <em>Dict</em>[str, int], <em>Dict</em>[<em>Tuple</em>[str, str, str], int], <em>Dict</em>[str, set]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mrqart.email_latest_flip.send_all">
+<span class="sig-prename descclassname"><span class="pre">mrqart.email_latest_flip.</span></span><span class="sig-name descname"><span class="pre">send_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">email_entries</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">send_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">send_via_local_mail&gt;</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/NPACore/mrrc-hdr-qa/blob/main/mrqart/email_latest_flip.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mrqart.email_latest_flip.send_all" title="Link to this definition">¶</a></dt>
+<dd><p>Send the same subject/body to all recipients.
+Returns True if any failures occurred.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>email_entries</strong> (<em>Iterable</em><em>[</em><em>Mapping</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em>)</p></li>
+<li><p><strong>subject</strong> (<em>str</em>)</p></li>
+<li><p><strong>body</strong> (<em>str</em>)</p></li>
+<li><p><strong>send_fn</strong> (<em>Callable</em><em>[</em><em>[</em><em>str</em><em>, </em><em>str</em><em>, </em><em>str</em><em>]</em><em>, </em><em>bool</em><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">mrrc-hdr-qa</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mrqart.html">mrqart</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mrqart.acq2sqlite.html">mrqart.acq2sqlite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.change_header.html">mrqart.change_header</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.compliance_check_html.html">mrqart.compliance_check_html</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.dcmmeta2tsv.html">mrqart.dcmmeta2tsv</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mrqart.email_latest_flip</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.ReportDate"><code class="docutils literal notranslate"><span class="pre">ReportDate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.RowResult"><code class="docutils literal notranslate"><span class="pre">RowResult</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.SeqSummary"><code class="docutils literal notranslate"><span class="pre">SeqSummary</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.Totals"><code class="docutils literal notranslate"><span class="pre">Totals</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.build_email"><code class="docutils literal notranslate"><span class="pre">build_email()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.build_jsonl_entries"><code class="docutils literal notranslate"><span class="pre">build_jsonl_entries()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.compact_error_keys"><code class="docutils literal notranslate"><span class="pre">compact_error_keys()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.evaluate_rows"><code class="docutils literal notranslate"><span class="pre">evaluate_rows()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.format_seq_result"><code class="docutils literal notranslate"><span class="pre">format_seq_result()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.get_physicist_for_project"><code class="docutils literal notranslate"><span class="pre">get_physicist_for_project()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.get_report_date"><code class="docutils literal notranslate"><span class="pre">get_report_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.is_interesting_sequence_with_blacklist"><code class="docutils literal notranslate"><span class="pre">is_interesting_sequence_with_blacklist()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.load_reporting_config"><code class="docutils literal notranslate"><span class="pre">load_reporting_config()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.select_eligible_rows"><code class="docutils literal notranslate"><span class="pre">select_eligible_rows()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mrqart.email_latest_flip.send_all"><code class="docutils literal notranslate"><span class="pre">send_all()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.html_email.html">mrqart.html_email</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.mrqart.html">mrqart.mrqart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.npac_email.html">mrqart.npac_email</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.seq_report.html">mrqart.seq_report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.template_checker.html">mrqart.template_checker</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.test_db.html">mrqart.test_db</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mrqart.web_report.html">mrqart.web_report</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mrrc_dbupdate.html">mrrc_dbupdate</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="mrqart.html">mrqart</a><ul>
+      <li>Previous: <a href="mrqart.dcmmeta2tsv.html" title="previous chapter">mrqart.dcmmeta2tsv</a></li>
+      <li>Next: <a href="mrqart.html_email.html" title="next chapter">mrqart.html_email</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, EH, WF.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/_autosummary/mrqart.email_latest_flip.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

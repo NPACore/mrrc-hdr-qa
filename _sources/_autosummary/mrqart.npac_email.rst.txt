@@ -1,0 +1,12 @@
+mrqart.npac\_email
+==================
+
+.. automodule:: mrqart.npac_email
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      decrypt_creds
+   

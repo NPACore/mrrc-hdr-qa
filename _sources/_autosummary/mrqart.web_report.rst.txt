@@ -1,0 +1,13 @@
+mrqart.web\_report
+==================
+
+.. automodule:: mrqart.web_report
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      append_entries
+      render_html
+   
