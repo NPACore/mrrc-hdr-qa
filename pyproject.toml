@@ -5,9 +5,8 @@ description = "MR QA tools"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "pydicom>=2.3",
+  "pydicom==2.4.2",
   "nibabel>=5.0",
-  "dicom-parser",
   "Jinja2>=3.1",
   "pyrage",
   "websockets",
