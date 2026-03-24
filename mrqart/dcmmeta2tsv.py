@@ -259,8 +259,8 @@ class DicomTagReader:
                 continue
 
             same_as_prev = True
-            if all_tags[i].get("TE") not in tag.get("TE", "").split(","):
-                tag["TE"] = tag["TE"] + "," + all_tags[i]["TE"]
+            if str(all_tags[i].get("TE", "")) not in str(tag.get("TE", "")).split(","):
+                tag["TE"] = str(tag["TE"]) + "," + str(all_tags[i]["TE"])
                 same_as_prev = False
             # TODO: May want to combine/check other tags?
 
