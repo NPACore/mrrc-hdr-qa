@@ -59,7 +59,7 @@ def find_first_dicoms(session_root: PathLike) -> list[list[PathLike]]:
 
         if dcms:
             logging.debug("found first dcm '%s'", dcms[0])
-            first_dicoms.append(dcms)
+            first_dicoms.append([d for d in dcms if d])
         else:
             logging.warning("no dicoms found in %s", seqdir)
     return first_dicoms
