@@ -121,7 +121,7 @@ def build_html_body(
                     rowspan = len(error_tuples)
                     project_rows += f"""
         <tr>
-            <td rowspan="{rowspan}" style="padding:8px 12px;color:#94a3b8;vertical-align:top;border-top:1px solid #1f2937;">{"<a href='" + xnat_url + "' style='color:#94a3b8;'>" + subid + "</a>" if xnat_url else subid}</td>
+            <td rowspan="{rowspan}" style="padding:8px 12px;color:#94a3b8;vertical-align:top;border-top:1px solid #1f2937;">{"<a href='" + xnat_url + "' style='color:#60a5fa;text-decoration:underline;cursor:pointer;'>" + subid + "</a>" if xnat_url else subid}</td>
             <td rowspan="{rowspan}" style="padding:8px 12px;vertical-align:top;border-top:1px solid #1f2937;">{seqname}
                 {"<br><code style='font-size:10px;color:#64748b;user-select:all;'>" + path_str + "</code>" if path_str else ""}
             </td>
