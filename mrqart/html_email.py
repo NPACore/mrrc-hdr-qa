@@ -71,6 +71,17 @@ def build_html_body(
         else "❌"
     )
 
+    # XNAT session URL lookup
+    from .xnat_lookup import lookup_session_urls
+
+    unique_pairs = list(
+        {(key[0], key[1]) for key in seq_summary if seq_summary[key].nonconforming > 0}
+    )
+    try:
+        xnat_urls = lookup_session_urls(unique_pairs)
+    except Exception:
+        xnat_urls = {}
+
     # group nonconforming by project
     by_project: Dict[str, List[SeqKey]] = defaultdict(list)
     for key in sorted(seq_summary.keys()):
@@ -104,12 +115,13 @@ def build_html_body(
                         project.split("^", 1)[-1] if "^" in project else project
                     )
                     path_str = f"{proj_short}/{subid}/{seq_part}"
+            xnat_url = xnat_urls.get((project, subid), "")
             for i, (col, exp, got) in enumerate(error_tuples):
                 if i == 0:
                     rowspan = len(error_tuples)
                     project_rows += f"""
         <tr>
-            <td rowspan="{rowspan}" style="padding:8px 12px;color:#94a3b8;vertical-align:top;border-top:1px solid #1f2937;">{subid}</td>
+            <td rowspan="{rowspan}" style="padding:8px 12px;color:#94a3b8;vertical-align:top;border-top:1px solid #1f2937;">{"<a href='" + xnat_url + "' style='color:#94a3b8;'>" + subid + "</a>" if xnat_url else subid}</td>
             <td rowspan="{rowspan}" style="padding:8px 12px;vertical-align:top;border-top:1px solid #1f2937;">{seqname}
                 {"<br><code style='font-size:10px;color:#64748b;user-select:all;'>" + path_str + "</code>" if path_str else ""}
             </td>

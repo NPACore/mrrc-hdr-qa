@@ -31,3 +31,4 @@ uv.lock
 .*idea*
 studies.xlsx
 mrqart/._*
+config/mrrc-xnat.cfg
