@@ -399,7 +399,10 @@ def rebuild_templates(sql: sqlite3.Connection) -> None:
     if not TEMPLATE_SQL.exists():
         raise FileNotFoundError(f"Missing SQL: {TEMPLATE_SQL}")
     dbg(f"rebuilding template_by_count from {TEMPLATE_SQL.name}")
-    sql.executescript(TEMPLATE_SQL.read_text())
+    for stmt in TEMPLATE_SQL.read_text().split(";"):
+        stmt = stmt.strip()
+        if stmt:
+            sql.execute(stmt)
     sql.commit()
     log_line("template_by_count rebuilt")
 
