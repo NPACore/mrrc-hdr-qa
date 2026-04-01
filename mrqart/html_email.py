@@ -9,6 +9,7 @@ If not set, nothing is sent.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from email.header import Header
@@ -33,6 +34,42 @@ def _fmt_val(col: str, val: Any) -> str:
         except Exception:
             return str(val)
     return str(val)
+
+
+def get_failure_streaks(log_path: Path) -> Dict[Tuple[str, str, str], int]:
+    """
+    Read JSONL log and count how many days each (project, sequence, parameter)
+    combination has appeared as nonconforming.
+    Returns dict mapping (project, sequence, parameter) -> day count.
+    """
+    if not log_path.exists():
+        return {}
+
+    # collect (project, sequence, parameter) per date
+    by_date: Dict[str, set] = {}
+    with log_path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            date = r.get("acq_ts", "")
+            project = r.get("project", "")
+            sequence = r.get("sequence", "")
+            for error in r.get("errors", []):
+                param = error.split(":")[0].strip()
+                by_date.setdefault(date, set()).add((project, sequence, param))
+
+    # count days per (project, sequence, parameter)
+    counts: Dict[Tuple[str, str, str], int] = {}
+    for date_set in by_date.values():
+        for key in date_set:
+            counts[key] = counts.get(key, 0) + 1
+
+    return counts
 
 
 def load_html_email_entries(toml_path: Path) -> List[Dict[str, str]]:
@@ -82,6 +119,10 @@ def build_html_body(
     except Exception:
         xnat_urls = {}
 
+    # failure streak counts from JSONL log
+    web_log = Path(os.environ.get("MRQART_WEB_LOG", ""))
+    streaks = get_failure_streaks(web_log) if web_log.name else {}
+
     # group nonconforming by project
     by_project: Dict[str, List[SeqKey]] = defaultdict(list)
     for key in sorted(seq_summary.keys()):
@@ -117,6 +158,7 @@ def build_html_body(
                     path_str = f"{proj_short}/{subid}/{seq_part}"
             xnat_url = xnat_urls.get((project, subid), "")
             for i, (col, exp, got) in enumerate(error_tuples):
+                streak = streaks.get((project, seqname, col), 0)
                 if i == 0:
                     rowspan = len(error_tuples)
                     project_rows += f"""
@@ -128,6 +170,7 @@ def build_html_body(
             <td style="padding:4px 12px;color:#94a3b8;border-top:1px solid #1f2937;">{col}</td>
             <td style="padding:4px 12px;border-top:1px solid #1f2937;">{_fmt_val(col, exp)}</td>
             <td style="padding:4px 12px;color:#ef4444;border-top:1px solid #1f2937;">{_fmt_val(col, got)}</td>
+            <td style="padding:4px 12px;color:#f59e0b;border-top:1px solid #1f2937;">{streak if streak > 1 else ""}</td>
         </tr>"""
                 else:
                     project_rows += f"""
@@ -135,11 +178,12 @@ def build_html_body(
             <td style="padding:4px 12px;color:#94a3b8;">{col}</td>
             <td style="padding:4px 12px;">{_fmt_val(col, exp)}</td>
             <td style="padding:4px 12px;color:#ef4444;">{_fmt_val(col, got)}</td>
+            <td style="padding:4px 12px;color:#f59e0b;">{streak if streak > 1 else ""}</td>
         </tr>"""
         if not project_rows:
             continue
         rows_html += f"""
-        <tr><td colspan="5" style="background:#1e293b;padding:8px 12px;font-weight:600;color:#60a5fa;">
+        <tr><td colspan="6" style="background:#1e293b;padding:8px 12px;font-weight:600;color:#60a5fa;">
             {project}{physicist_str}
         </td></tr>"""
         rows_html += project_rows
@@ -167,6 +211,7 @@ def build_html_body(
             <th style="padding:8px 12px;text-align:left;">Parameter</th>
             <th style="padding:8px 12px;text-align:left;">Expected</th>
             <th style="padding:8px 12px;text-align:left;color:#ef4444;">Got</th>
+            <th style="padding:8px 12px;text-align:left;color:#f59e0b;">Days</th>
         </tr>
     </thead>
     <tbody>
