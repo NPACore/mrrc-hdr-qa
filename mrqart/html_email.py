@@ -220,7 +220,6 @@ def build_html_body(
 </table>'''}
 
 <p style="color:#94a3b8;font-size:12px;margin-top:20px;">
-    Full interactive report attached. — MRQART
 </p>
 </div>
 </body>
