@@ -87,8 +87,8 @@ def test_format_expected_got_fa_no_delta_when_equalish():
 def test_series_helpers():
     assert format_series_003("9") == "009"
     assert format_series_003(12) == "012"
-    assert series_is_posthoc("201") is True
-    assert series_is_posthoc("200") is False
+    assert series_is_posthoc("101") is True
+    assert series_is_posthoc("100") is False
     assert series_is_posthoc("banana") is False
 
 
@@ -173,7 +173,7 @@ def test_select_eligible_rows_counts_and_filters():
             "SubID": "S1",
             "SequenceName": "task_rest",
             "SequenceType": "func_bold",
-            "SeriesNumber": "201",  # posthoc -> excluded
+            "SeriesNumber": "101",  # posthoc -> excluded
         },
         {
             "Project": "Brain^X",
