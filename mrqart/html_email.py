@@ -159,6 +159,11 @@ def build_html_body(
             xnat_url = xnat_urls.get((project, subid), "")
             for i, (col, exp, got) in enumerate(error_tuples):
                 streak = streaks.get((project, seqname, col), 0)
+                mailto_subject = (
+                    f"Template update request: {proj_short}/{seqname}/{col}"
+                )
+                mailto_body = f"Project: {project}%0ASequence: {seqname}%0AParameter: {col}%0AExpected: {exp}%0AGot: {got}%0A%0APlease approve updating the template."
+                mailto_url = f"mailto:hudlowe@upmc.edu?subject={mailto_subject}&body={mailto_body}"
                 if i == 0:
                     rowspan = len(error_tuples)
                     project_rows += f"""
@@ -171,6 +176,7 @@ def build_html_body(
             <td style="padding:4px 12px;border-top:1px solid #1f2937;">{_fmt_val(col, exp)}</td>
             <td style="padding:4px 12px;color:#ef4444;border-top:1px solid #1f2937;">{_fmt_val(col, got)}</td>
             <td style="padding:4px 12px;color:#f59e0b;border-top:1px solid #1f2937;">{streak if streak > 1 else ""}</td>
+            <td style="padding:4px 12px;border-top:1px solid #1f2937;"><a href="{mailto_url}" style="color:#60a5fa;font-size:11px;">↗ update</a></td>
         </tr>"""
                 else:
                     project_rows += f"""
@@ -179,11 +185,12 @@ def build_html_body(
             <td style="padding:4px 12px;">{_fmt_val(col, exp)}</td>
             <td style="padding:4px 12px;color:#ef4444;">{_fmt_val(col, got)}</td>
             <td style="padding:4px 12px;color:#f59e0b;">{streak if streak > 1 else ""}</td>
+            <td style="padding:4px 12px;border-top:1px solid #1f2937;"><a href="{mailto_url}" style="color:#60a5fa;font-size:11px;">↗ update</a></td>
         </tr>"""
         if not project_rows:
             continue
         rows_html += f"""
-        <tr><td colspan="6" style="background:#1e293b;padding:8px 12px;font-weight:600;color:#60a5fa;">
+        <tr><td colspan="7" style="background:#1e293b;padding:8px 12px;font-weight:600;color:#60a5fa;">
             {project}{physicist_str}
         </td></tr>"""
         rows_html += project_rows
@@ -212,6 +219,7 @@ def build_html_body(
             <th style="padding:8px 12px;text-align:left;">Expected</th>
             <th style="padding:8px 12px;text-align:left;color:#ef4444;">Got</th>
             <th style="padding:8px 12px;text-align:left;color:#f59e0b;">Days</th>
+            <th style="padding:8px 12px;text-align:left;">Template Update</th>
         </tr>
     </thead>
     <tbody>
