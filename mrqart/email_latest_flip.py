@@ -115,7 +115,7 @@ def send_via_local_mail(subject: str, body: str, recipient: str) -> bool:
     try:
         # check=True raises on non-zero exit, so if we reach the return we succeeded.
         subprocess.run(
-            ["mail", "-s", subject, recipient],
+            ["mail", "-s", subject, "-r", "no-reply@upmc.edu", recipient],
             input=body.encode("utf-8"),
             check=True,
         )
