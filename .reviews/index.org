@@ -1,0 +1,115 @@
+* Bugs/Feats
+** TODO org-agenda (vs-code 'VOrg' or emacs)
+  * shortcuts for toggling status
+  * updating deadline
+  * clocking time
+  * navigate headers
+
+** TODO skip seqnum > 100
+CREATED: [2026-04-01 Wed]
+  * those sequences are probably scanner derivatives
+
+** TODO day counts
+CREATED: [2026-04-01 Wed]
+  * query for count of bad
+  * how many good?
+  * ways to show various info (total bad, date range of bad, etc)
+
+** TODO html emails stuck on 03-09?
+DEADLINE: <2026-04-08 Wed> CREATED: [2026-04-01 Wed]
+  "MRQART Header Compliance — 2026-03-09"
+
+  cerebro handles but not rhea. (maybe fixed)
+** TODO emails from "@terminator" (rhea)
+DEADLINE: <2026-04-08 Wed> CREATED: [2026-04-01 Wed]
+remove from cron
+  * cerebro mailing failing?
+  * test smtp email or mailx; cron log
+
+** TODO test for multiecho
+DEADLINE: <2026-04-08 Wed> CREATED: [2026-04-01 Wed]
+confirm mutliecho compare is working with pytest
+
+** TODO research xnat forms and data structures
+CREATED: [2026-04-01 Wed]
+  * deep link to link to update template
+  * store/flag non-conforming (maybe not user facing, but for phsysists)
+
+** TODO Support Multiple templates
+CREATED: [2026-04-01 Wed]
+  * range of values
+  * list of good templates
+  * update templateChecker?
+    - new table for explicitly accepted templates?
+
+** WAIT PHP button?
+CREATED: [2026-04-01 Wed]
+  * xnat can do instead?
+  * not hard code -- send notification? to start 
+    * bad to have in an email
+  * change log/provenance -- track history
+
+** DONE confirm regenerating
+#+begin_src bash :dir /ssh:npac@mrrc-cerebro2:
+ sqlite3 -readonly ~/src/mrrc-hdr-qa/db.sqlite '
+ select project, max(acqdate) latest
+ from acq a join acq_param p on a.param_id = p.rowid
+ group by Project
+ order by latest desc limit 10'
+
+#+end_src
+
+#+RESULTS:
+| Brain^coh-ppg4    | 20260331 |
+| Brain^CATOV-BRAIN | 20260331 |
+| Body^ALT-IND      | 20260331 |
+| 7TBRP^WPC-9277    | 20260331 |
+| 7TBRP^WPC-8711    | 20260331 |
+| 7TBRP^WPC-8482    | 20260331 |
+| Brain^wpc-9279    | 20260330 |
+| Brain^wpc-9239    | 20260330 |
+| Brain^wpc-8791    | 20260330 |
+| Brain^wpc-8606    | 20260330 |
+
+** DONE confirm multiecho in db
+#+begin_src bash :dir /ssh:npac@mrrc-cerebro2: :results verbatim
+ sqlite3 -readonly ~/src/mrrc-hdr-qa/db.sqlite "
+ select acqdate,sequencename, TE
+ from acq a join acq_param p on a.param_id = p.rowid
+ where TE like '%,%'
+ order by acqdate desc limit 10
+"
+#+end_src
+
+#+RESULTS:
+#+begin_example
+20260331|Resting State fMRI_SBRef|38.76,64.32
+20260331|Resting State fMRI|13.2,38.76,64.32
+20260331|B1 Map 350V|3.06,4.93,7,0
+20260331|B1 Map 350V|3.06,4.93,7,0
+20260331|SWI_Images|8.16,18.35
+20260331|B1 Map 350V|3.06,4.93,7,0
+20260331|B1 Map 350V|3.06,4.93,7,0
+20260331|B1 Map 350V|3.06,4.93,7,0
+20260331|B1 Map 350V|3.06,4.93,7,0
+20260330|StaGe_4echo_27FA_1.34TH-IPAT2X2|7.67,15
+#+end_example
+
+
+* Colophon 
+
+** Emacs setup
+
+*** Annotations
+
+#+begin_src elisp
+(use-package 'annotate)
+#+end_src
+
+*** gnatt
+explored [2026-04-01 Wed] but not setup
+#+begin_src elisp
+(use-package elgantt
+  :vc (:url "https://github.com/legalnonsense/elgantt.git"
+       :rev :newest))
+#+end_src
