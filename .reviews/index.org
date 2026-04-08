@@ -5,35 +5,56 @@
   * clocking time
   * navigate headers
 
-** TODO skip seqnum > 100
-CREATED: [2026-04-01 Wed]
-  * those sequences are probably scanner derivatives
+** TODO unique names of sequences not checked.
+CREATED: [2026-04-08 Wed]
+Enumerate what's excluded at bottom of mail as a check against accidentally ignoring something important.
+Give physicists a chance to catch what should be include
+
+** TODO fixed template table. check first
+for email updated template change
+
 
 ** TODO day counts
 CREATED: [2026-04-01 Wed]
   * query for count of bad
+     select count(*) as n from acq where TR = $wrong and seqname = % and project = %
   * how many good?
   * ways to show various info (total bad, date range of bad, etc)
 
-** TODO html emails stuck on 03-09?
+** TODO move emails from "@terminator" (rhea) to cerebro
 DEADLINE: <2026-04-08 Wed> CREATED: [2026-04-01 Wed]
-  "MRQART Header Compliance — 2026-03-09"
-
-  cerebro handles but not rhea. (maybe fixed)
-** TODO emails from "@terminator" (rhea)
-DEADLINE: <2026-04-08 Wed> CREATED: [2026-04-01 Wed]
+ - sendmail installed on cerebro2
 remove from cron
   * cerebro mailing failing?
   * test smtp email or mailx; cron log
+
+*** sendmail
+UPDATED: [2026-04-08 Wed]
+
+  * installed sendmail. might need more.
+  * python3 -m smtplib '.....'  into a helper script from fw-mrrcqa
+    - if fails, need upmc help; move to zeus? or sendmail with zeus as host/smtp server
+    - okay to be upmc only (andrew R and physicists only)
+
+** TODO automatic per session
+CREATED: [2026-04-08 Wed]
+Can xnat run protocol QC at acq end?
 
 ** TODO test for multiecho
 DEADLINE: <2026-04-08 Wed> CREATED: [2026-04-01 Wed]
 confirm mutliecho compare is working with pytest
 
+
 ** TODO research xnat forms and data structures
 CREATED: [2026-04-01 Wed]
   * deep link to link to update template
-  * store/flag non-conforming (maybe not user facing, but for phsysists)
+  * store/flag non-conforming (maybe not user facing, but for physicists)
+
+*** custom fields
+UPDATED: [2026-04-08 Wed]
+Eventually want to store pass/fail and non-compliant fields in XNAT db
+current MRRC xnat too old for custom fields. need admin/write access anyway
+
 
 ** TODO Support Multiple templates
 CREATED: [2026-04-01 Wed]
@@ -42,12 +63,16 @@ CREATED: [2026-04-01 Wed]
   * update templateChecker?
     - new table for explicitly accepted templates?
 
-** WAIT PHP button?
+** DONE PHP button? - no. use mailto
 CREATED: [2026-04-01 Wed]
   * xnat can do instead?
   * not hard code -- send notification? to start 
     * bad to have in an email
   * change log/provenance -- track history
+  * <2026-04-08 Wed> using mailto link instead
+** DONE skip seqnum > 100
+CREATED: [2026-04-01 Wed]
+  * those sequences are probably scanner derivatives
 
 ** DONE confirm regenerating
 #+begin_src bash :dir /ssh:npac@mrrc-cerebro2:
