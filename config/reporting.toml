@@ -19,7 +19,7 @@ blacklist_study_regex = ["^Body", "^7T"]
 # Exclude if SequenceName contains any of these (case-insensitive).
 # This overrides "interesting_substrings" and also applies when disable_blacklist=true.
 deny_substrings = [
-  "localizer", "scout", "3 plane", "3-plane", "survey"
+  "localizer", "scout", "3 plane", "3-plane", "survey", "Perfusion_Weighted"
 ]
 
 # If empty, no blacklist filtering.
