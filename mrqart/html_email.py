@@ -256,7 +256,7 @@ def send_html_email(
                 "-s",
                 subject.encode("ascii", "ignore").decode(),
                 "-a",
-                "Content-Type: text/html",
+                'Content-Type: text/html; charset="UTF-8"',
                 to_addr,
             ],
             input=html_body.encode("utf-8"),
