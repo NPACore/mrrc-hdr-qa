@@ -98,6 +98,7 @@ def build_html_body(
     totals: Totals,
     physicist_by_project: Mapping[str, Optional[str]],
     marquee_cols: List[str],
+    excluded_by_deny: set = set(),
 ) -> str:
     """Build a condensed HTML email body."""
     from collections import defaultdict
@@ -194,7 +195,7 @@ def build_html_body(
             {project}{physicist_str}
         </td></tr>"""
         rows_html += project_rows
-
+    excluded_seqnames = ", ".join(sorted({s for _, s in excluded_by_deny}))
     html = f"""<!doctype html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -226,9 +227,7 @@ def build_html_body(
         {rows_html}
     </tbody>
 </table>'''}
-
-<p style="color:#94a3b8;font-size:12px;margin-top:20px;">
-</p>
+{"" if not excluded_by_deny else f'<p style="color:#64748b;font-size:11px;margin-top:20px;">🚫 Excluded (not checked): {excluded_seqnames}</p>'}
 </div>
 </body>
 </html>"""

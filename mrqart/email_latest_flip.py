@@ -599,6 +599,7 @@ def select_eligible_rows(
     study_counts_today: Dict[str, int] = defaultdict(int)
     seq_counts_today: Dict[SeqKey, int] = defaultdict(int)
     study_subids_today: Dict[str, set] = defaultdict(set)
+    excluded_by_deny: set = set()
 
     for row in acq_rows:
         if series_is_posthoc(row["SeriesNumber"]):
@@ -619,6 +620,7 @@ def select_eligible_rows(
             continue
 
         if not is_interesting_sequence_with_blacklist(seqname, seqtype, settings):
+            excluded_by_deny.add((project, seqname))
             continue
 
         eligible.append(row)
@@ -627,7 +629,13 @@ def select_eligible_rows(
         seq_counts_today[key] += 1
         study_subids_today[project].add(subid)
 
-    return eligible, study_counts_today, seq_counts_today, study_subids_today
+    return (
+        eligible,
+        study_counts_today,
+        seq_counts_today,
+        study_subids_today,
+        excluded_by_deny,
+    )
 
 
 def _evaluate_row(
@@ -813,6 +821,7 @@ def build_email(
     totals: Totals,
     study_subids_today: Mapping[str, set],
     physicist_by_project: Mapping[str, Optional[str]],
+    excluded_by_deny: set = set(),
 ) -> Tuple[str, str]:
     """
     Render subject + body from aggregated results.
@@ -936,9 +945,14 @@ def build_email(
         f"  {totals.total_anydiff} of those differ from template on at least one column (marquee or otherwise)."
     )
     lines.append(f"  {totals.total_missing_templates} do not have a template.")
+    if excluded_by_deny:
+        lines.append("")
+        lines.append("🚫 Excluded sequences (not checked):")
+        unique_seqnames = sorted({seqname for _, seqname in excluded_by_deny})
+        for seqname in unique_seqnames:
+            lines.append(f"  {seqname}")
     lines.append("")
     lines.append("— MRQART")
-
     body = "\n".join(lines)
     return subject, body
 
@@ -1105,9 +1119,13 @@ def main(*, dry_run: bool = False) -> int:
         return 0 if not any_fail else 7
 
     # filter
-    eligible_rows, study_counts_today, seq_counts_today, study_subids_today = (
-        select_eligible_rows(acq_rows, settings)
-    )
+    (
+        eligible_rows,
+        study_counts_today,
+        seq_counts_today,
+        study_subids_today,
+        excluded_by_deny,
+    ) = select_eligible_rows(acq_rows, settings)
 
     # engine
     tc = TemplateChecker(db=sql, context="DB")
@@ -1174,6 +1192,7 @@ def main(*, dry_run: bool = False) -> int:
                 totals=totals,
                 physicist_by_project=physicist_by_project,
                 marquee_cols=settings["marquee_cols"],
+                excluded_by_deny=excluded_by_deny,
             )
             smtp_host = (
                 html_entries[0].get("host", "localhost")
