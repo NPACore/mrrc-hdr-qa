@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="/home/hudlowe/src/mrrc-hdr-qa"
+# repo is this scripts working directory
+# if script moves out of root consider: git -C "$(dirname "$0")" rev-parse --show-toplevel
+REPO=$(cd "$(dirname "$0")"; pwd)
 VENV="$REPO/.venv/bin/python"
 LOGDIR="$REPO/logs"
 mkdir -p "$LOGDIR"
