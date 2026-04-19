@@ -29,6 +29,7 @@ create table acq_param (
   BWPPE text,
   FA text,
   TA text,
-  FoV text
-  -- TODO: add shim settings from CSA
+  FoV text,
+  -- added 20260419 is actual program name (dll)
+  SequenceFile text
 );

@@ -3,6 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #     "pydicom",
+#     "nibabel"
 # ]
 # ///
 """
@@ -94,11 +95,10 @@ def read_known_tags(tagfile: Optional[str] = None) -> TagDicts:
         if re.search(r"^[0-9]{4},", tags[i]["tag"]):
             tags[i]["tag"] = tagpair_to_hex(tags[i]["tag"])
             tags[i]["loc"] = "header"
-        elif name.lower() == "shims":  # case-insensitive to match 'Shims'
+        elif name.lower() in ["shims", "sequencefile"]:
             tags[i]["loc"] = "asccov"
         else:
             tags[i]["loc"] = "csa"
-
     return tags
 
 
@@ -120,6 +120,35 @@ def csa_fetch(csa_tr: dict, itemname: str) -> str:
     except KeyError:
         val = NULLVAL.value
     return val
+
+
+def read_sequencefile(csa_s: Optional[dict]) -> str:
+    """
+    Fetch sequenceFilename from ASCCONV section of dicom  header
+    :param csa_s ``0x0029,0x1020`` CSA **Series** Header Info
+    :return sequenceFilename
+
+    >>> csa_s = pydicom.dcmread('example_dicoms/RewardedAnti_good.dcm').get((0x0029, 0x1020))
+    >>> ascconv = read_csa(csa_s)["tags"]["MrPhoenixProtocol"]["items"][0]
+    >>> re.findall(r'tSequenceFileName.*', ascconv)
+    ['tSequenceFileName\\t = \\t""%CustomerSeq%\\\\cmrr_mbep2d_bold""']
+    >>> read_sequencefile(read_csa(csa_s))
+    '%CustomerSeq%/cmrr_mbep2d_bold'
+    """
+    if csa_s is None:
+        csa_s = {}
+    try:
+        asccov = csa_s["tags"]["MrPhoenixProtocol"]["items"][0]
+    except KeyError:
+        print("WARNING: no MrPhoenixPortocol")
+        return NULLVAL.value
+
+    res = re.findall(r'tSequenceFileName.*\t""([^"]*)"', asccov)
+    if not res:
+        print("WARNING: no tSeqFileName failed")
+        return NULLVAL.value
+    # remove windows like path to avoid escape character
+    return res[0].replace('\\', '/')
 
 
 def read_shims(csa_s: Optional[dict]) -> list:
@@ -213,13 +242,16 @@ def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> TagValues:
 
     out = dict()
     csa = read_csa(dcm.get((0x0029, 0x1010)))
+    csa_s = read_csa(dcm.get((0x0029, 0x1020)))
     for tag in tags:
         k = tag["name"]
         if k == "Shims":
             # 20241118: add shims
-            csa_s = read_csa(dcm.get((0x0029, 0x1020)))
             shims = read_shims(csa_s)
             out[k] = ",".join(shims)
+        elif k == 'SequenceFile':
+            print(csa_s)
+            out[k] = read_sequencefile(csa_s)
         elif tag["loc"] == "csa":
             out[k] = csa_fetch(csa, tag["tag"]) if csa is not None else NULLVAL.value
         else:

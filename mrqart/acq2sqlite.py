@@ -91,6 +91,7 @@ class DBQuery:
         "FA",
         "TA",
         "FoV",
+        "SequenceFile"
     ]
 
     def __init__(self, sql=None):
