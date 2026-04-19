@@ -140,12 +140,12 @@ def read_sequencefile(csa_s: Optional[dict]) -> str:
     try:
         asccov = csa_s["tags"]["MrPhoenixProtocol"]["items"][0]
     except KeyError:
-        print("WARNING: no MrPhoenixPortocol")
+        logging.warning("WARNING: no MrPhoenixPortocol")
         return NULLVAL.value
 
     res = re.findall(r'tSequenceFileName.*\t""([^"]*)"', asccov)
     if not res:
-        print("WARNING: no tSeqFileName failed")
+        logging.warning("WARNING: no tSeqFileName failed")
         return NULLVAL.value
     # remove windows like path to avoid escape character
     return res[0].replace('\\', '/')
@@ -250,7 +250,6 @@ def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> TagValues:
             shims = read_shims(csa_s)
             out[k] = ",".join(shims)
         elif k == 'SequenceFile':
-            print(csa_s)
             out[k] = read_sequencefile(csa_s)
         elif tag["loc"] == "csa":
             out[k] = csa_fetch(csa, tag["tag"]) if csa is not None else NULLVAL.value

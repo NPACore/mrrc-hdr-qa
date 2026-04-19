@@ -15,20 +15,32 @@ find_example_dcm(){
 
 export -f find_example_dcm
 
+# get python depends. TODO: should do more to ensure this exists?
+test -r "$(dirname "$0")/.venv/bin/activate" && source "$_"
+
 build_dcm_db(){
   #
   # dicoms like project/session_date/session_id/acquisition/
 
 
+  # stop after $maxcnt sessions per project. 0 means all
   maxcnt=${MAXDCMCOUNT:-0}
-  cnt=1
+
+  # default to scan_data, but variable to use archive
+  # but can also just specify full path with glob
+  PROJECT_ROOT=${PROJECT_ROOT:-/disk/mace2/scan_data}
+
+
+  [[ $# -eq 0 || $* =~ ^-h ]] && echo "USAGE: $0 [all|WPC-8291 /disk/mace2/scan_data/WPC-*/]; set PROJECT_ROOT to use archives" && return 0
+  [[ $1 == all ]] && mapfile -t PROJECTS < <(ls -d $PROJECT_ROOT/*/ |xargs -n1 basename) || PROJECTS=("$@")
+
 
   mkdir -p db/
-
+  cnt=1
   for project in "$@"; do
      # convenient way to specify a project without having the full path
-     [[ ! -d "$project" && ! "$project" =~ / && -d "/disk/mace2/scan_data/$project" ]] &&
-        project=/disk/mace2/scan_data/$project
+     [[ ! -d "$project" && ! "$project" =~ / && -d "$PROJECT_ROOT/$project" ]] &&
+        project=$PROJECT_ROOT/$project
 
      [ ! -d $project ] && echo "ERROR: failed to find project directory '$project'" >&2 && continue
      pname=$(basename $project)
@@ -43,7 +55,7 @@ build_dcm_db(){
 
 	 find_example_dcm "$acq"
      done |
-     time parallel -X -j 4 --bar ./dcmmeta2tsv.py > $outtxt 
+     time parallel -X -j 4 --bar python3 -m mrqart.dcmmeta2tsv > $outtxt 
   done
  return 0
 }

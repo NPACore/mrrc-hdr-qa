@@ -2,13 +2,15 @@
 """
 Find MRRC organized study acquisitions directories newer than what's in the DB
 and update them.
+
+Use RESCAN_ALL to force inspecting all dicoms
 """
 
 import logging
 import os
 import re
 import subprocess
-from datetime import timedelta
+from datetime import timedelta, datetime
 from glob import glob
 
 from mrqart.acq2sqlite import DBQuery
@@ -80,14 +82,18 @@ def update_mrrc_db(project_dir_list: list[PathLike] = None):
     VERYRECENT = db.most_recent()
     for pdir in project_dir_list:
         if not is_project(pdir):
+            print(f"WARNING: {pdir} is not a project")
             next
         project = os.path.basename(pdir)
         recent = db.most_recent("%" + project)
 
         #: if no data from any other pass, use the most recent DB pass as time to check
         #: this will be a problem if this script isn't used to update and a existing folder is updated in between runs
-        if not recent or recent == "None":
-            recent = VERYRECENT
+        if not recent or recent == "None" or os.environ.get("RESCAN_ALL"):
+            # BUG? 20260419 - if seen none, start at the begining insetad of at the end
+            #recent = VERYRECENT
+            recent = datetime.strptime("19700101 000000.0000", "%Y%m%d %H%M%S.%f")
+            print(f"WARNING: project dir '{pdir}' has no recent time? Using {recent}")
 
         #: sequence time is older than folder copy to gyrus time
         #: reset time to midnight and go one day ahead
@@ -120,4 +126,5 @@ def update_mrrc_db(project_dir_list: list[PathLike] = None):
 
 
 if __name__ == "__main__":
-    update_mrrc_db()
+    import sys
+    update_mrrc_db(sys.argv[1:])

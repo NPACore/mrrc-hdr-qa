@@ -23,3 +23,4 @@ FA	0018,1314
 TA	0051,100a
 FoV	0051,100c	 eg FoV 1617*1727; but actually cocaluated from matrix and spacing?
 Shims	ASCCOV	sAdjData.uiAdjShimMode,sGRADSPEC.asGPAData[0].lOffset{X,Y,Z},sGRADSPEC.alShimCurrent[0:4],sTXSPEC.asNucleusInfo[0].lFrequency
+SequenceFile	ASCCOV	tSequenceFileName
