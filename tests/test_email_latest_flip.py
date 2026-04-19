@@ -190,21 +190,23 @@ def test_select_eligible_rows_counts_and_filters():
             "SeriesNumber": "11",
         },
     ]
-
-    eligible, study_counts, seq_counts, study_subids_today = select_eligible_rows(
-        rows,
-        {
-            "interesting_substrings": ["rest"],
-            "deny_substrings": ["localizer"],
-            "blacklist_study_regex": ["^7T"],
-            "blacklist_prefixes": ["anat"],
-            "disable_blacklist": False,
-        },
+    eligible, study_counts, seq_counts, study_subids_today, excluded = (
+        select_eligible_rows(
+            rows,
+            {
+                "interesting_substrings": ["rest"],
+                "deny_substrings": ["localizer"],
+                "blacklist_study_regex": ["^7T"],
+                "blacklist_prefixes": ["anat"],
+                "disable_blacklist": False,
+            },
+        )
     )
 
     assert len(eligible) == 1
     assert study_counts["Brain^X"] == 1
     assert seq_counts[("Brain^X", "S1", "task_rest")] == 1
+    assert excluded == {("Brain^X", "localizer_foo")}
 
 
 # -----------------------------

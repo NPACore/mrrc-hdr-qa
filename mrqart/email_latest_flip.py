@@ -581,11 +581,14 @@ def fetch_acquisitions(sql: sqlite3.Connection, yday_str: str) -> List[sqlite3.R
 
 def select_eligible_rows(
     acq_rows: Iterable[sqlite3.Row], settings: FilterSettings
-) -> Tuple[List[sqlite3.Row], Dict[str, int], Dict[SeqKey, int], Dict[str, set]]:
+) -> Tuple[List[sqlite3.Row], Dict[str, int], Dict[SeqKey, int], Dict[str, set], set]:
     """
     @param acq_rows  sql query results - acquisitions to check
     @param settings  configuration from load_reporting_config
                      passed to is_interesting_sequence_with_blacklist
+    @returns
+               eligible, study_counts_today, seq_counts_today,
+               study_subids_today, excluded_by_deny
     Apply:
       - SeriesNumber <= 100
       - reporting filter (interesting/deny/blacklist)
@@ -593,7 +596,8 @@ def select_eligible_rows(
       - eligible rows
       - study_counts_today: total eligible rows per project
       - seq_counts_today: total eligible rows per (project, subid, seqname)
-      - study_subids_today: set of unique SubIDs seen per project (for session count)
+      - study_subids_today:
+             set of unique SubIDs seen per project (for session count)
     """
     eligible: List[sqlite3.Row] = []
     study_counts_today: Dict[str, int] = defaultdict(int)
