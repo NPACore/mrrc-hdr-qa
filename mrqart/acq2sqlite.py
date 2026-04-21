@@ -310,6 +310,27 @@ class DBQuery:
         logging.debug("found template: %s", res)
         return res
 
+    def get_param_value_counts(self, project: str, seqname: str, col: str) -> dict:
+        """
+        Count how many times each distinct value has been seen
+        for a given (project, seqname, col) combination in acq_param.
+        Returns dict mapping value -> count.
+        """
+        try:
+            rows = self.sql.execute(
+                f"""
+                SELECT "{col}", COUNT(*) as n
+                FROM acq_param
+                WHERE Project = ? AND SequenceName = ?
+                GROUP BY "{col}"
+                ORDER BY n DESC
+                """,
+                (project, seqname),
+            ).fetchall()
+            return {str(r[0]): r[1] for r in rows}
+        except Exception:
+            return {}
+
     def find_acquisitions_since(
         self, since_date: Optional[str] = None
     ) -> list[sqlite3.Row]:

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 import subprocess
 from email.header import Header
 from pathlib import Path
@@ -99,6 +100,7 @@ def build_html_body(
     physicist_by_project: Mapping[str, Optional[str]],
     marquee_cols: List[str],
     excluded_by_deny: set = set(),
+    sql=None,
 ) -> str:
     """Build a condensed HTML email body."""
     from collections import defaultdict
@@ -160,6 +162,15 @@ def build_html_body(
             xnat_url = xnat_urls.get((project, subid), "")
             for i, (col, exp, got) in enumerate(error_tuples):
                 streak = streaks.get((project, seqname, col), 0)
+                counts = {}
+                if sql is not None:
+                    from .acq2sqlite import DBQuery
+
+                    db = DBQuery(sql)
+                    counts = db.get_param_value_counts(project, seqname, col)
+                n_got = counts.get(str(got), 0)
+                n_exp = counts.get(str(exp), 0)
+                count_str = f" ({n_got}× got, {n_exp}× expected)" if counts else ""
                 mailto_subject = (
                     f"Template update request: {proj_short}/{seqname}/{col}"
                 )
@@ -175,7 +186,7 @@ def build_html_body(
             </td>
             <td style="padding:4px 12px;color:#94a3b8;border-top:1px solid #1f2937;">{col}</td>
             <td style="padding:4px 12px;border-top:1px solid #1f2937;">{_fmt_val(col, exp)}</td>
-            <td style="padding:4px 12px;color:#ef4444;border-top:1px solid #1f2937;">{_fmt_val(col, got)}</td>
+            <td style="padding:4px 12px;color:#ef4444;border-top:1px solid #1f2937;">{_fmt_val(col, got)}{count_str}</td>
             <td style="padding:4px 12px;color:#f59e0b;border-top:1px solid #1f2937;">{streak if streak > 1 else ""}</td>
             <td style="padding:4px 12px;border-top:1px solid #1f2937;"><a href="{mailto_url}" style="color:#60a5fa;font-size:11px;">↗ update</a></td>
         </tr>"""
@@ -184,7 +195,7 @@ def build_html_body(
         <tr>
             <td style="padding:4px 12px;color:#94a3b8;">{col}</td>
             <td style="padding:4px 12px;">{_fmt_val(col, exp)}</td>
-            <td style="padding:4px 12px;color:#ef4444;">{_fmt_val(col, got)}</td>
+            <td style="padding:4px 12px;color:#ef4444;">{_fmt_val(col, got)}{count_str}</td>
             <td style="padding:4px 12px;color:#f59e0b;">{streak if streak > 1 else ""}</td>
             <td style="padding:4px 12px;border-top:1px solid #1f2937;"><a href="{mailto_url}" style="color:#60a5fa;font-size:11px;">↗ update</a></td>
         </tr>"""
