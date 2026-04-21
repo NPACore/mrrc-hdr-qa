@@ -238,7 +238,7 @@ def build_html_body(
         {rows_html}
     </tbody>
 </table>'''}
-{"" if not excluded_by_deny else f'<p style="color:#64748b;font-size:11px;margin-top:20px;">🚫 Excluded (not checked): {excluded_seqnames}</p>'}
+{"" if not excluded_by_deny else f'<p style="color:#64748b;font-size:10px;margin-top:20px;">🚫 Excluded (not checked): {excluded_seqnames}</p>'}
 </div>
 </body>
 </html>"""
