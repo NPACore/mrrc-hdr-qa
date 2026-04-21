@@ -1197,6 +1197,7 @@ def main(*, dry_run: bool = False) -> int:
                 physicist_by_project=physicist_by_project,
                 marquee_cols=settings["marquee_cols"],
                 excluded_by_deny=excluded_by_deny,
+                sql=sql,
             )
             smtp_host = (
                 html_entries[0].get("host", "localhost")
