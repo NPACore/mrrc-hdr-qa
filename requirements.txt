@@ -7,3 +7,4 @@ asyncio
 websockets
 aionotify
 tornado
+openpyxl
