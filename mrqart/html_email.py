@@ -168,9 +168,10 @@ def build_html_body(
 
                     db = DBQuery(sql)
                     counts = db.get_param_value_counts(project, seqname, col)
-                n_got = counts.get(str(got), 0)
-                n_exp = counts.get(str(exp), 0)
-                count_str = f" ({n_got}× got, {n_exp}× expected)" if counts else ""
+                series_nums = db.get_param_series_numbers(
+                    project, seqname, col, str(exp)
+                )
+                exp_str = f" (series: {', '.join(series_nums)})" if series_nums else ""
                 mailto_subject = (
                     f"Template update request: {proj_short}/{seqname}/{col}"
                 )
@@ -185,8 +186,8 @@ def build_html_body(
                 {"<br><code style='font-size:10px;color:#64748b;user-select:all;'>" + path_str + "</code>" if path_str else ""}
             </td>
             <td style="padding:4px 12px;color:#94a3b8;border-top:1px solid #1f2937;">{col}</td>
-            <td style="padding:4px 12px;border-top:1px solid #1f2937;">{_fmt_val(col, exp)}</td>
-            <td style="padding:4px 12px;color:#ef4444;border-top:1px solid #1f2937;">{_fmt_val(col, got)}{count_str}</td>
+            <td style="padding:4px 12px;border-top:1px solid #1f2937;">{_fmt_val(col, exp)}{exp_str}</td>
+            <td style="padding:4px 12px;color:#ef4444;border-top:1px solid #1f2937;">{_fmt_val(col, got)}</td>
             <td style="padding:4px 12px;color:#f59e0b;border-top:1px solid #1f2937;">{streak if streak > 1 else ""}</td>
             <td style="padding:4px 12px;border-top:1px solid #1f2937;"><a href="{mailto_url}" style="color:#60a5fa;font-size:11px;">↗ update</a></td>
         </tr>"""
@@ -194,8 +195,8 @@ def build_html_body(
                     project_rows += f"""
         <tr>
             <td style="padding:4px 12px;color:#94a3b8;">{col}</td>
-            <td style="padding:4px 12px;">{_fmt_val(col, exp)}</td>
-            <td style="padding:4px 12px;color:#ef4444;">{_fmt_val(col, got)}{count_str}</td>
+            <td style="padding:4px 12px;">{_fmt_val(col, exp)}{exp_str}</td>
+            <td style="padding:4px 12px;color:#ef4444;">{_fmt_val(col, got)}</td>
             <td style="padding:4px 12px;color:#f59e0b;">{streak if streak > 1 else ""}</td>
             <td style="padding:4px 12px;border-top:1px solid #1f2937;"><a href="{mailto_url}" style="color:#60a5fa;font-size:11px;">↗ update</a></td>
         </tr>"""

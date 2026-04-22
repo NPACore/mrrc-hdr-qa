@@ -91,7 +91,7 @@ class DBQuery:
         "FA",
         "TA",
         "FoV",
-        "SequenceFile"
+        "SequenceFile",
     ]
 
     def __init__(self, sql=None):
@@ -458,6 +458,27 @@ class DBQuery:
             tstamp = datetime.strptime(tstamp, "%Y%m%d %H%M%S.%f")
 
         return tstamp
+
+    def get_param_series_numbers(
+        self, project: str, seqname: str, col: str, val: str
+    ) -> list[str]:
+        """
+        Return series numbers where (project, seqname, col) = val.
+        """
+        try:
+            rows = self.sql.execute(
+                f"""
+                SELECT DISTINCT a.SeriesNumber
+                FROM acq a
+                JOIN acq_param p ON a.param_id = p.rowid
+                WHERE p.Project = ? AND p.SequenceName = ? AND p."{col}" = ?
+                ORDER BY a.SeriesNumber
+                """,
+                (project, seqname, val),
+            ).fetchall()
+            return [str(r[0]) for r in rows if r[0]]
+        except Exception:
+            return []
 
 
 def have_pipe_data():
