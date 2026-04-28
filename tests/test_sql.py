@@ -201,3 +201,65 @@ def test_check_header_matches(template_checker):
     result: CheckResult = template_checker.check_header(MOCK_TEMPLATE)
     assert result["errors"] == {}
     assert result["conforms"] == True
+
+
+def test_get_param_value_counts(db):
+    """get_param_value_counts returns dict of value -> count"""
+    # insert a second acq_param row with different TR
+    db.sql.execute(
+        "INSERT INTO acq_param (Project, SequenceName, TR) VALUES (?, ?, ?)",
+        ("Brain^wpc-8620", "HabitTask", "2000"),
+    )
+    counts = db.get_param_value_counts("Brain^wpc-8620", "HabitTask", "TR")
+    assert counts.get("1300") == 1
+    assert counts.get("2000") == 1
+
+
+def test_get_param_series_numbers(db):
+    """get_param_series_numbers returns distinct series numbers for a value"""
+    # insert acq rows linked to acq_param
+    db.sql.execute(
+        "INSERT INTO acq (param_id, SeriesNumber, AcqDate, SubID) VALUES (1, 5, '20260309', 'sub01')"
+    )
+    db.sql.execute(
+        "INSERT INTO acq (param_id, SeriesNumber, AcqDate, SubID) VALUES (1, 7, '20260309', 'sub01')"
+    )
+    series = db.get_param_series_numbers("Brain^wpc-8620", "HabitTask", "TR", "1300")
+    assert "5" in series
+    assert "7" in series
+
+
+def test_get_failure_streaks(tmp_path):
+    """get_failure_streaks counts days per (project, seqname, param)"""
+    import json
+
+    from mrqart.html_email import get_failure_streaks
+
+    log = tmp_path / "test.jsonl"
+    entries = [
+        {
+            "acq_ts": "2026-03-09",
+            "project": "Brain^wpc-8620",
+            "sequence": "HabitTask",
+            "errors": ["TR: expected 1300, got 1400"],
+        },
+        {
+            "acq_ts": "2026-03-10",
+            "project": "Brain^wpc-8620",
+            "sequence": "HabitTask",
+            "errors": ["TR: expected 1300, got 1400"],
+        },
+        {
+            "acq_ts": "2026-03-10",
+            "project": "Brain^wpc-8620",
+            "sequence": "HabitTask",
+            "errors": ["FA: expected 60, got 70"],
+        },
+    ]
+    with log.open("w") as f:
+        for e in entries:
+            f.write(json.dumps(e) + "\n")
+
+    streaks = get_failure_streaks(log)
+    assert streaks[("Brain^wpc-8620", "HabitTask", "TR")] == 2
+    assert streaks[("Brain^wpc-8620", "HabitTask", "FA")] == 1
