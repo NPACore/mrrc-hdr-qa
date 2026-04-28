@@ -121,7 +121,7 @@ def send_via_local_mail(subject: str, body: str, recipient: str) -> bool:
         )
         return True
     except Exception as e:
-        print(f"[warn] local mail send failed to {recipient}: {e}", file=sys.stderr)
+        log_line(f"[warn] local mail send failed to {recipient}: {e}")
         return False
 
 
@@ -1052,7 +1052,7 @@ def send_all(
     for e in email_entries:
         ok = send_fn(subject, body, e["to"])
         if ok:
-            print(f"[ok] mailed {e['to']}")
+            log_line(f"[ok] mailed {e['to']}")
         else:
             any_fail = True
     return any_fail
@@ -1214,7 +1214,7 @@ def main(*, dry_run: bool = False) -> int:
                     smtp_host=smtp_host,
                 )
         except Exception as e:
-            print(f"[warn] HTML email failed: {e}", file=sys.stderr)
+            log_line(f"[warn] HTML email failed: {e}")
 
     # dry run: print instead of send
     if dry_run:

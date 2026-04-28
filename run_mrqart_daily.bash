@@ -21,6 +21,8 @@ export MRQART_SINCE="$(date -d 'yesterday' +%m-%d-%Y)"
 
 # Send an email even if no issues are found
 export MRQART_FORCE_EMAIL=1
+export MRQART_LOG=1
+export MRQART_LOG_PATH="$LOGDIR/mrqart_daily.log"
 
 # export MRQART_SKIP_CASEONLY=1
 
