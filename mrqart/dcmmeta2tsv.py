@@ -148,7 +148,7 @@ def read_sequencefile(csa_s: Optional[dict]) -> str:
         logging.warning("WARNING: no tSeqFileName failed")
         return NULLVAL.value
     # remove windows like path to avoid escape character
-    return res[0].replace('\\', '/')
+    return res[0].replace("\\", "/")
 
 
 def read_shims(csa_s: Optional[dict]) -> list:
@@ -249,7 +249,7 @@ def read_tags(dcm_path: os.PathLike, tags: TagDicts) -> TagValues:
             # 20241118: add shims
             shims = read_shims(csa_s)
             out[k] = ",".join(shims)
-        elif k == 'SequenceFile':
+        elif k == "SequenceFile":
             out[k] = read_sequencefile(csa_s)
         elif tag["loc"] == "csa":
             out[k] = csa_fetch(csa, tag["tag"]) if csa is not None else NULLVAL.value

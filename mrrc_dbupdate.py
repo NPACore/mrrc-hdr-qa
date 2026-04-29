@@ -10,7 +10,7 @@ import logging
 import os
 import re
 import subprocess
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from glob import glob
 
 from mrqart.acq2sqlite import DBQuery
@@ -90,8 +90,8 @@ def update_mrrc_db(project_dir_list: list[PathLike] = None):
         #: if no data from any other pass, use the most recent DB pass as time to check
         #: this will be a problem if this script isn't used to update and a existing folder is updated in between runs
         if not recent or recent == "None" or os.environ.get("RESCAN_ALL"):
-            # BUG? 20260419 - if seen none, start at the begining insetad of at the end
-            #recent = VERYRECENT
+            # BUG? 20260419 - if seen none, start at the beginning instead of at the end
+            # recent = VERYRECENT
             recent = datetime.strptime("19700101 000000.0000", "%Y%m%d %H%M%S.%f")
             print(f"WARNING: project dir '{pdir}' has no recent time? Using {recent}")
 
@@ -127,4 +127,5 @@ def update_mrrc_db(project_dir_list: list[PathLike] = None):
 
 if __name__ == "__main__":
     import sys
+
     update_mrrc_db(sys.argv[1:])

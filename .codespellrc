@@ -1,4 +1,4 @@
 [codespell]
-skip = ./creds/*,./docs/*,./share/*,./example*,.git/*,./db/*,./attic/*,*.dcm,MR.*,*.IMA
+skip = ./creds/*,./node_modules,./docs/*,./share/*,./.venv/,./example*,.git/*,./db/*,./attic/*,*.dcm,MR.*,*.IMA
 ignore-words-list = TE,te,DNE
 
