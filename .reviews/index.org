@@ -4,22 +4,19 @@
   * updating deadline
   * clocking time
   * navigate headers
+  *
+** TODO fix db
+CREATED: <2026-04-29 Wed>
+ ./mrrc_dbupdate.py
+ ValueError: time data 'null null' does not match format '%Y%m%d %H%M%S.%f'
 
-** TODO unique names of sequences not checked.
-CREATED: [2026-04-08 Wed]
-Enumerate what's excluded at bottom of mail as a check against accidentally ignoring something important.
-Give physicists a chance to catch what should be include
+** TODO "realtime" db add and notification
+ * using aoinotify
+ * waiting for REST from xnat https://wiki.xnat.org/documentation/using-the-xnat-event-service
+   - either way, is a server waiting for external pings. See  'mrqart' python script (scanner shared samba mount pushed in realtime and requires cmd.exe setup, cf. /mace2/scan_data pushed at end of scan session)
 
-** TODO fixed template table. check first
-for email updated template change
-
-
-** TODO day counts
-CREATED: [2026-04-01 Wed]
-  * query for count of bad
-     select count(*) as n from acq where TR = $wrong and seqname = % and project = %
-  * how many good?
-  * ways to show various info (total bad, date range of bad, etc)
+     * run db update given the folder (with a delay for file sync)
+     * run notifier for just that session
 
 ** TODO move emails from "@terminator" (rhea) to cerebro
 DEADLINE: <2026-04-08 Wed> CREATED: [2026-04-01 Wed]
@@ -56,8 +53,26 @@ Eventually want to store pass/fail and non-compliant fields in XNAT db
 current MRRC xnat too old for custom fields. need admin/write access anyway
 
 
+** DONE unique names of sequences not checked.
+CREATED: [2026-04-08 Wed]
+Enumerate what's excluded at bottom of mail as a check against accidentally ignoring something important.
+Give physicists a chance to catch what should be include
+
+** DONE fixed template table. check first
+for email updated template change
+
+
+** DONE day counts
+CREATED: [2026-04-01 Wed]
+  * query for count of bad
+     select count(*) as n from acq where TR = $wrong and seqname = % and project = %
+  * how many good?
+  * ways to show various info (total bad, date range of bad, etc)
+
+
 ** TODO Support Multiple templates
 CREATED: [2026-04-01 Wed]
+SHELVED: <2026-04-29 Wed>
   * range of values
   * list of good templates
   * update templateChecker?
@@ -121,7 +136,15 @@ CREATED: [2026-04-01 Wed]
 #+end_example
 
 
-* Colophon 
+* Colophon :noexport:
+
+** gen diffs
+#+begin_src bash :resutls none :eval never
+git log -p $(git rev-list --reverse HEAD --since="1 week ago"|sed 1q)~1..HEAD > diffs/$(date +%F).diff
+#+end_src
+
+#+RESULTS:
+
 
 ** Emacs setup
 
