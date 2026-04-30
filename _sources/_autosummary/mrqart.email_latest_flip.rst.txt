@@ -1,0 +1,48 @@
+mrqart.email\_latest\_flip
+==========================
+
+.. automodule:: mrqart.email_latest_flip
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build_email
+      build_jsonl_entries
+      compact_error_keys
+      dbg
+      evaluate_rows
+      fetch_acquisitions
+      first_seen_date_for_seq
+      first_seen_from_template_by_count
+      format_expected_got
+      format_seq_result
+      format_series_003
+      get_physicist_for_project
+      get_report_date
+      is_interesting_sequence_with_blacklist
+      load_email_entries
+      load_reporting_config
+      log_line
+      main
+      normalize_for_compare
+      parse_ta_seconds
+      rebuild_templates
+      select_eligible_rows
+      send_all
+      send_via_local_mail
+      series_int
+      series_is_posthoc
+      study_has_any_templates
+      yyyymmdd_to_iso
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ReportDate
+      RowResult
+      SeqSummary
+      Totals
+   

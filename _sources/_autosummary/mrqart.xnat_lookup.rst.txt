@@ -1,0 +1,13 @@
+mrqart.xnat\_lookup
+===================
+
+.. automodule:: mrqart.xnat_lookup
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get_xnat_interface
+      lookup_session_urls
+   

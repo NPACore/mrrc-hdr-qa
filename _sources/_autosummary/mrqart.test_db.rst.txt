@@ -1,0 +1,12 @@
+mrqart.test\_db
+===============
+
+.. automodule:: mrqart.test_db
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      DBQuery
+   
