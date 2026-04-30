@@ -448,6 +448,8 @@ class DBQuery:
         from acq a
         join acq_param p on a.param_id=p.rowid
         where project like ?
+        and AcqDate is not null and AcqTime is not null
+        and AcqDate != 'null' and AcqTime != 'null'
         """
         # logging.debug("search for %s", project)
         cur = self.sql.execute(query, (project,))
