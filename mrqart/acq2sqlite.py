@@ -474,6 +474,7 @@ class DBQuery:
                 FROM acq a
                 JOIN acq_param p ON a.param_id = p.rowid
                 WHERE p.Project = ? AND p.SequenceName = ? AND p."{col}" = ?
+                AND CAST(a.SeriesNumber AS INTEGER) < 100
                 ORDER BY a.SeriesNumber
                 """,
                 (project, seqname, val),
