@@ -308,7 +308,7 @@ def format_series_003(series: Any) -> str:
 
 def series_is_posthoc(series: Any) -> bool:
     si = series_int(series)
-    return (si is not None) and (si > 100)
+    return (si is not None) and (si >= 100)
 
 
 def is_interesting_sequence_with_blacklist(
@@ -590,7 +590,7 @@ def select_eligible_rows(
                eligible, study_counts_today, seq_counts_today,
                study_subids_today, excluded_by_deny
     Apply:
-      - SeriesNumber <= 100
+      - SeriesNumber < 100
       - reporting filter (interesting/deny/blacklist)
     Returns:
       - eligible rows
@@ -937,7 +937,7 @@ def build_email(
     lines.append("ℹ️ Summary:")
     lines.append(f"  {total_seen_today} acquisitions were seen.")
     lines.append(
-        f"  {totals.total_checked} matched inspection criteria (interesting + series<=100)."
+        f"  {totals.total_checked} matched inspection criteria (interesting + series<100)."
     )
     lines.append(
         f"  {totals.total_nonconforming} of those are nonconforming by marquee cols ({', '.join(marquee_cols)})."
