@@ -167,7 +167,7 @@ def build_html_body(
 
                 db_q = DBQuery(sql)
                 series_conformance = db_q.get_series_conformance(
-                    project, subid, seqname, acqdate
+                    project, seqname, subid, acqdate
                 )
 
             badges = ""

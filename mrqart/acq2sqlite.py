@@ -485,7 +485,7 @@ class DBQuery:
             return []
 
     def get_series_conformance(
-        self, project: str, subid: str, seqname: str, acqdate: str
+        self, project: str, seqname: str, subid: str, acqdate: str
     ) -> list[tuple[str, bool]]:
         """
         Return (series_number, conforms) for all acquisitions in a session
@@ -501,14 +501,14 @@ class DBQuery:
                 JOIN acq_param p ON a.param_id = p.rowid
                 JOIN template_by_count t ON t.Project = p.Project
                     AND t.SequenceName = ?
-                WHERE p.Project = ? AND a.SubID = ? AND a.AcqDate = ?
+                WHERE p.Project = ? AND p.SequenceName = ? AND a.SubID = ? AND a.AcqDate = ?
                     AND CAST(a.SeriesNumber AS INTEGER) < 100
                 ORDER BY CAST(a.SeriesNumber AS INTEGER)
                 """,
-                (seqname, project, subid, acqdate),
+                (seqname, project, seqname, subid, acqdate),
             ).fetchall()
             return [(str(r[0]), bool(r[1])) for r in rows if r[0]]
-        except Exception:
+        except Exception as e:
             return []
 
 
