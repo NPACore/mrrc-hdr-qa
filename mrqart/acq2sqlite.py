@@ -466,6 +466,7 @@ class DBQuery:
     ) -> list[str]:
         """
         Return series numbers where (project, seqname, col) = val.
+        Excludes series >= 100 (posthoc/derived sequences).
         """
         try:
             rows = self.sql.execute(
@@ -480,6 +481,33 @@ class DBQuery:
                 (project, seqname, val),
             ).fetchall()
             return [str(r[0]) for r in rows if r[0]]
+        except Exception:
+            return []
+
+    def get_series_conformance(
+        self, project: str, subid: str, seqname: str, acqdate: str
+    ) -> list[tuple[str, bool]]:
+        """
+        Return (series_number, conforms) for all acquisitions in a session
+        that share the same template param_id as the given sequence.
+        Catches renamed redos (e.g. 'T2w_FLAIR repeat').
+        """
+        try:
+            rows = self.sql.execute(
+                """
+                SELECT a.SeriesNumber,
+                    CASE WHEN a.param_id = t.param_id THEN 1 ELSE 0 END as conforms
+                FROM acq a
+                JOIN acq_param p ON a.param_id = p.rowid
+                JOIN template_by_count t ON t.Project = p.Project
+                    AND t.SequenceName = ?
+                WHERE p.Project = ? AND a.SubID = ? AND a.AcqDate = ?
+                    AND CAST(a.SeriesNumber AS INTEGER) < 100
+                ORDER BY CAST(a.SeriesNumber AS INTEGER)
+                """,
+                (seqname, project, subid, acqdate),
+            ).fetchall()
+            return [(str(r[0]), bool(r[1])) for r in rows if r[0]]
         except Exception:
             return []
 

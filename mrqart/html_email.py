@@ -17,7 +17,7 @@ from email.header import Header
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
-from .email_latest_flip import SeqKey, SeqSummary, Totals, format_expected_got
+from .email_latest_flip import SeqKey, SeqSummary, Totals, format_expected_got, log_line
 
 try:
     import tomllib as toml
@@ -101,6 +101,7 @@ def build_html_body(
     marquee_cols: List[str],
     excluded_by_deny: set = set(),
     sql=None,
+    acqdate: str = "",
 ) -> str:
     """Build a condensed HTML email body."""
     from collections import defaultdict
@@ -151,26 +152,51 @@ def build_html_body(
             if not error_tuples:
                 continue
             path_str = ""
+            proj_short = project.split("^", 1)[-1] if "^" in project else project
             if summary.examples:
                 parts = summary.examples[0].split(" / ", 2)
                 if len(parts) == 3:
                     seq_part = parts[2].split(" (diffs:")[0].strip()
-                    proj_short = (
-                        project.split("^", 1)[-1] if "^" in project else project
-                    )
                     path_str = f"{proj_short}/{subid}/{seq_part}"
             xnat_url = xnat_urls.get((project, subid), "")
+
+            # series conformance badges
+            series_conformance = []
+            if sql is not None and acqdate:
+                from .acq2sqlite import DBQuery
+
+                db_q = DBQuery(sql)
+                series_conformance = db_q.get_series_conformance(
+                    project, subid, seqname, acqdate
+                )
+
+            badges = ""
+            if series_conformance:
+                ok_series = [s for s, ok in series_conformance if ok]
+                fail_count = sum(1 for s, ok in series_conformance if not ok)
+                parts = []
+                if ok_series:
+                    parts.append(
+                        f"<span style='color:#10b981;font-size:10px;'>✓ series: {', '.join(ok_series)}</span>"
+                    )
+                if fail_count:
+                    parts.append(
+                        f"<span style='color:#ef4444;font-size:10px;'>✗ {fail_count} others</span>"
+                    )
+                badges = "<br>" + " &nbsp; ".join(parts)
+
             for i, (col, exp, got) in enumerate(error_tuples):
                 streak = streaks.get((project, seqname, col), 0)
                 counts = {}
+                series_nums = []
                 if sql is not None:
                     from .acq2sqlite import DBQuery
 
-                    db = DBQuery(sql)
-                    counts = db.get_param_value_counts(project, seqname, col)
-                series_nums = db.get_param_series_numbers(
-                    project, seqname, col, str(exp)
-                )
+                    db_q = DBQuery(sql)
+                    counts = db_q.get_param_value_counts(project, seqname, col)
+                    series_nums = db_q.get_param_series_numbers(
+                        project, seqname, col, str(exp)
+                    )
                 exp_str = f" (series: {', '.join(series_nums)})" if series_nums else ""
                 mailto_subject = (
                     f"Template update request: {proj_short}/{seqname}/{col}"
@@ -184,6 +210,7 @@ def build_html_body(
             <td rowspan="{rowspan}" style="padding:8px 12px;color:#94a3b8;vertical-align:top;border-top:1px solid #1f2937;">{"<a href='" + xnat_url + "' style='color:#60a5fa;text-decoration:underline;cursor:pointer;'>" + subid + "</a>" if xnat_url else subid}</td>
             <td rowspan="{rowspan}" style="padding:8px 12px;vertical-align:top;border-top:1px solid #1f2937;">{seqname}
                 {"<br><code style='font-size:10px;color:#64748b;user-select:all;'>" + path_str + "</code>" if path_str else ""}
+                {badges}
             </td>
             <td style="padding:4px 12px;color:#94a3b8;border-top:1px solid #1f2937;">{col}</td>
             <td style="padding:4px 12px;border-top:1px solid #1f2937;">{_fmt_val(col, exp)}{exp_str}</td>
@@ -273,6 +300,7 @@ def send_html_email(
             input=html_body.encode("utf-8"),
             check=True,
         )
+        log_line(f"[ok] html mailed {to_addr}")
         return True
     except Exception as e:
         print(f"[warn] HTML email send failed to {to_addr}: {e}")
